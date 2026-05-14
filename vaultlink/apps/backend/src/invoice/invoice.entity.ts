@@ -12,9 +12,10 @@ import { FinancingOffer } from '../financing/financing-offer.entity';
 
 export enum InvoiceStatus {
   DRAFT = 'draft',
-  PENDING = 'pending',
-  FUNDED = 'funded',
-  REPAID = 'repaid',
+  SUBMITTED = 'submitted',
+  FINANCED = 'financed',
+  PAID = 'paid',
+  CANCELLED = 'cancelled',
   DEFAULTED = 'defaulted',
 }
 
@@ -49,6 +50,12 @@ export class Invoice {
 
   @Column({ nullable: true })
   contractId?: string; // Stellar Soroban contract ID
+
+  @Column({ nullable: true })
+  txHash?: string; // On-chain transaction hash
+
+  @Column({ nullable: true })
+  ipfsHash?: string; // IPFS hash for document storage
 
   @Column({ nullable: true })
   tokenId?: string; // NFT token ID on Soroban

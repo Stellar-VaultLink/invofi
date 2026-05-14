@@ -13,7 +13,7 @@ VaultLink enables businesses to tokenize invoices as NFTs on Stellar and obtain 
 
 ## Architecture
 
-```
+```md
 vaultlink/
 ├── apps/
 │   ├── backend/      # NestJS API server
@@ -72,9 +72,7 @@ The server will start at `http://localhost:3000`.
 
 ### 4. Interactive API Documentation
 
-Once the application is running, you can explore and test the API endpoints (Registration, Login, Invoice creation, etc.) via the Swagger UI:
-
-👉 **http://localhost:3000/api**
+Once the application is running, you can explore and test the API endpoints (Registration, Login, Invoice creation, etc.) via the [Swagger UI](http://localhost:3000/api)
 
 ### 4. Build and Deploy Contracts
 
@@ -135,7 +133,7 @@ cargo test
 
 ### Backend (apps/backend)
 
-```
+```md
 src/
 ├── auth/           # JWT + Stellar wallet auth
 ├── invoice/        # Invoice management
@@ -147,7 +145,7 @@ src/
 
 ### Contracts (apps/contracts)
 
-```
+```md
 vaultlink-core/
 ├── src/
 │   ├── invoice.rs   # Invoice NFT contract

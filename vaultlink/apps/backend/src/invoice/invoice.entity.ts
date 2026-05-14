@@ -20,51 +20,51 @@ export enum InvoiceStatus {
 
 @Entity('invoices')
 export class Invoice {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn('uuid') // Auto-generated UUID
+  id!: string;
 
-  @Column()
-  title: string;
+  @Column() // Title of the invoice
+  title!: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description?: string; // Optional description
 
   @Column({ type: 'decimal', precision: 20, scale: 7 })
-  amount: string;
+  amount!: string; // Use string for currency to avoid precision issues
 
-  @Column()
-  currency: string;
+  @Column() // Currency type (e.g., 'USDC', 'XLM')
+  currency!: string;
 
-  @Column()
-  issuer: string;
+  @Column() // Issuer of the invoice
+  issuer!: string;
 
-  @Column()
-  recipient: string;
+  @Column() // Recipient of the invoice
+  recipient!: string;
 
-  @Column()
-  dueDate: Date;
+  @Column() // Due date of the invoice
+  dueDate!: Date;
 
   @Column({ type: 'enum', enum: InvoiceStatus, default: InvoiceStatus.DRAFT })
-  status: InvoiceStatus;
+  status!: InvoiceStatus; // Current status of the invoice
 
   @Column({ nullable: true })
-  contractId: string;
+  contractId?: string; // Stellar Soroban contract ID
 
   @Column({ nullable: true })
-  tokenId: string;
+  tokenId?: string; // NFT token ID on Soroban
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date; // Timestamp of creation
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date; // Timestamp of last update
 
   @Column()
-  createdById: string;
+  createdById!: string; // ID of the user who created the invoice
 
   @ManyToOne(() => User, (user) => user.invoices)
-  createdBy: User;
+  createdBy!: User; // User who created the invoice
 
   @OneToMany(() => FinancingOffer, (offer) => offer.invoice)
-  financingOffers: FinancingOffer[];
+  financingOffers!: FinancingOffer[]; // Related financing offers
 }

@@ -20,9 +20,10 @@ export class FinancingService {
 
     const offer = this.offerRepository.create({
       ...createFinancingDto,
+      amount: createFinancingDto.amount.toString(),
       lenderId: userId,
     });
-    return this.offerRepository.save(offer);
+    return await this.offerRepository.save(offer);
   }
 
   async findAll(userId?: string): Promise<FinancingOffer[]> {

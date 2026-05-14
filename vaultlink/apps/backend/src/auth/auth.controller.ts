@@ -1,22 +1,22 @@
 import { Controller, Request, Post, UseGuards, Body, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { ConnectWalletDto } from './dto/connect-wallet.dto';
-import { UsersService } from '../users/users.service';
-import { User } from '../users/user.entity';
+import { RegisterDto } from './dto/register.dto'; // Corrected import
+import { LoginDto } from './dto/login.dto';       // Corrected import
+import { ConnectWalletDto } from './dto/connect-wallet.dto'; // Corrected import
+import { UserService } from '../user/user.service';
+import { User } from '../user/user.entity';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private usersService: UsersService, // Inject UsersService
+    private userService: UserService, // Inject UserService
   ) {}
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req, @Body() loginDto: LoginDto) {
+  async login(@Request() req: any, @Body() loginDto: LoginDto) {
     // LocalAuthGuard already validated the user and attached it to req.user
     return this.authService.login(req.user);
   }
@@ -37,7 +37,7 @@ export class AuthController {
     }
 
     // Find user by stellarAccountId
-    const user: User | undefined = await this.usersService.findOneByStellarAccountId(publicKey);
+    const user: User | undefined = await this.userService.findByStellarAccountId(publicKey) || undefined; // Ensure it's undefined if null
 
     if (!user) {
       throw new UnauthorizedException('No user found with this Stellar account. Please register or link your wallet first.');

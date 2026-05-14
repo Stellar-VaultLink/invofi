@@ -33,29 +33,48 @@ vaultlink/
 
 ## Quick Start
 
-### 1. Clone and Setup Environment
+### 1. Environment Configuration
+
+The backend application expects its environment variables in the `apps/backend/` directory.
 
 ```bash
-cd vaultlink
-cp .env.example .env
+cd vault-link
+cp .env.example apps/backend/.env
 ```
 
-### 2. Start Infrastructure
+Ensure your `apps/backend/.env` contains the correct connection strings for your local environment (e.g., using `localhost:5432` for the database if running the app on your host machine).
+
+### 2. Start Infrastructure (Docker)
+
+VaultLink uses Docker Compose to manage PostgreSQL and Redis. From the project root, run:
 
 ```bash
-docker-compose up -d postgres redis
+docker-compose up -d
 ```
 
-### 3. Setup Backend
+Verify that both services are healthy:
+
+```bash
+docker ps
+```
+
+### 3. Start the Backend API
+
+Navigate to the backend directory, install dependencies, and start the development server:
 
 ```bash
 cd apps/backend
 npm install
-npm run migration:run
 npm run start:dev
 ```
 
-The API will be available at http://localhost:3000
+The server will start at `http://localhost:3000`.
+
+### 4. Interactive API Documentation
+
+Once the application is running, you can explore and test the API endpoints (Registration, Login, Invoice creation, etc.) via the Swagger UI:
+
+👉 **http://localhost:3000/api**
 
 ### 4. Build and Deploy Contracts
 
@@ -90,13 +109,15 @@ stellar contract deploy --wasm target/wasm32-unknown-unknown/release/vaultlink_c
 
 ## Environment Variables
 
-| Variable            | Description                  | Default |
-| ------------------- | ---------------------------- | ------- |
-| DATABASE_URL        | PostgreSQL connection string | -       |
-| REDIS_URL           | Redis connection string      | -       |
-| JWT_SECRET          | Secret for JWT signing       | -       |
-| STELLAR_NETWORK     | `testnet` or `mainnet`       | testnet |
-| STELLAR_HORIZON_URL | Stellar Horizon RPC URL      | -       |
+| Variable            | Description                                  | Default                                 |
+| ------------------- | -------------------------------------------- | --------------------------------------- |
+| DATABASE_URL        | PostgreSQL connection string                 | -                                       |
+| REDIS_HOST          | Redis server host                            | `localhost`                             |
+| REDIS_PORT          | Redis server port                            | `6379`                                  |
+| JWT_SECRET          | Secret for JWT signing                       | -                                       |
+| STELLAR_NETWORK     | `testnet` or `public`                        | `testnet`                               |
+| STELLAR_HORIZON_URL | Stellar Horizon RPC URL                      | `https://horizon-testnet.stellar.org`   |
+| CONTRACT_ID         | Deployed Soroban Contract ID                 | -                                       |
 
 ## Running Tests
 

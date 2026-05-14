@@ -24,41 +24,41 @@ export enum TransactionStatus {
 @Entity('transactions')
 export class Transaction {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'enum', enum: TransactionType })
-  type: TransactionType;
+  type!: TransactionType;
 
   @Column({ type: 'enum', enum: TransactionStatus, default: TransactionStatus.PENDING })
-  status: TransactionStatus;
+  status!: TransactionStatus;
 
   @Column()
-  txHash: string;
+  txHash!: string;
 
   @Column()
-  contractId: string;
+  contractId!: string;
 
   @Column({ nullable: true })
-  tokenId: string;
+  tokenId!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Column()
-  userId: string;
+  userId!: string;
 
   @ManyToOne(() => User, (user) => user.invoices)
-  user: User;
+  user!: User;
 
   @Column({ nullable: true })
-  invoiceId: string;
+  invoiceId!: string;
 
   @ManyToOne(() => Invoice)
-  invoice: Invoice;
+  invoice!: Invoice;
 
   @Column({ nullable: true })
-  offerId: string;
+  offerId!: string;
 
   @ManyToOne(() => FinancingOffer)
-  offer: FinancingOffer;
+  offer!: FinancingOffer;
 }

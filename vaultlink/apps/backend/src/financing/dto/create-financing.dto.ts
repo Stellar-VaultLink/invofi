@@ -3,14 +3,14 @@ import { IsString, IsNumber, IsNotEmpty } from 'class-validator';
 export class CreateFinancingDto {
   @IsString()
   @IsNotEmpty()
-  invoiceId: string;
+  invoiceId!: string;
 
   @IsNumber()
-  amount: number;
+  amount!: number;
 
   @IsNumber()
-  interestRate: number;
+  interestRate!: number;
 
   @IsNumber()
-  duration: number;
+  duration!: number;
 }

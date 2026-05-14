@@ -1,43 +1,31 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  OneToMany,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Invoice } from '../invoice/invoice.entity';
-import { FinancingOffer } from '../financing/financing-offer.entity';
+import { FinancingOffer } from '../financing/financing-offer.entity'; // Import FinancingOffer
+import { Transaction } from '../transaction/transaction.entity'; // Import Transaction
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  stellarPublicKey: string;
+  email!: string;
 
-  @Column({ unique: true })
-  walletAddress: string;
+  @Column()
+  passwordHash!: string;
 
-  @Column({ nullable: true })
-  email?: string;
+  @Column({ unique: true, nullable: true })
+  stellarAccountId?: string; // Public key of the Stellar account (made optional)
 
-  @Column({ default: 0 })
-  creditScore: number;
+  @Column({ default: 'originator' }) // 'originator', 'funder', 'admin'
+  role!: string;
 
-  @Column({ type: 'decimal', precision: 20, scale: 7, default: 0 })
-  walletBalance: string;
+  @OneToMany(() => Invoice, (invoice: Invoice) => invoice.createdBy) // Corrected relationship to createdBy
+  invoices!: Invoice[];
 
-  @CreateDateColumn()
-  createdAt: Date;
+  @OneToMany(() => FinancingOffer, (offer: FinancingOffer) => offer.lender) // Added for lender offers
+  lendingOffers!: FinancingOffer[];
 
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  @OneToMany(() => Invoice, (invoice) => invoice.creator)
-  invoices: Invoice[];
-
-  @OneToMany(() => FinancingOffer, (offer) => offer.lender)
-  lendingOffers: FinancingOffer[];
+  @OneToMany(() => Transaction, (transaction: Transaction) => transaction.user) // Added for transactions
+  transactions!: Transaction[];
 }

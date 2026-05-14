@@ -9,27 +9,27 @@ import {
 export class CreateInvoiceDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @IsString()
   @IsOptional()
   description?: string;
 
   @IsNumber()
-  amount: number;
+  amount!: number;
 
   @IsString()
   @IsNotEmpty()
-  currency: string;
+  currency!: string;
 
   @IsString()
   @IsNotEmpty()
-  issuer: string;
+  issuer!: string;
 
   @IsString()
   @IsNotEmpty()
-  recipient: string;
+  recipient!: string;
 
   @IsDateString()
-  dueDate: string;
+  dueDate!: string;
 }

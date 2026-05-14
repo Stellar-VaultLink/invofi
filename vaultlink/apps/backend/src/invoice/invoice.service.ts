@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Decimal } from 'decimal.js'; // Import Decimal for precise calculations
 import { Invoice, InvoiceStatus } from './invoice.entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { TransactionService } from '../transaction/transaction.service';
@@ -14,11 +15,15 @@ export class InvoiceService {
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice> {
+    // Convert amount to string for precise storage
+    const amountString = new Decimal(createInvoiceDto.amount).toFixed(7);
     const invoice = this.invoiceRepository.create({
       ...createInvoiceDto,
+      amount: amountString, // Use the string amount
+      dueDate: new Date(createInvoiceDto.dueDate), // Convert dueDate string to Date object
       createdById: userId,
     });
-    return this.invoiceRepository.save(invoice);
+    return await this.invoiceRepository.save(invoice);
   }
 
   async findAll(userId?: string): Promise<Invoice[]> {
@@ -49,10 +54,19 @@ export class InvoiceService {
       throw new ForbiddenException('Cannot update non-draft invoice');
     }
 
-    Object.assign(invoice, updateData);
-    return this.invoiceRepository.save(invoice);
-  }
+    // Handle amount conversion if present in updateData
+    if (updateData.amount !== undefined) {
+      updateData.amount = new Decimal(updateData.amount).toFixed(7);
+    }
+    // Handle dueDate conversion if present in updateData
+    if (updateData.dueDate !== undefined && typeof updateData.dueDate === 'string') {
+      (updateData as any).dueDate = new Date(updateData.dueDate);
+    }
 
+    Object.assign(invoice, updateData); // Apply updates
+    return await this.invoiceRepository.save(invoice);
+  }
+  
   async remove(id: string, userId: string): Promise<void> {
     const invoice = await this.findOne(id);
 

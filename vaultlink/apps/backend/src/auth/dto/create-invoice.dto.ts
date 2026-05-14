@@ -1,17 +1,35 @@
-import { IsString, IsNumberString, IsDateString, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsDateString,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateInvoiceDto {
-  @IsNotEmpty()
-  @IsNumberString() // Use IsNumberString for amounts to handle large numbers and decimal strings
-  amount: string;
-
-  @IsNotEmpty()
   @IsString()
-  currency: string; // e.g., 'XLM', 'USDC'
-
   @IsNotEmpty()
-  @IsDateString()
-  dueDate: Date;
+  title!: string;
 
-  // Add other relevant invoice fields like description, client info, etc.
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsNumber()
+  amount!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  currency!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  issuer!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  recipient!: string;
+
+  @IsDateString()
+  dueDate!: string;
 }

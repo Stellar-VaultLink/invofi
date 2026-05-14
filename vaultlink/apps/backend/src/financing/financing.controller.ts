@@ -19,12 +19,12 @@ export class FinancingController {
   constructor(private financingService: FinancingService) {}
 
   @Post('offers')
-  create(@Body() createFinancingDto: CreateFinancingDto, @Request() req) {
+  create(@Body() createFinancingDto: CreateFinancingDto, @Request() req: any) {
     return this.financingService.create(createFinancingDto, req.user.id);
   }
 
   @Get('offers')
-  findAll(@Request() req) {
+  findAll(@Request() req: any) {
     return this.financingService.findAll(req.user.id);
   }
 
@@ -34,7 +34,7 @@ export class FinancingController {
   }
 
   @Patch('offers/:id/accept')
-  accept(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
+  accept(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) { // Explicitly type req
     return this.financingService.accept(id, req.user.id);
   }
 }

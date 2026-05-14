@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
+import { ConfigModule } from './config.module'; // Import your custom ConfigModule
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
 import { AuthModule } from './auth/auth.module';
@@ -12,26 +13,25 @@ import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
-    }),
+    ConfigModule, // Use your custom ConfigModule which loads configuration.ts and is global
     TypeOrmModule.forRootAsync({
-      useFactory: () => ({
-        type: 'postgres',
-        url: process.env.DATABASE_URL,
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: process.env.NODE_ENV !== 'production',
-        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        ...configService.get('database'),
+        autoLoadEntities: true,
       }),
     }),
-    CacheModule.registerAsync({
-      useFactory: () => ({
-        store: redisStore,
-        host: process.env.REDIS_HOST || 'localhost',
-        port: +process.env.REDIS_PORT || 6379,
-        ttl: 30,
-      }),
+    CacheModule.registerAsync<any>({ // Explicitly type CacheModule.registerAsync
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({ // Make useFactory async
+        store: await redisStore({ // Call redisStore with config
+          socket: {
+            host: configService.get<string>('redis.host'),
+            port: configService.get<number>('redis.port'),
+          },
+          ttl: 30,
+        }) as any, // Type assertion for the store
+      }), // Removed extra parentheses
       isGlobal: true,
     }),
     AuthModule,

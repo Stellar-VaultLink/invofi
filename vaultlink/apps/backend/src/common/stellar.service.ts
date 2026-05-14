@@ -27,8 +27,8 @@ export class StellarService {
   ): boolean {
     try {
       const keypair = Keypair.fromPublicKey(publicKey);
-      return keypair.verify(message, Buffer.from(signature, 'base64'));
-    } catch (error) {
+      return keypair.verify(Buffer.from(message), Buffer.from(signature, 'base64'));
+    } catch (error: any) {
       this.logger.error(`Signature verification failed: ${error.message}`);
       return false;
     }

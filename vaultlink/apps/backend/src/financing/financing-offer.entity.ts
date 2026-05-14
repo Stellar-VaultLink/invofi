@@ -19,38 +19,38 @@ export enum OfferStatus {
 @Entity('financing_offers')
 export class FinancingOffer {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'decimal', precision: 20, scale: 7 })
-  amount: string;
+  amount!: string;
 
   @Column({ type: 'decimal', precision: 5, scale: 2 })
-  interestRate: number;
+  interestRate!: number;
 
   @Column()
-  duration: number;
+  duration!: number;
 
   @Column({ type: 'enum', enum: OfferStatus, default: OfferStatus.PENDING })
-  status: OfferStatus;
+  status!: OfferStatus;
 
   @Column({ nullable: true })
-  contractId: string;
+  contractId!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @Column()
-  invoiceId: string;
+  invoiceId!: string;
 
   @Column()
-  lenderId: string;
+  lenderId!: string;
 
   @ManyToOne(() => Invoice, (invoice) => invoice.financingOffers)
-  invoice: Invoice;
+  invoice!: Invoice;
 
   @ManyToOne(() => User, (user) => user.lendingOffers)
-  lender: User;
+  lender!: User;
 }

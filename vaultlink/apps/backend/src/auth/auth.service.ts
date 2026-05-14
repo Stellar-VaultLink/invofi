@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { Keypair } from 'stellar-sdk';
 import * as bcrypt from 'bcrypt';
@@ -7,12 +7,12 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
+    private userService: UserService,
     private jwtService: JwtService,
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOneByEmail(email);
+    const user = await this.userService.findOneByEmail(email);
     if (user && (await bcrypt.compare(pass, user.passwordHash))) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { passwordHash, ...result } = user;
@@ -29,11 +29,11 @@ export class AuthService {
   }
 
   async register(email: string, password: string, stellarAccountId?: string) {
-    const existingUser = await this.usersService.findOneByEmail(email);
+    const existingUser = await this.userService.findOneByEmail(email);
     if (existingUser) {
       throw new UnauthorizedException('User with this email already exists');
     }
-    const newUser = await this.usersService.create(email, password, stellarAccountId);
+    const newUser = await this.userService.create(email, password, stellarAccountId);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...result } = newUser;
     return result;

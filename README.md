@@ -121,9 +121,10 @@ stellar contract deploy --wasm target/wasm32-unknown-unknown/release/vaultlink_c
 | REDIS_HOST          | Redis server host                            | `localhost`                             |
 | REDIS_PORT          | Redis server port                            | `6379`                                  |
 | JWT_SECRET          | Secret for JWT signing                       | -                                       |
-| STELLAR_NETWORK     | `testnet` or `public`                        | `testnet`                               |
+| STELLAR_NETWORK     | Stellar network to connect to (`testnet` or `public`) | `testnet`                               |
+| STELLAR_RPC_URL     | Stellar Soroban RPC URL                      | `https://soroban-testnet.stellar.org`   |
 | STELLAR_HORIZON_URL | Stellar Horizon RPC URL                      | `https://horizon-testnet.stellar.org`   |
-| CONTRACT_ID         | Deployed Soroban Contract ID                 | -                                       |
+| INVOICE_REGISTRY_CONTRACT_ID | Deployed Soroban Invoice Registry Contract ID | -                                       |
 
 ## Running Tests
 
@@ -132,7 +133,7 @@ stellar contract deploy --wasm target/wasm32-unknown-unknown/release/vaultlink_c
 cd apps/backend
 npm run test
 
-# Contract tests
+# Contract tests (Rust)
 cd apps/contracts
 cargo test
 ```

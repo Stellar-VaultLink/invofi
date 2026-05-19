@@ -7,12 +7,21 @@ license = "MIT"
 
 [lib]
 crate-type = ["cdylib"]
+path = "lib.rs"
+
+[workspace]
+members = [
+    "vaultlink-core",
+]
+
+[workspace.dependencies]
+soroban-sdk = "20.0.0"
 
 [dependencies]
-soroban-sdk = "20.0.0" # Use the latest stable version
+soroban-sdk = { workspace = true }
 
 [dev-dependencies]
-soroban-sdk = { version = "20.0.0", features = ["testutils"] }
+soroban-sdk = { workspace = true, features = ["testutils"] }
 
 [features]
 testutils = ["soroban-sdk/testutils"]

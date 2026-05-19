@@ -1,0 +1,1 @@
+soroban_sdk::Map<soroban_sdk::Symbol, Invoice>: Default

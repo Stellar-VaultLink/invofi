@@ -5,17 +5,17 @@ edition = "2021"
 description = "Soroban contract for VaultLink invoice registry"
 license = "MIT"
 
-[lib]
-crate-type = ["cdylib"]
-path = "lib.rs"
-
 [workspace]
 members = [
     "vaultlink-core",
 ]
 
 [workspace.dependencies]
-soroban-sdk = "20.0.0"
+soroban-sdk = "22.0.0"
+
+[lib]
+crate-type = ["cdylib"]
+path = "lib.rs"
 
 [dependencies]
 soroban-sdk = { workspace = true }

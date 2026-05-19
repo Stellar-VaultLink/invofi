@@ -11,17 +11,25 @@ VaultLink enables businesses to tokenize invoices as NFTs on Stellar and obtain 
 - **Database**: PostgreSQL with TypeORM for data persistence
 - **Cache**: Redis for session management and caching
 
-## Architecture
+## Architecture & Services
 
-```md
-vaultlink/
-├── apps/
-│   ├── backend/      # NestJS API server
-│   └── contracts/    # Soroban Rust smart contracts
-├── docs/             # Documentation
-├── docker-compose.yml
-└── README.md
+The protocol is designed as a monorepo, leveraging Docker to orchestrate its core infrastructure dependencies.
+
+### Project Structure
+```text
+.
+├── vaultlink/
+│   ├── apps/
+│   │   ├── backend/       # NestJS API server
+│   │   └── contracts/     # Soroban Rust smart contracts
+│   └── docs/              # Documentation
+└── docker-compose.yml      # Infrastructure Orchestration (PostgreSQL & Redis)
 ```
+
+### Services (Dockerized)
+The following services are automatically provisioned via the `docker-compose.yml` file:
+- **PostgreSQL 16**: Primary relational database for user and invoice data.
+- **Redis 7**: High-performance cache for session management and rate limiting.
 
 ## Prerequisites
 
@@ -38,7 +46,7 @@ vaultlink/
 The backend application expects its environment variables in the `apps/backend/` directory.
 
 ```bash
-cd vault-link
+cd vaultlink
 cp .env.example apps/backend/.env
 ```
 
@@ -46,7 +54,7 @@ Ensure your `apps/backend/.env` contains the correct connection strings for your
 
 ### 2. Start Infrastructure (Docker)
 
-VaultLink uses Docker Compose to manage PostgreSQL and Redis. From the project root, run:
+**Crucial:** VaultLink relies on Docker Compose to spin up the required database and cache layers. From the project root, run:
 
 ```bash
 docker-compose up -d

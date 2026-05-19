@@ -21,7 +21,7 @@ The protocol is designed as a monorepo, leveraging Docker to orchestrate its cor
 ├── vaultlink/
 │   ├── apps/
 │   │   ├── backend/       # NestJS API server
-│   │   └── contracts/     # Soroban Rust smart contracts
+│   │   └── contracts/     # Soroban Rust Workspace (Registry & Core)
 │   └── docs/              # Documentation
 └── docker-compose.yml      # Infrastructure Orchestration (PostgreSQL & Redis)
 ```

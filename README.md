@@ -33,7 +33,7 @@ To run locally:
 
 ```bash
 git clone https://github.com/Stellar-VaultLink/invofi.git
-cd vault-link/invofi/apps/frontend
+cd invofi/apps/frontend
 cp .env.local.example .env.local   # fill in your Supabase + contract values
 npm install && npm run dev
 # → http://localhost:3000

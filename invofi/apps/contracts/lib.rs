@@ -57,9 +57,6 @@ pub enum OfferStatus {
 
 // ─── Storage helpers ─────────────────────────────────────────────────────────
 
-const INVOICES_KEY: &str = "invoices";
-const OFFERS_KEY: &str = "offers";
-
 fn load_invoices(env: &Env) -> Map<Symbol, Invoice> {
     env.storage()
         .persistent()

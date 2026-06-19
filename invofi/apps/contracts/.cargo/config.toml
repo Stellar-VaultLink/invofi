@@ -1,0 +1,5 @@
+[target.wasm32-unknown-unknown]
+# Soroban requires baseline MVP WebAssembly only.
+# "reference-types", "bulk-memory", and other post-MVP features are not supported.
+# This flag is equivalent to what `stellar contract build` applies automatically.
+rustflags = ["-C", "target-cpu=mvp"]

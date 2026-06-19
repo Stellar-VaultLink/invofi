@@ -7,8 +7,9 @@
 [![Soroban](https://img.shields.io/badge/Smart%20Contracts-Soroban-FF5B36)](https://soroban.stellar.org)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2014-black)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Auth-Supabase-3ECF8E)](https://supabase.com)
+[![GitBook](https://img.shields.io/badge/Docs-GitBook-3884FF)](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs)
 
-[Live Demo](#live-demo) · [Documentation](./docs/) · [Contributing](./CONTRIBUTING.md) · [Report Bug](https://github.com/Stellar-VaultLink/invofi/issues)
+[Live Demo](#live-demo) · [Documentation](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs) · [Contributing](./CONTRIBUTING.md) · [Report Bug](https://github.com/Stellar-VaultLink/invofi/issues)
 
 ---
 

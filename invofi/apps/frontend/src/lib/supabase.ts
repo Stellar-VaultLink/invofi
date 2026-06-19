@@ -1,10 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/client';
 import type { UserProfile, UserRole } from '@/types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Singleton browser client — safe to use in 'use client' components
+export const supabase = createClient();
 
 export async function signUpWithEmail(
   email: string,

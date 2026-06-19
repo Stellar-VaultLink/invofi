@@ -2,6 +2,8 @@
 
 Welcome to the official InvoFi documentation. InvoFi is a decentralized invoice financing protocol built on Stellar Soroban. These docs cover everything from high-level concepts to line-by-line technical references.
 
+**Live docs:** [stellar-vault-link.gitbook.io/stellar-vault-link-docs](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs)
+
 ---
 
 ## Navigation

@@ -39,8 +39,8 @@ export default function PortfolioPage() {
   const repaid = offers.filter(o => o.status === 'Repaid');
   const pending = offers.filter(o => o.status === 'Pending');
 
-  const totalDeployed = active.reduce((sum, o) => sum + o.amount, 0n);
-  const totalRepaid = repaid.reduce((sum, o) => sum + o.amount, 0n);
+  const totalDeployed = active.reduce((sum, o) => sum + parseFloat(String(o.amount)), 0);
+  const totalRepaid = repaid.reduce((sum, o) => sum + parseFloat(String(o.amount)), 0);
 
   return (
     <AuthGuard>
@@ -76,7 +76,7 @@ export default function PortfolioPage() {
           <Card>
             <CardContent className="pt-5">
               <TrendingUp className="h-4 w-4 text-gray-400 mb-2" />
-              <p className="text-2xl font-bold font-mono text-sm mt-1">{formatAmount(totalDeployed)}</p>
+              <p className="text-2xl font-bold font-mono text-sm mt-1">{totalDeployed.toFixed(2)}</p>
               <p className="text-xs text-gray-500">Total Deployed</p>
             </CardContent>
           </Card>

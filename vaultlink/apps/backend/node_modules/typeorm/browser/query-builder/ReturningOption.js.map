@@ -1,1 +1,0 @@
-{"version":3,"sources":["../browser/src/query-builder/ReturningOption.ts"],"names":[],"mappings":"","file":"ReturningOption.js","sourcesContent":["/**\n * Describes allowed RETURNING clause shapes: either raw SQL string or list of column paths.\n */\nexport type ReturningOption = string | string[]\n"],"sourceRoot":".."}

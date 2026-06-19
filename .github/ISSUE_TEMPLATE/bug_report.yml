@@ -1,0 +1,95 @@
+name: Bug Report
+description: Report a bug in InvoFi
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill this out as completely as possible so we can reproduce and fix it quickly.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Bug summary
+      description: A clear one-line description of the bug.
+      placeholder: "e.g. Accepting a financing offer panics with 'Offer not found'"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the project is affected?
+      options:
+        - Smart Contract (Soroban / Rust)
+        - Frontend (Next.js)
+        - Auth (Supabase / Freighter)
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: network
+    attributes:
+      label: Stellar network
+      options:
+        - Testnet
+        - Mainnet
+        - Local / not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Step-by-step instructions to reproduce the bug.
+      placeholder: |
+        1. Connect Freighter wallet
+        2. Register an invoice with amount 1000 USDC
+        3. Submit a financing offer
+        4. Click "Accept offer"
+        5. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: The offer should be accepted and the invoice status should change to "Financed".
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: The page shows a toast error "Transaction failed" and nothing changes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or error messages
+      description: Paste any browser console errors, Rust panic messages, or transaction errors.
+      render: text
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS (for frontend bugs)
+      placeholder: "e.g. Chrome 125 on Ubuntu 22.04"
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I am using the latest version of the code from `main`.
+          required: true

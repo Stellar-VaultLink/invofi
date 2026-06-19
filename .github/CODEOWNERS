@@ -1,0 +1,16 @@
+# InvoFi code owners
+# These users are automatically requested for review on PRs that touch their areas.
+
+# Global fallback — repo maintainer reviews everything
+* @samjay8
+
+# Smart contracts
+/invofi/apps/contracts/ @samjay8
+
+# Frontend
+/invofi/apps/frontend/ @samjay8
+
+# Documentation and community files
+/docs/ @samjay8
+/README.md @samjay8
+/CONTRIBUTING.md @samjay8

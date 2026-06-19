@@ -1,0 +1,26 @@
+version: '3.9'
+
+# InvoFi local development infrastructure
+# Only needed if you want a local PostgreSQL/Redis for custom integrations.
+# The production stack uses Supabase (auth/db) + Stellar (on-chain) with no self-hosted infra.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: invofi-postgres
+    environment:
+      POSTGRES_USER: invofi
+      POSTGRES_PASSWORD: invofi123
+      POSTGRES_DB: invofi
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invofi -d invofi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

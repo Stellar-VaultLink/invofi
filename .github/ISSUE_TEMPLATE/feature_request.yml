@@ -1,0 +1,64 @@
+name: Feature Request
+description: Propose a new feature or improvement for InvoFi
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting, check the [roadmap in the README](../README.md#roadmap) to see if this is already planned.
+
+  - type: input
+    id: title
+    attributes:
+      label: Feature title
+      placeholder: "e.g. USDC on-chain token transfers during offer acceptance"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Smart Contract (Soroban / Rust)
+        - Frontend (Next.js)
+        - Auth / Wallet
+        - Documentation
+        - Infrastructure / CI
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem this solves
+      description: What current limitation or pain point does this address?
+      placeholder: "Right now, accepting a financing offer only changes state on-chain but doesn't move real tokens. Lenders have no way to actually send funds trustlessly."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature you want built.
+      placeholder: "When a lender calls create_offer, they attach a Stellar token transfer to the transaction. The contract holds funds in escrow until the invoice is repaid."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: "We could do off-chain settlement with a centralized escrow, but that defeats the trustless nature of the protocol."
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and this has not been requested before.
+          required: true
+        - label: This is not in the existing roadmap (or I want to prioritize it sooner).
+          required: true

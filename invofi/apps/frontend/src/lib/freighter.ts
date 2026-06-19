@@ -25,15 +25,12 @@ export async function isFreighterAllowed(): Promise<boolean> {
 }
 
 export async function connectFreighter(): Promise<string> {
+  // In v6, requestAccess() returns { address } on approval or { error } on denial
   const accessResult = await requestAccess();
-  if (!accessResult.isAllowed) {
-    throw new Error('Freighter access was denied. Please approve the connection in the extension.');
+  if (accessResult.error) {
+    throw new Error(String(accessResult.error));
   }
-
-  const addrResult = await getAddress();
-  if (addrResult.error) throw new Error(String(addrResult.error));
-
-  return addrResult.address;
+  return accessResult.address;
 }
 
 export async function getFreighterPublicKey(): Promise<string | null> {

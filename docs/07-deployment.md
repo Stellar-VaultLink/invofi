@@ -60,28 +60,28 @@ This uses Stellar's Friendbot to add 10,000 XLM to your testnet account.
 
 ```bash
 cd invofi/apps/contracts
-cargo build --release --target wasm32-unknown-unknown
+stellar contract build
 ```
 
-The WASM binary is at:
+The optimised WASM binary is at:
 
 ```text
-target/wasm32-unknown-unknown/release/invofi_invoice_registry.wasm
+target/wasm32v1-none/release/invofi_invoice_registry.wasm
 ```
 
 ### 2d. Deploy to testnet
 
 ```bash
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/invofi_invoice_registry.wasm \
+  --wasm target/wasm32v1-none/release/invofi_invoice_registry.wasm \
   --source invofi-deployer \
   --network testnet
 ```
 
-The output is a **contract ID** that looks like:
+The output is a **contract ID** — a 56-character string starting with `C`. Example (the live InvoFi testnet contract):
 
 ```text
-CACJR3SZ6TK2IGOEQB33GMPOGNDFGD74Z3L32P5WJY2Y5BMWEFJFFWH6
+CDJS6AFE6VRPAPWOPWOPZLSLQ7NCISA7YHOMAE7HJWOD7G6CQDCVT4L2
 ```
 
 **Copy this.** You need it in the next step.

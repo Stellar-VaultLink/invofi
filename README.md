@@ -28,7 +28,8 @@ Business registers invoice → Lenders compete with offers → Business accepts 
 
 ## Live Demo
 
-> Testnet demo: Coming soon — deploy the contract and paste your Vercel URL here once live.
+> Contract live on Stellar testnet: [`CDJS6AFE6VRPAPWOPWOPZLSLQ7NCISA7YHOMAE7HJWOD7G6CQDCVT4L2`](https://lab.stellar.org/r/testnet/contract/CDJS6AFE6VRPAPWOPWOPZLSLQ7NCISA7YHOMAE7HJWOD7G6CQDCVT4L2)
+> Frontend demo: deploy to Vercel and paste your URL here.
 
 To run locally:
 
@@ -287,7 +288,8 @@ cd ../contracts
 cargo test
 # 9 tests should pass
 
-cargo build --release --target wasm32-unknown-unknown
+stellar contract build
+# Output: target/wasm32v1-none/release/invofi_invoice_registry.wasm
 ```
 
 ### 6. Deploy the contract to Stellar testnet
@@ -300,13 +302,17 @@ cargo install --locked stellar-cli
 stellar keys generate --global invofi-deployer --network testnet
 stellar keys fund invofi-deployer --network testnet
 
-# Deploy
+# Build then deploy
+stellar contract build
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/invofi_invoice_registry.wasm \
+  --wasm target/wasm32v1-none/release/invofi_invoice_registry.wasm \
   --source invofi-deployer \
   --network testnet
 # Copy the CONTRACT_ID output into your .env.local
 ```
+
+The live InvoFi testnet contract ID is:
+`CDJS6AFE6VRPAPWOPWOPZLSLQ7NCISA7YHOMAE7HJWOD7G6CQDCVT4L2`
 
 ---
 

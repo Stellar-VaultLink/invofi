@@ -15,7 +15,6 @@ const CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID!;
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? 'https://soroban-testnet.stellar.org';
 const NETWORK = (process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet') as 'testnet' | 'mainnet';
 const NETWORK_PASSPHRASE = NETWORK === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET;
-const FREIGHTER_NETWORK = NETWORK === 'mainnet' ? 'PUBLIC' : 'TESTNET';
 const BASE_FEE = '100';
 
 function server() {
@@ -65,7 +64,7 @@ async function invokeContract(
   }
 
   tx = SorobanRpc.assembleTransaction(tx, simResult).build();
-  const signedXdr = await signTxWithFreighter(tx.toXDR(), FREIGHTER_NETWORK);
+  const signedXdr = await signTxWithFreighter(tx.toXDR(), NETWORK_PASSPHRASE);
   const signedTx = new Transaction(signedXdr, NETWORK_PASSPHRASE);
 
   const sendResult = await rpc.sendTransaction(signedTx);

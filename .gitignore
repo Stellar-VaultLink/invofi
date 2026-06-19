@@ -1,0 +1,35 @@
+# ── Rust / Cargo ──────────────────────────────────────────────────────────────
+target/
+**/*.rs.bk
+Cargo.lock
+
+# ── Node.js / Next.js ─────────────────────────────────────────────────────────
+node_modules/
+.next/
+.swc/
+out/
+
+# ── Environment files ─────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.local.example
+
+# ── OS and editor ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Build artifacts ───────────────────────────────────────────────────────────
+dist/
+build/
+*.wasm
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

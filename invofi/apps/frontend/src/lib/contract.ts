@@ -7,7 +7,7 @@ import {
   nativeToScVal,
   scValToNative,
   xdr,
-} from 'stellar-sdk';
+} from '@stellar/stellar-sdk';
 import { signTxWithFreighter } from './freighter';
 import type { Currency, FinancingOffer, Invoice } from '@/types';
 

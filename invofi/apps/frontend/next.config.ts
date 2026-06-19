@@ -1,7 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // stellar-sdk uses Node.js built-ins; polyfill them for the browser bundle
+  // stellar-sdk ships a browser-compatible build. We only need to tell
+  // webpack to skip the Node.js built-ins it doesn't need in the browser.
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -9,9 +10,8 @@ const nextConfig: NextConfig = {
         fs: false,
         net: false,
         tls: false,
-        crypto: require.resolve('crypto-browserify'),
-        stream: require.resolve('stream-browserify'),
-        buffer: require.resolve('buffer'),
+        dns: false,
+        child_process: false,
       };
     }
     return config;

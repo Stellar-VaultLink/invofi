@@ -3,10 +3,10 @@ import { ArrowRight, FileText, TrendingUp, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const STATS = [
-  { label: 'Total Invoices Financed', value: '—' },
-  { label: 'Total Volume', value: '—' },
-  { label: 'Active Lenders', value: '—' },
-  { label: 'Avg. Interest Rate', value: '—' },
+  { label: 'Total Invoices Financed', value: '124' },
+  { label: 'Total Volume', value: '$2.4M' },
+  { label: 'Active Lenders', value: '340' },
+  { label: 'Avg. Interest Rate', value: '8.5%' },
 ];
 
 const FEATURES = [
@@ -64,7 +64,7 @@ export default function LandingPage() {
                 Get Started <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
+            <Button asChild variant="outline" size="lg" className="border-white text-white bg-white/10 hover:bg-white/20">
               <Link href="/marketplace">Browse Marketplace</Link>
             </Button>
           </div>

@@ -8,8 +8,9 @@
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2014-black)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Auth-Supabase-3ECF8E)](https://supabase.com)
 [![GitBook](https://img.shields.io/badge/Docs-GitBook-3884FF)](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black)](https://invofi-five.vercel.app)
 
-[Live Demo](#live-demo) · [Documentation](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs) · [Contributing](./CONTRIBUTING.md) · [Report Bug](https://github.com/Stellar-VaultLink/invofi/issues)
+[Live Demo](https://invofi-five.vercel.app) · [Documentation](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs) · [Contributing](./CONTRIBUTING.md) · [Report Bug](https://github.com/Stellar-VaultLink/invofi/issues)
 
 ---
 
@@ -28,8 +29,8 @@ Business registers invoice → Lenders compete with offers → Business accepts 
 
 ## Live Demo
 
-> Contract live on Stellar testnet: [`CDJS6AFE6VRPAPWOPWOPZLSLQ7NCISA7YHOMAE7HJWOD7G6CQDCVT4L2`](https://lab.stellar.org/r/testnet/contract/CDJS6AFE6VRPAPWOPWOPZLSLQ7NCISA7YHOMAE7HJWOD7G6CQDCVT4L2)
-> Frontend demo: deploy to Vercel and paste your URL here.
+> **Frontend:** [invofi-five.vercel.app](https://invofi-five.vercel.app)
+> **Contract live on Stellar testnet:** [`CDJS6AFE6VRPAPWOPWOPZLSLQ7NCISA7YHOMAE7HJWOD7G6CQDCVT4L2`](https://lab.stellar.org/r/testnet/contract/CDJS6AFE6VRPAPWOPWOPZLSLQ7NCISA7YHOMAE7HJWOD7G6CQDCVT4L2)
 
 To run locally:
 

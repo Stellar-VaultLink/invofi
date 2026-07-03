@@ -12,7 +12,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-soroban-sdk = "22.0.0"
+soroban-sdk = "26.1.0"
 
 [lib]
 crate-type = ["cdylib"]

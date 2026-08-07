@@ -555,7 +555,32 @@ Thanks to everyone who has contributed to InvoFi — the list below is generated
 
 ## Contributing
 
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. For bugs and features, use [GitHub Issues](https://github.com/Stellar-VaultLink/invofi/issues).
+### Getting started contributing
+
+New contributors: welcome. Here is the quickest path from zero to merged PR.
+
+**1. Find your first task**
+
+Both repos label onboarding-friendly issues `good first issue`. Filter here:
+- Frontend/app: [github.com/Stellar-VaultLink/invofi/labels/good%20first%20issue](https://github.com/Stellar-VaultLink/invofi/labels/good%20first%20issue)
+- Contracts: [github.com/Stellar-VaultLink/invofi-contracts/labels/good%20first%20issue](https://github.com/Stellar-VaultLink/invofi-contracts/labels/good%20first%20issue)
+
+**2. Understand effort (Wave points)**
+
+Issues are labelled by complexity, which maps to Wave reward tiers:
+
+| Label | Wave points |
+|---|---|
+| `trivial` | 100 |
+| `medium` | 150 |
+| `high-complexity` | 200 |
+| `good-first-issue` | 100 |
+
+See the full label guide in [CONTRIBUTING.md — Label → Wave points](./CONTRIBUTING.md#label--wave-points).
+
+**3. Read the rules**
+
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. For bugs and features, open a [GitHub Issue](https://github.com/Stellar-VaultLink/invofi/issues) first.
 
 ## Security
 

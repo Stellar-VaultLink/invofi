@@ -97,6 +97,10 @@ Lender's investment tracker.
   and added with a one-click "Add POS trustline" button (changeTrust signed by
   the connected wallet)
 
+### Forbidden — `/403`
+
+Branded 403 Forbidden error page styled identically to the custom 404 page. Rendered or redirected to whenever a user attempts to access an unauthorized resource or another user's invoice.
+
 ---
 
 ## Component Reference
@@ -121,7 +125,7 @@ Renders a "Connect Freighter" button when disconnected, or an address chip + dis
 
 ### `components/auth/AuthGuard.tsx`
 
-Wraps authenticated pages. Checks Supabase session on mount and redirects to `/auth/login` if no session exists.
+Wraps authenticated pages. Checks Supabase session/wallet on mount and redirects to `/auth/login` if no session exists. Supports resource-level protection via `isUnauthorized` prop, redirecting to `/403` when unauthorized access is detected.
 
 ### `components/invoices/InvoiceCard.tsx`
 

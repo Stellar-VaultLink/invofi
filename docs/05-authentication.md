@@ -98,7 +98,7 @@ export default function DashboardPage() {
 }
 ```
 
-`AuthGuard` checks `supabase.auth.getUser()` on mount. If no session exists, it redirects to `/auth/login`. While checking, it renders a centered loading spinner.
+`AuthGuard` checks `supabase.auth.getUser()` and wallet connection state on mount. If no session or wallet exists, it redirects to `/auth/login`. While checking, it renders a centered loading spinner. It also accepts an optional `isUnauthorized` prop for resource-level guards to redirect unauthorized access attempts to `/403`.
 
 ---
 

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Store,
@@ -12,22 +12,24 @@ import {
   Moon,
   Menu,
   X,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { cn } from '@/lib/utils';
-import { WalletButton } from '@/components/auth/WalletButton';
-import { useWallet } from '@/components/auth/WalletProvider';
-import { supabase } from '@/lib/supabase';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { cn } from "@/lib/utils";
+import { WalletButton } from "@/components/auth/WalletButton";
+import { useWallet } from "@/components/auth/WalletProvider";
+import { supabase } from "@/lib/supabase";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
-const NETWORK = (process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet').toLowerCase();
-const IS_MAINNET = NETWORK === 'mainnet' || NETWORK === 'public';
+const NETWORK = (
+  process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? "testnet"
+).toLowerCase();
+const IS_MAINNET = NETWORK === "mainnet" || NETWORK === "public";
 
 const NAV_LINKS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/marketplace', label: 'Marketplace', icon: Store },
-  { href: '/portfolio', label: 'Portfolio', icon: Briefcase },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/marketplace", label: "Marketplace", icon: Store },
+  { href: "/portfolio", label: "Portfolio", icon: Briefcase },
 ];
 
 export function Navbar() {
@@ -38,7 +40,7 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme, setTheme] = useLocalStorage<"light" | "dark">("theme", "light");
 
   useEffect(() => {
     setMounted(true);
@@ -46,10 +48,10 @@ export function Navbar() {
 
   useEffect(() => {
     if (!mounted) return;
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
   }, [theme, mounted]);
 
@@ -58,11 +60,11 @@ export function Navbar() {
     setDrawerOpen(false);
   }, [pathname]);
 
-  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/');
+    router.push("/");
   };
 
   if (!mounted) return null;
@@ -75,29 +77,34 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2 font-bold text-lg">
             <span className="text-blue-600">Invo</span>
             <span className="text-foreground">Fi</span>
-            <span className={cn(
-              'hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide',
-              networkMismatch
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
-                : IS_MAINNET
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
-            )}>
-              {networkMismatch ? 'wrong network' : NETWORK}
+            <span
+              className={cn(
+                "hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide",
+                networkMismatch
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                  : IS_MAINNET
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                    : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+              )}
+            >
+              {networkMismatch ? "wrong network" : NETWORK}
             </span>
           </Link>
 
           {/* Desktop nav */}
-          <nav aria-label="Main navigation" className="hidden md:flex items-center gap-1">
-            {NAV_LINKS.map(link => (
+          <nav
+            aria-label="Main navigation"
+            className="hidden md:flex items-center gap-1"
+          >
+            {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-2 rounded-md text-sm transition-colors',
+                  "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm transition-colors",
                   pathname.startsWith(link.href)
-                    ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-blue-400 font-medium'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
+                    ? "bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-blue-400 font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
                 )}
               >
                 <link.icon className="h-4 w-4" />
@@ -114,16 +121,33 @@ export function Navbar() {
               title="Toggle theme"
               aria-label="Toggle dark mode"
             >
-              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              {theme === "light" ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
             </button>
 
             <WalletButton />
 
+            {!IS_MAINNET && (
+              <Link
+                href="https://github.com/Stellar-VaultLink/invofi-contracts"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors shrink-0"
+                title="View smart contract addresses"
+              >
+                Testnet
+              </Link>
+            )}
+
             <Link
               href="/settings"
               className={cn(
-                'hidden md:flex items-center text-muted-foreground hover:text-foreground transition-colors',
-                pathname.startsWith('/settings') && 'text-blue-700 dark:text-blue-400',
+                "hidden md:flex items-center text-muted-foreground hover:text-foreground transition-colors",
+                pathname.startsWith("/settings") &&
+                  "text-blue-700 dark:text-blue-400",
               )}
               title="Settings"
               aria-label="Settings"
@@ -142,11 +166,15 @@ export function Navbar() {
 
             {/* Mobile hamburger */}
             <button
-              onClick={() => setDrawerOpen(v => !v)}
+              onClick={() => setDrawerOpen((v) => !v)}
               className="md:hidden p-2 rounded-md text-muted-foreground hover:bg-accent transition-colors"
-              aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
+              aria-label={drawerOpen ? "Close menu" : "Open menu"}
             >
-              {drawerOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {drawerOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </button>
           </div>
         </div>
@@ -164,20 +192,20 @@ export function Navbar() {
       {/* Mobile drawer */}
       <div
         className={cn(
-          'fixed top-16 right-0 bottom-0 z-40 w-72 bg-background border-l border-border shadow-xl flex flex-col transition-transform duration-200 md:hidden',
-          drawerOpen ? 'translate-x-0' : 'translate-x-full',
+          "fixed top-16 right-0 bottom-0 z-40 w-72 bg-background border-l border-border shadow-xl flex flex-col transition-transform duration-200 md:hidden",
+          drawerOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
         <nav className="flex-1 p-4 space-y-1">
-          {NAV_LINKS.map(link => (
+          {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                 pathname.startsWith(link.href)
-                  ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-blue-400 font-medium'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent',
+                  ? "bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-blue-400 font-medium"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent",
               )}
             >
               <link.icon className="h-4 w-4 shrink-0" />
@@ -187,10 +215,10 @@ export function Navbar() {
           <Link
             href="/settings"
             className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
-              pathname.startsWith('/settings')
-                ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-blue-400 font-medium'
-                : 'text-muted-foreground hover:text-foreground hover:bg-accent',
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
+              pathname.startsWith("/settings")
+                ? "bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-blue-400 font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent",
             )}
           >
             <Settings className="h-4 w-4 shrink-0" />

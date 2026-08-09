@@ -26,6 +26,7 @@ export default function InvoiceDetailPage() {
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
 
   const handleCancel = async () => {
     if (!invoice || !publicKey) return;
@@ -51,12 +52,19 @@ export default function InvoiceDetailPage() {
     setLoading(true);
     getInvoice(id)
       .then(setInvoice)
-      .catch(e => setError(e instanceof Error ? e.message : 'Invoice not found'))
+      .catch(e => {
+        const errMsg = e instanceof Error ? e.message : String(e);
+        if (/403|unauthorized|forbidden|not authorized|access denied/i.test(errMsg)) {
+          setIsUnauthorized(true);
+        } else {
+          setError(errMsg || 'Invoice not found');
+        }
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
   return (
-    <AuthGuard>
+    <AuthGuard isUnauthorized={isUnauthorized}>
       <div className="max-w-3xl mx-auto px-4 py-8">
         <Link
           href="/dashboard"

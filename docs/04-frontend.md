@@ -143,6 +143,31 @@ Displays offers on an invoice. Handles:
 - Accept/reject buttons (for originators)
 - Calling the Soroban contract and updating Supabase on each action
 
+### `app/invoices/[id]/print/InvoicePrintView.tsx`
+
+Client-only print view for an individual invoice. Fetches the invoice and financing offers, renders a clean print-optimised layout, and automatically opens the browser print dialog once the data is ready.
+
+Handles:
+
+* Invoice metadata and status
+* Financing offers and repayment information
+* Contract address and invoice ID in the footer
+* Print-specific layout and formatting
+* Automatic `window.print()` after the invoice data loads
+
+### `app/invoices/[id]/print/page.tsx`
+
+Print route wrapper for the invoice. Uses a client-only dynamic import with SSR disabled so browser-only APIs such as `useParams` and `window.print()` can be used safely without hydration issues.
+
+### `app/invoices/[id]/page.tsx`
+
+The invoice detail page. Adds a **Print / Export PDF** action that opens the dedicated print view in a new browser tab.
+
+### `globals.css`
+
+Adds print-specific styles that hide screen-only UI such as the Navbar, Footer, and toast notifications when generating the printed/PDF version of an invoice.
+
+
 ### `components/marketplace/MarketplaceCard.tsx`
 
 A card for the marketplace listing. Shows amount, currency, due date, originator address (truncated), and a "Make Offer" button linking to the detail page.

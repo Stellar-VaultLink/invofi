@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, Loader2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Loader2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,12 +66,27 @@ export default function InvoiceDetailPage() {
   return (
     <AuthGuard isUnauthorized={isUnauthorized}>
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-6"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to dashboard
-        </Link>
+        {/* ── Nav bar ── */}
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to dashboard
+          </Link>
+
+          {invoice && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => window.open(`/invoices/${id}/print`, '_blank')}
+            >
+              <Printer className="h-4 w-4" />
+              Print / Export PDF
+            </Button>
+          )}
+        </div>
 
         {loading && (
           <div className="flex items-center justify-center py-20">

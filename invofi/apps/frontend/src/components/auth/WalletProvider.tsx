@@ -26,7 +26,7 @@ const WalletContext = createContext<WalletContextValue>({
   networkMismatch: false,
   isCheckingWallet: true,
   connect: async () => '',
-  disconnect: () => {},
+  disconnect: () => { },
 });
 
 const EXPECTED_NETWORK = (
@@ -89,7 +89,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             networkMismatch: networkMismatchFor(net),
           });
           // Ensure a Supabase session exists for the restored wallet connection.
-          await signInWithWallet(address).catch(() => {});
+          await signInWithWallet(address).catch(() => { });
           setIsCheckingWallet(false);
           return;
         } catch {
@@ -120,7 +120,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       // Block until the Supabase session is created so the dashboard's own
       // auth check finds a user immediately after router.push('/dashboard').
-      await signInWithWallet(address).catch(() => {});
+      await signInWithWallet(address).catch(() => { });
 
       return address;
     } catch (err) {
@@ -140,7 +140,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       networkMismatch: false,
     }));
     // Sign out of Supabase so protected routes redirect to login.
-    supabaseSignOut().catch(() => {});
+    supabaseSignOut().catch(() => { });
   }, []);
 
   return (

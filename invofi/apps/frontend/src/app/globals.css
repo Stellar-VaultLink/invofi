@@ -67,3 +67,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  header,
+  footer,
+  ol[data-sonner-toaster] {
+    display: none !important;
+  }
+}

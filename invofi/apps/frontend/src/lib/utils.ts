@@ -40,8 +40,10 @@ export function toStroopsBigInt(value: bigint | number | string | null | undefin
   return 0n;
 }
 
-export function formatDate(timestamp: number): string {
-  return format(new Date(timestamp * 1000), 'MMM d, yyyy');
+export function formatDate(timestamp: number | bigint | string): string {
+  const ts = Number(timestamp);
+  if (!ts || isNaN(ts)) return '-';
+  return format(new Date(ts * 1000), 'MMM d, yyyy');
 }
 
 export function formatAddress(address: string): string {
@@ -49,12 +51,12 @@ export function formatAddress(address: string): string {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }
 
-export function interestRateLabel(basisPoints: number): string {
-  return `${(basisPoints / 100).toFixed(2)}%`;
+export function interestRateLabel(basisPoints: number | bigint | string): string {
+  return `${(Number(basisPoints) / 100).toFixed(2)}%`;
 }
 
-export function durationLabel(seconds: number): string {
-  const days = Math.floor(seconds / 86_400);
+export function durationLabel(seconds: number | bigint | string): string {
+  const days = Math.floor(Number(seconds) / 86_400);
   if (days < 7) return `${days}d`;
   if (days < 30) return `${Math.floor(days / 7)}w`;
   return `${Math.floor(days / 30)}mo`;

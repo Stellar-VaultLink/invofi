@@ -262,7 +262,7 @@ export default function InvoicePrintView() {
         {invoice && (
           <>
             {/* ── Brand header ── */}
-            <header className="brand-header">
+            <div className="brand-header">
               <div>
                 <div className="brand-name">Invo<span>Fi</span></div>
                 <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>
@@ -296,7 +296,7 @@ export default function InvoicePrintView() {
                   </div>
                 )}
               </div>
-            </header>
+            </div>
 
             {/* ── Invoice metadata ── */}
             <h2>Invoice Details</h2>
@@ -433,7 +433,7 @@ export default function InvoicePrintView() {
             )}
 
             {/* ── Footer ── */}
-            <footer className="print-footer">
+            <div className="print-footer">
               <div>
                 <div>Invoice ID: <span style={{ fontFamily: 'monospace' }}>{invoice.id}</span></div>
                 {REGISTRY_CONTRACT_ID && (
@@ -449,7 +449,7 @@ export default function InvoicePrintView() {
                 <div>InvoFi · Stellar Invoice Finance Protocol</div>
                 {printedAt && <div style={{ marginTop: 3 }}>{printedAt}</div>}
               </div>
-            </footer>
+            </div>
           </>
         )}
       </div>

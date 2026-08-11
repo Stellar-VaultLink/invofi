@@ -1,6 +1,9 @@
+// Author: RawNuke
+// Copyright (c) 2026 RawNuke. All rights reserved.
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +18,8 @@ import { supabase } from '@/lib/supabase';
 import { accountExists, fundAccountViaFriendbot } from '@/lib/horizon';
 import { amountToStroops, generateInvoiceId } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { Currency } from '@/types';
 
 const schema = z.object({
@@ -24,6 +29,11 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const DEFAULT_FORM_VALUES: FormValues = { amount: '', currency: 'USDC', dueDate: '' };
+
+const DRAFT_KEY_PREFIX = 'invofi:invoice-draft:';
+const DRAFT_SAVE_DELAY_MS = 500;
 
 interface InvoiceFormProps {
   onSuccess: (invoiceId: string) => void;
@@ -35,17 +45,82 @@ const IS_TESTNET =
 
 const CONTRACT_OK = isContractConfigured();
 
+/**
+ * Validate and sanitize a raw storage value into a safe partial draft.
+ * Unknown fields are dropped. The currency must be a valid enum value.
+ * Partially typed strings are kept so a mid-typing reload still restores.
+ * The form's zod resolver reports an invalid amount on submit.
+ */
+function sanitizeDraft(raw: unknown): Partial<FormValues> {
+  if (!raw || typeof raw !== 'object') return {};
+  const draft: Partial<FormValues> = {};
+  const record = raw as Record<string, unknown>;
+  if (record.currency === 'XLM' || record.currency === 'USDC') {
+    draft.currency = record.currency;
+  }
+  if (typeof record.amount === 'string' && record.amount !== '') {
+    draft.amount = record.amount;
+  }
+  if (typeof record.dueDate === 'string' && record.dueDate !== '') {
+    draft.dueDate = record.dueDate;
+  }
+  return draft;
+}
+
 export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
+  const { publicKey } = useWallet();
+  const draftKey = `${DRAFT_KEY_PREFIX}${publicKey ?? 'anonymous'}`;
+
+  // Remount per user. Each wallet key gets a fresh component instance, so the
+  // draft for one user never overwrites the draft for another user.
+  return <InvoiceDraftForm key={draftKey} draftKey={draftKey} onSuccess={onSuccess} />;
+}
+
+function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey: string }) {
   const { publicKey, isConnected } = useWallet();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [funding, setFunding] = useState(false);
   const [accountFunded, setAccountFunded] = useState<boolean | null>(null);
+  const clearedRef = useRef(true);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { currency: 'USDC' },
+  const [restoredDraft] = useState<Partial<FormValues>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const stored = window.localStorage.getItem(draftKey);
+      return stored ? sanitizeDraft(JSON.parse(stored)) : {};
+    } catch {
+      return {};
+    }
   });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { ...DEFAULT_FORM_VALUES, ...restoredDraft },
+  });
+
+  const [draft, setDraft] = useLocalStorage<Partial<FormValues>>(draftKey, restoredDraft);
+  const values = watch();
+  const debouncedValues = useDebounce(values, DRAFT_SAVE_DELAY_MS);
+
+  // Resume saving when the user changes any field after a successful submit.
+  useEffect(() => {
+    if (values.amount !== '' || values.currency !== 'USDC' || values.dueDate !== '') {
+      clearedRef.current = false;
+    }
+  }, [values]);
+
+  // Debounced save of the form values.
+  useEffect(() => {
+    if (clearedRef.current) return;
+    setDraft(debouncedValues);
+  }, [debouncedValues, setDraft]);
 
   // Check if the connected wallet exists on-chain (only matters when contract is live)
   useEffect(() => {
@@ -119,6 +194,16 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
             : `Saving the invoice failed: ${insertError.message}`,
         );
       }
+
+      // Successful submission: clear the stored draft and reset the form.
+      clearedRef.current = true;
+      try {
+        window.localStorage.removeItem(draftKey);
+      } catch {
+        // private mode or storage unavailable — nothing to clear
+      }
+      setDraft({});
+      reset(DEFAULT_FORM_VALUES);
 
       toast({
         title: CONTRACT_OK ? 'Invoice registered!' : 'Invoice saved!',

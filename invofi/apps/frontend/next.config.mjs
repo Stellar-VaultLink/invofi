@@ -38,8 +38,6 @@ const connectSrc = [
   HORIZON_URL,
   FRIENDBOT_URL,
   ...(SUPABASE_URL ? [SUPABASE_URL] : []),
-  // Allow Sentry error reporting
-  'https://*.ingest.sentry.io',
 ].join(' ');
 
 const CONTENT_SECURITY_POLICY = [

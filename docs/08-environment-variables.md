@@ -17,6 +17,10 @@ All environment variables for the InvoFi frontend are prefixed with `NEXT_PUBLIC
 | `NEXT_PUBLIC_RPC_URL` | Yes | See below | Soroban RPC endpoint (differs by network) |
 | `NEXT_PUBLIC_HORIZON_URL` | Yes | See below | Stellar Horizon REST API (differs by network) |
 | `NEXT_PUBLIC_USDC_ISSUER` | No | `GBBD47IF...` | USDC issuer address. Required to display USDC balances. |
+| `NEXT_PUBLIC_SENTRY_DSN` | No | `https://...@sentry.io/...` | Sentry error monitoring DSN. Optional for local dev; enables error tracking in production. |
+| `SENTRY_ORG` | No (build-time) | `your-org-slug` | Sentry organization slug (server-side, Vercel CI only, for source map uploads) |
+| `SENTRY_PROJECT` | No (build-time) | `your-project-slug` | Sentry project slug (server-side, Vercel CI only, for source map uploads) |
+| `SENTRY_AUTH_TOKEN` | No (build-time) | `sntrys_...` | **Secret** — Sentry auth token (server-side, Vercel CI only, for source map uploads). Never expose as NEXT_PUBLIC_*. |
 
 \* Legacy fallback: if the three `*_CONTRACT_ID` variables are unset, the app
 uses the single `NEXT_PUBLIC_CONTRACT_ID` and routes every call to that one

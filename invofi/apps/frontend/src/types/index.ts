@@ -62,15 +62,15 @@ export interface WalletState {
   networkMismatch: boolean;
 }
 
-// Securitization / fractionalization types
+// Matching engine types (lender preferences, scores, quality)
 export type {
-  FractionalizationRecord,
-  FractionalizationStatus,
-  FractionalPosition,
-  FractionalPositionStatus,
-  FractionalPositionView,
-  PriceHistoryPoint,
-  DividendRecord,
-  DividendStatus,
-  FractionalizationStep1,
-} from './securitization';
+  RiskProfile,
+  CurrencyPreference,
+  LenderPreferences,
+  LenderPreferencesSerialized,
+  MatchQuality,
+  MatchResult,
+  OriginatorHistory,
+  ScoreBreakdown,
+} from './matching';
+export { DEFAULT_PREFERENCES, serializePreferences, deserializePreferences } from './matching';

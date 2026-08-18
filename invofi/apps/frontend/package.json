@@ -10,6 +10,7 @@
     "lint": "next lint && node scripts/localstorage-secrets-guard.mjs",
     "type-check": "tsc --noEmit",
     "test": "vitest run --coverage",
+    "test:watch": "vitest",
     "test:e2e": "playwright test"
   },
   "dependencies": {

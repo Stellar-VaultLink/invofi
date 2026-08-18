@@ -595,17 +595,17 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/Damieee">
-                    <img src="https://avatars.githubusercontent.com/u/115638760?v=4" width="100;" alt="Damieee"/>
-                    <br />
-                    <sub><b>Oluwadamilare E</b></sub>
-                </a>
-            </td>
-            <td align="center">
                 <a href="https://github.com/retkatmun">
                     <img src="https://avatars.githubusercontent.com/u/153809730?v=4" width="100;" alt="retkatmun"/>
                     <br />
                     <sub><b>scholar</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Damieee">
+                    <img src="https://avatars.githubusercontent.com/u/115638760?v=4" width="100;" alt="Damieee"/>
+                    <br />
+                    <sub><b>Oluwadamilare E</b></sub>
                 </a>
             </td>
             <td align="center">

@@ -61,3 +61,16 @@ export interface WalletState {
   isInstalled: boolean;
   networkMismatch: boolean;
 }
+
+// Securitization / fractionalization types
+export type {
+  FractionalizationRecord,
+  FractionalizationStatus,
+  FractionalPosition,
+  FractionalPositionStatus,
+  FractionalPositionView,
+  PriceHistoryPoint,
+  DividendRecord,
+  DividendStatus,
+  FractionalizationStep1,
+} from './securitization';

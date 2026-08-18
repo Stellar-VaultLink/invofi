@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, Copy, Check, Send, RefreshCw, Tag } from 'lucide-react';
+import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, Copy, Check, Send, RefreshCw, Tag, Layers } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDeci
 import { formatAmount, formatDate, interestRateLabel, durationLabel, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
+import { fetchFractionalPositions } from '@/lib/securitization';
 import type { FinancingOffer } from '@/types';
 import { SupabaseUser } from '@/lib/types/supabase-auth';
 
@@ -279,12 +280,12 @@ function CopyId({ id }: { id: string }) {
 export default function PortfolioPage() {
   const [offers, setOffers] = useState<FinancingOffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fractionalCount, setFractionalCount] = useState(0);
 
   useEffect(() => {
   supabase.auth.getUser().then(async ({ data }: { data: { user: SupabaseUser | null } }) => {
     const { user } = data;
     if (!user) {
-      // Wallet-only user — no offers to show yet; stop the spinner.
       setLoading(false);
       return;
     }
@@ -294,13 +295,16 @@ export default function PortfolioPage() {
       .eq('lender_id', user.id)
       .order('created_at', { ascending: false });
     const rows = (offersData as unknown as FinancingOffer[]) ?? [];
-    // Normalize mirror strings (and contract i128s) to bigint stroops so
-    // amount/amount_repaid math and display are consistent.
     setOffers(rows.map(o => ({
       ...o,
       amount: toStroopsBigInt(o.amount),
       amount_repaid: toStroopsBigInt(o.amount_repaid),
     })));
+    // Fractional positions count
+    try {
+      const fp = await fetchFractionalPositions(user.id);
+      setFractionalCount(fp.length);
+    } catch { /* non-fatal */ }
     setLoading(false);
   });
 }, []);
@@ -383,6 +387,22 @@ export default function PortfolioPage() {
               <p className="text-xs text-muted-foreground">Total Deployed</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Fractional positions summary + link */}
+        <div className="mb-6 flex items-center justify-between rounded-xl border bg-card px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Layers className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {fractionalCount} fractional position{fractionalCount !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-muted-foreground">Invoice fraction tokens you hold</p>
+            </div>
+          </div>
+          <Link href="/portfolio/fractions" className="text-sm text-blue-600 hover:underline font-medium shrink-0">
+            View fractions →
+          </Link>
         </div>
 
         {/* Extra earned stat */}

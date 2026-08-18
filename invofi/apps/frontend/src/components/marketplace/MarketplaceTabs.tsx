@@ -5,13 +5,16 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const TABS = [
-  { href: '/marketplace', label: 'Invoices' },
+  { href: '/marketplace',           label: 'Invoices' },
   { href: '/marketplace/positions', label: 'Positions' },
+  { href: '/marketplace/fractions', label: 'Fractions' },
 ] as const;
 
 /**
- * Switches between the two marketplace surfaces: invoices open for financing
- * and the secondary-market board for position tokens (ADR-0004).
+ * Switches between the three marketplace surfaces:
+ *  - Invoices:  open for financing
+ *  - Positions: secondary-market position-token board (ADR-0004)
+ *  - Fractions: fractionalized invoice tokens available for purchase
  */
 export function MarketplaceTabs() {
   const pathname = usePathname();

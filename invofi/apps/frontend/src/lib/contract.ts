@@ -18,6 +18,8 @@ const LEGACY_CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID ?? '';
 const REGISTRY_ID = process.env.NEXT_PUBLIC_REGISTRY_CONTRACT_ID ?? LEGACY_CONTRACT_ID;
 const FINANCING_ID = process.env.NEXT_PUBLIC_FINANCING_CONTRACT_ID ?? LEGACY_CONTRACT_ID;
 const REPAYMENT_ID = process.env.NEXT_PUBLIC_REPAYMENT_CONTRACT_ID ?? LEGACY_CONTRACT_ID;
+const INSURANCE_ID = process.env.NEXT_PUBLIC_INSURANCE_CONTRACT_ID ?? '';
+const REPUTATION_ID = process.env.NEXT_PUBLIC_REPUTATION_CONTRACT_ID ?? '';
 
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? 'https://soroban-testnet.stellar.org';
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon-testnet.stellar.org';
@@ -44,6 +46,8 @@ const client = createInvofiClient({
   registryId: REGISTRY_ID,
   financingId: FINANCING_ID,
   repaymentId: REPAYMENT_ID,
+  insuranceId: INSURANCE_ID || undefined,
+  reputationId: REPUTATION_ID || undefined,
   positionTokenAsset: POSITION_TOKEN_ASSET,
   signTransaction: signTransactionWithActiveWallet,
 });
@@ -69,6 +73,13 @@ export const {
   transferPositionToken,
   hasPositionTrustline,
   addPositionTrustline,
+  // Insurance
+  getInsurancePoolTotal,
+  stakeIntoPool,
+  unstakeFromPool,
+  getStakedBalance,
+  // Reputation
+  getReputationScore,
 } = client;
 
 export { client };

@@ -594,6 +594,52 @@ export function createInvofiClient(cfg: InvofiClientConfig) {
       const signedTx = new Transaction(signedXdr, cfg.networkPassphrase);
       await horizon().submitTransaction(signedTx);
     },
+
+    // ── Insurance contract (stake/unstake + pool total) ───────────────────
+
+    /** Get the authoritative insurance pool total (stroops). */
+    getInsurancePoolTotal: (sourceAccount?: string): Promise<bigint> => {
+      if (!cfg.insuranceId) throw new SdkValidationError(ErrorCode.MISSING_CONFIG, 'cfg.insuranceId', 'cfg.insuranceId: insurance contract ID not set');
+      if (sourceAccount !== undefined) validateStellarAddress(sourceAccount, 'sourceAccount');
+      return readContract(cfg.insuranceId, 'get_pool_total', [], sourceAccount).then(val => scValToNative(val) as bigint);
+    },
+
+    /** Stake into the insurance pool (signed by staker). */
+    stakeIntoPool: async (amount: bigint, stakerAddress: string): Promise<void> => {
+      if (!cfg.insuranceId) throw new SdkValidationError(ErrorCode.MISSING_CONFIG, 'cfg.insuranceId', 'cfg.insuranceId: insurance contract ID not set');
+      validateStellarAddress(stakerAddress, 'stakerAddress');
+      validatePositiveI128(amount, 'amount');
+      await invokeContract(cfg.insuranceId, 'stake', [encodeI128(amount)], stakerAddress);
+    },
+
+    /** Unstake from the insurance pool (signed by staker). */
+    unstakeFromPool: async (amount: bigint, stakerAddress: string): Promise<void> => {
+      if (!cfg.insuranceId) throw new SdkValidationError(ErrorCode.MISSING_CONFIG, 'cfg.insuranceId', 'cfg.insuranceId: insurance contract ID not set');
+      validateStellarAddress(stakerAddress, 'stakerAddress');
+      validatePositiveI128(amount, 'amount');
+      await invokeContract(cfg.insuranceId, 'unstake', [encodeI128(amount)], stakerAddress);
+    },
+
+    /**
+     * Get the staked balance for an address in the insurance pool (stroops).
+     * Returns 0n when the contract is not configured or the address has no stake.
+     */
+    getStakedBalance: (address: string, sourceAccount?: string): Promise<bigint> => {
+      if (!cfg.insuranceId) throw new SdkValidationError(ErrorCode.MISSING_CONFIG, 'cfg.insuranceId', 'cfg.insuranceId: insurance contract ID not set');
+      validateStellarAddress(address, 'address');
+      if (sourceAccount !== undefined) validateStellarAddress(sourceAccount, 'sourceAccount');
+      return readContract(cfg.insuranceId, 'get_staked', [encodeAddress(address)], sourceAccount).then(val => scValToNative(val) as bigint);
+    },
+
+    // ── Reputation (read-only get_score) ───────────────────────────────────
+
+    /** Get the reputation score for an address (0..100). */
+    getReputationScore: (address: string, sourceAccount?: string): Promise<number> => {
+      if (!cfg.reputationId) throw new SdkValidationError(ErrorCode.MISSING_CONFIG, 'cfg.reputationId', 'cfg.reputationId: reputation contract ID not set');
+      validateStellarAddress(address, 'address');
+      if (sourceAccount !== undefined) validateStellarAddress(sourceAccount, 'sourceAccount');
+      return readContract(cfg.reputationId, 'get_score', [encodeAddress(address)], sourceAccount).then(val => scValToNative(val) as number);
+    },
   };
 }
 

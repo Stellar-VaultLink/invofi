@@ -147,6 +147,108 @@ changes.
 | `startLedger`     | `number`                    | latest     | Starting ledger (omit for live-only) |
 | `maxRetries`      | `number`                    | `3`        | Max consecutive failures before back-off |
 
+## Contract-interaction testing framework (issue #226)
+
+The mock client is a full contract-interaction testing framework. Tests run
+entirely in memory — no testnet, no RPC, no wallet — and can assert on the
+same typed surfaces the real client exposes, including the `ProtocolEvent`
+shapes that `listenToEvents` delivers.
+
+### What you get
+
+- **In-memory state** — `createMockClient()` starts from deterministic
+  pre-seeded fixtures (invoices in every status, offers, position-token
+  balances). Each instance gets a fresh copy, so tests never leak state.
+- **Event emission tracking** — every successful state-changing call records
+  the protocol event it would have emitted on-chain in `client.events`
+  (`inv_reg`, `inv_cxl`, `off_new`, `off_acc`, `off_rej`, `inv_rep`,
+  `inv_ovd`, `off_def`), each with a deterministic fake `ledger`/`txHash`.
+- **Typed failure scenarios** — domain failures throw typed `ContractError`s:
+  `NOT_FOUND` (missing id), `UNAUTHORIZED` (wrong originator/lender),
+  `ALREADY_EXISTS` (duplicate id), `INSUFFICIENT_BALANCE` (overdraft).
+- **Configurable failure injection** — simulate arbitrary RPC/contract
+  failures deterministically with the `failures` option, `failNext(...)`, or
+  `addFailure(...)`.
+- **State control** — `reset()` restores the seed between tests,
+  `setBalance`/`getBalance` set up balance scenarios, and
+  `seededInvoices()`/`seededOffers()` expose the fixture builders.
+- **Fixture builders** — `createTestInvoice()` / `createTestOffer()` compose
+  SDK-valid pre-seeded data with sensible defaults and full overrides.
+
+### Example — happy path with event assertions
+
+```ts
+import { createMockClient, createTestInvoice, MOCK_BUSINESS_A, ContractErrorType } from '@invofi/sdk';
+
+const client = createMockClient();
+
+// Compose a custom fixture and register it like a real call.
+const invoice = createTestInvoice({ id: 'inv_42', amount: toStroops(500) });
+await client.registerInvoice(
+  { id: invoice.id, amount: invoice.amount, currency: invoice.currency, dueDate: invoice.due_date },
+  invoice.originator,
+);
+
+// The mock emitted the same event the registry contract would publish:
+expect(client.events).toHaveLength(1);
+const emitted = client.events[0];
+expect(emitted.type).toBe('inv_reg');
+if (emitted.type === 'inv_reg') {
+  expect(emitted.subjectId).toBe('inv_42');
+  expect(emitted.data.amount).toBe(toStroops(500));
+}
+```
+
+### Example — failure scenarios
+
+```ts
+// Typed domain failures need no setup:
+await expect(client.getInvoice('inv_nope')).rejects.toMatchObject({
+  errorType: ContractErrorType.NOT_FOUND,
+});
+await expect(client.cancelInvoice('inv_mock_p001', MOCK_BUSINESS_A)).rejects.toMatchObject({
+  errorType: ContractErrorType.UNAUTHORIZED, // only the originator may cancel
+});
+
+// Inject an arbitrary failure for the next call only:
+client.failNext('acceptOffer', undefined, 'simulated outage');
+await expect(client.acceptOffer(offerId, originator)).rejects.toThrow(/simulated outage/);
+
+// Or configure a sticky rule up front:
+const flaky = createMockClient({
+  failures: [{ on: 'transferPositionToken', message: 'token contract paused' }],
+});
+```
+
+### Example — reset between test cases
+
+```ts
+const client = createMockClient();
+
+await client.acceptOffer('off_mock_006', MOCK_BUSINESS_B);   // mutates state + emits off_acc
+await client.reset();                                        // back to the seed
+
+expect((await client.getInvoice('inv_mock_p002')).status).toBe('Pending');
+expect(client.events).toHaveLength(0);
+```
+
+### Fixture builders
+
+| Helper             | Defaults                                                              |
+|--------------------|-----------------------------------------------------------------------|
+| `createTestInvoice`| `inv_test_001`, `MOCK_BUSINESS_A`, 100 XLM, due in 30 days, `Pending` |
+| `createTestOffer`  | `off_test_001`, `inv_test_001`, `MOCK_LENDER_B`, 5 %, 30 days, `Pending` |
+
+Both accept full overrides (`id`, `amount`, `currency`, `status`, …) plus
+readable aliases (`dueDate` for `due_date`, `invoiceId` for `invoice_id`). Use
+`toStroops(n)` to convert whole XLM/USDC units to stroops.
+
+> **Design note:** the mock implements the complete `InvofiClient` method
+> surface, so it is a drop-in for real contract interactions in tests and
+> demo mode alike. It deliberately does not simulate Soroban transaction
+> assembly/signing — validation, typed errors, events, and state transitions
+> are what test suites exercise against it.
+
 ## Local dev
 
 ```bash

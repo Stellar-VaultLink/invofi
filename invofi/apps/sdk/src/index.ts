@@ -11,15 +11,28 @@ export { createInvofiClient, type InvofiClient, SdkValidationError, ErrorCode } 
 export type { InvofiClientConfig } from './config';
 export type { Currency, FinancingOffer, Invoice, InvoiceStatus, OfferStatus } from './types';
 
-// ── Offline mock client (#177) ──────────────────────────────────────────────
+// ── Offline mock client (#177) + contract-interaction testing (#226) ────────
 // `createMockClient` is a drop-in replacement for `createInvofiClient` backed
 // by in-memory state — no RPC, Horizon, wallet, or testnet required. It is for
 // UI development only (no crypto/signing simulation). Deterministic fixtures
 // cover every invoice status, offers, and position-token balances.
+//
+// Since #226 it doubles as a contract-interaction testing framework: every
+// successful state-changing call records the protocol event it would have
+// emitted on-chain (`client.events`, same `ProtocolEvent` shapes as
+// `listenToEvents`), domain failures throw typed `ContractError`s, failure
+// rules (`failures` option / `failNext`) simulate deterministic RPC/contract
+// failures, and `reset()`/`setBalance`/`seededInvoices`/`seededOffers` give
+// tests full control over in-memory state. Pair with `createTestInvoice` /
+// `createTestOffer` (below) to compose pre-seeded data.
 export {
   createMockClient,
   type MockClient,
   type MockClientOptions,
+  // Testing framework (#226) types.
+  type MockTestingSurface,
+  type MockFailureRule,
+  type MockMethodName,
   // Deterministic mock identities + fixtures (shared with the frontend mock).
   MOCK_WALLET_ADDRESS,
   MOCK_BUSINESS_A,
@@ -28,7 +41,23 @@ export {
   MOCK_LENDER_B,
   MOCK_POSITION_TOKEN_ID,
   MOCK_POSITION_BALANCE,
+  // Contract ids reported in mock-emitted events.
+  MOCK_REGISTRY_ID,
+  MOCK_FINANCING_ID,
+  MOCK_REPAYMENT_ID,
 } from './mock';
+
+// ── Test fixture builders (#226) ────────────────────────────────────────────
+// `createTestInvoice` / `createTestOffer` produce SDK-valid fixture objects
+// for composing custom pre-seeded data in contract-interaction tests.
+export {
+  createTestInvoice,
+  createTestOffer,
+  toStroops,
+  STROOP_BASE,
+  type TestInvoiceOverrides,
+  type TestOfferOverrides,
+} from './testing';
 
 // Validation helpers re-exported for consumers who want to pre-validate
 // before calling SDK methods (e.g. form-level validation in the frontend).

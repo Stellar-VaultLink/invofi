@@ -17,6 +17,8 @@ import { formatAmount, formatDate, interestRateLabel, durationLabel, toStroopsBi
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import type { FinancingOffer } from '@/types';
+import { InsurancePanel } from '@/components/insurance/InsurancePanel';
+import { PayoutHistory } from '@/components/insurance/PayoutHistory';
 import { SupabaseUser } from '@/lib/types/supabase-auth';
 
 
@@ -277,6 +279,7 @@ function CopyId({ id }: { id: string }) {
 }
 
 export default function PortfolioPage() {
+  const { publicKey } = useWallet();
   const [offers, setOffers] = useState<FinancingOffer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -462,6 +465,9 @@ export default function PortfolioPage() {
           })}
         </div>
 
+        {/* useSearchParams (the listing hand-off prefill) needs a Suspense boundary. */}
+        <InsurancePanel walletAddress={publicKey} />
+        <PayoutHistory />
         {/* useSearchParams (the listing hand-off prefill) needs a Suspense boundary. */}
         <Suspense fallback={null}>
           <TransferPositionCard />

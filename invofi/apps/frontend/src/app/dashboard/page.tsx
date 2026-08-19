@@ -19,6 +19,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import type { UserProfile, Invoice } from '@/types';
+import { ReputationCard } from '@/components/reputation/ReputationCard';
 import { SupabaseUser } from '@/lib/types/supabase-auth';
 
 export default function DashboardPage() {
@@ -235,6 +236,15 @@ export default function DashboardPage() {
               </div>
             )}
           </section>
+        )}
+
+        {/* Reputation card — shown for business users with a connected wallet */}
+        {isBusiness && publicKey && (
+          <ReputationCard
+            address={publicKey}
+            showHistory
+            className="mt-8"
+          />
         )}
 
         {!isBusiness && (

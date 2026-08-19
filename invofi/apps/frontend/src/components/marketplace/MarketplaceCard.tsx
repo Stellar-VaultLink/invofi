@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import type { Invoice } from '@/types';
+import { ReputationScoreBadge } from '@/components/reputation/ReputationCard';
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
 const STELLAR_EXPERT = `https://stellar.expert/explorer/${NETWORK}`;
@@ -74,17 +75,22 @@ export function MarketplaceCard({ invoice }: MarketplaceCardProps) {
             <DueLabel dueDateUnix={invoice.due_date} />
           </div>
 
-          <p className="text-xs text-muted-foreground font-mono">
-            Originator:{' '}
-            <a
-              href={`${STELLAR_EXPERT}/account/${invoice.originator}`}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="hover:text-blue-500 hover:underline transition-colors"
-            >
-              {formatAddress(invoice.originator)}
-            </a>
-          </p>
+          {/* Originator row: address + reputation score badge */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-xs text-muted-foreground font-mono">
+              Originator:{' '}
+              <a
+                href={`${STELLAR_EXPERT}/account/${invoice.originator}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="hover:text-blue-500 hover:underline transition-colors"
+              >
+                {formatAddress(invoice.originator)}
+              </a>
+            </p>
+            {/* Reputation score badge — renders null when contract not configured */}
+            <ReputationScoreBadge address={invoice.originator} />
+          </div>
         </div>
 
         <Button asChild size="sm" className="w-full">

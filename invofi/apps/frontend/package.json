@@ -41,7 +41,8 @@
     "date-fns": "^3.6.0",
     "react-hook-form": "^7.85.0",
     "@hookform/resolvers": "^3.9.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "recharts": "^2.15.0"
   },
   "devDependencies": {
     "typescript": "^5.5.4",

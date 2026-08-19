@@ -21,6 +21,27 @@ export {
   VALID_CURRENCIES,
 } from './validation';
 
+// ── Typed error handling & Soroban error code mapping (#223) ────────────────
+// `SdkError` is the base class for all non-validation SDK errors;
+// `ContractError extends SdkError` wraps a failed contract call with a typed
+// `errorType`, an optional `recovery` suggestion, and the raw Soroban error
+// code. `parseContractError` is the mapping entry point client.ts funnels
+// every simulate/send/getTransaction failure through. `setErrorReporter` is
+// an optional, dependency-free analytics/observability hook.
+//
+// NOTE: `CONTRACT_ERROR_MAP`'s numeric codes are a placeholder/starter set —
+// see the banner comment at the top of `src/errors.ts` for details on why,
+// and what must be reconciled before relying on them against live contracts.
+export {
+  SdkError,
+  ContractError,
+  ContractErrorType,
+  CONTRACT_ERROR_MAP,
+  parseContractError,
+  setErrorReporter,
+  type RecoverySuggestion,
+} from './errors';
+
 // Stellar primitives the client surface needs — re-exported so consumers
 // don't need a direct @stellar/stellar-sdk dependency for common cases.
 export { Contract, Networks, xdr, nativeToScVal, scValToNative } from '@stellar/stellar-sdk';

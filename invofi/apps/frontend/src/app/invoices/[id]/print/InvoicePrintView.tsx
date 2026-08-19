@@ -30,32 +30,36 @@ export default function InvoicePrintView() {
   // Initialized empty so server (if any) and client first pass agree; set in useEffect.
   const [printedAt, setPrintedAt] = useState('');
 
-  useEffect(() => {
-    if (!id) return;
+ useEffect(() => {
+  if (!id) return;
 
-    Promise.all([
-      getInvoice(id).catch(() => null),
-      supabase
-        .from('financing_offers')
-        .select('*')
-        .eq('invoice_id', id)
-        .order('created_at', { ascending: false })
-        .then(({ data }) =>
-          ((data as unknown as FinancingOffer[]) ?? []).map(o => ({
-            ...o,
-            amount: toStroopsBigInt(o.amount),
-            amount_repaid: toStroopsBigInt(o.amount_repaid),
-          }))
-        ),
-    ])
-      .then(([inv, ofs]) => {
-        if (!inv) { setError('Invoice not found.'); return; }
-        setInvoice(inv);
-        setOffers(ofs);
-      })
-      .catch(e => setError(e instanceof Error ? e.message : 'Failed to load'))
-      .finally(() => setLoading(false));
-  }, [id]);
+  (async () => {
+    try {
+      const [inv, offersRes] = await Promise.all([
+        getInvoice(id).catch(() => null),
+        supabase
+          .from('financing_offers')
+          .select('*')
+          .eq('invoice_id', id)
+          .order('created_at', { ascending: false }),
+      ]);
+
+      if (!inv) { setError('Invoice not found.'); return; }
+      setInvoice(inv);
+
+      const ofs = ((offersRes.data as unknown as FinancingOffer[]) ?? []).map(o => ({
+        ...o,
+        amount: toStroopsBigInt(o.amount),
+        amount_repaid: toStroopsBigInt(o.amount_repaid),
+      }));
+      setOffers(ofs);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, [id]);
 
   // Client-only: set the printed timestamp after mount
   useEffect(() => {

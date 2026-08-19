@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { formatWalletAddress } from '@/lib/formatters';
+import { SupabaseUser } from '@/lib/types/supabase-auth';
+
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -18,14 +20,14 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push('/auth/login');
-        return;
-      }
-      setEmail(data.user.email ?? '');
-      setDisplayName(data.user.user_metadata?.display_name ?? '');
-    });
+   supabase.auth.getUser().then(({ data }: { data: { user: SupabaseUser | null } }) => {
+  if (!data.user) {
+    router.push('/auth/login');
+    return;
+  }
+  setEmail(data.user.email ?? '');
+  setDisplayName(data.user.user_metadata?.display_name ?? '');
+});
   }, [router]);
 
   async function handleSave(e: React.FormEvent) {

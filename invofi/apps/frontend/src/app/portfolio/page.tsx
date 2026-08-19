@@ -19,6 +19,8 @@ import { toCsv, downloadCsv } from '@/lib/csv';
 import type { FinancingOffer } from '@/types';
 import { InsurancePanel } from '@/components/insurance/InsurancePanel';
 import { PayoutHistory } from '@/components/insurance/PayoutHistory';
+import { SupabaseUser } from '@/lib/types/supabase-auth';
+
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
 
@@ -282,28 +284,29 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
-        // Wallet-only user — no offers to show yet; stop the spinner.
-        setLoading(false);
-        return;
-      }
-      const { data } = await supabase
-        .from('financing_offers')
-        .select('*, invoice:invoices(*)')
-        .eq('lender_id', user.id)
-        .order('created_at', { ascending: false });
-      const rows = (data as unknown as FinancingOffer[]) ?? [];
-      // Normalize mirror strings (and contract i128s) to bigint stroops so
-      // amount/amount_repaid math and display are consistent.
-      setOffers(rows.map(o => ({
-        ...o,
-        amount: toStroopsBigInt(o.amount),
-        amount_repaid: toStroopsBigInt(o.amount_repaid),
-      })));
+  supabase.auth.getUser().then(async ({ data }: { data: { user: SupabaseUser | null } }) => {
+    const { user } = data;
+    if (!user) {
+      // Wallet-only user — no offers to show yet; stop the spinner.
       setLoading(false);
-    });
-  }, []);
+      return;
+    }
+    const { data: offersData } = await supabase
+      .from('financing_offers')
+      .select('*, invoice:invoices(*)')
+      .eq('lender_id', user.id)
+      .order('created_at', { ascending: false });
+    const rows = (offersData as unknown as FinancingOffer[]) ?? [];
+    // Normalize mirror strings (and contract i128s) to bigint stroops so
+    // amount/amount_repaid math and display are consistent.
+    setOffers(rows.map(o => ({
+      ...o,
+      amount: toStroopsBigInt(o.amount),
+      amount_repaid: toStroopsBigInt(o.amount_repaid),
+    })));
+    setLoading(false);
+  });
+}, []);
 
   // An offer is active while it is financing an invoice: from acceptance until
   // it is fully repaid. Partial repayments flip offers to Financed on-chain,

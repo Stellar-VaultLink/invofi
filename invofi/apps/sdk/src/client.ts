@@ -31,6 +31,7 @@ import {
   validateAssetString,
   validateConfigField,
 } from './validation';
+import { parseContractError } from './errors';
 
 export { SdkValidationError, ErrorCode };
 
@@ -145,7 +146,7 @@ export function createInvofiClient(cfg: InvofiClientConfig) {
 
     const simResult = await rpc.simulateTransaction(tx);
     if (SorobanRpc.Api.isSimulationError(simResult)) {
-      throw new Error(`Simulation failed: ${simResult.error}`);
+      throw parseContractError(simResult.error, 'Simulation failed');
     }
 
     tx = SorobanRpc.assembleTransaction(tx, simResult).build();
@@ -154,7 +155,7 @@ export function createInvofiClient(cfg: InvofiClientConfig) {
 
     const sendResult = await rpc.sendTransaction(signedTx);
     if (sendResult.status === 'ERROR') {
-      throw new Error(`Transaction failed: ${JSON.stringify(sendResult.errorResult)}`);
+      throw parseContractError(sendResult.errorResult, 'Transaction failed');
     }
 
     let getResult = await rpc.getTransaction(sendResult.hash);
@@ -164,7 +165,7 @@ export function createInvofiClient(cfg: InvofiClientConfig) {
     }
 
     if (getResult.status !== 'SUCCESS') {
-      throw new Error(`Transaction did not succeed: ${getResult.status}`);
+      throw parseContractError(getResult, `Transaction did not succeed (status: ${getResult.status})`);
     }
 
     return getResult.returnValue ?? xdr.ScVal.scvVoid();
@@ -203,7 +204,7 @@ export function createInvofiClient(cfg: InvofiClientConfig) {
 
     const sim = await rpc.simulateTransaction(tx);
     if (SorobanRpc.Api.isSimulationError(sim)) {
-      throw new Error(`Read failed: ${sim.error}`);
+      throw parseContractError(sim.error, 'Read failed');
     }
     if (!SorobanRpc.Api.isSimulationSuccess(sim) || !sim.result) {
       throw new Error('Read simulation returned no result');

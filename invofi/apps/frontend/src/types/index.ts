@@ -61,3 +61,16 @@ export interface WalletState {
   isInstalled: boolean;
   networkMismatch: boolean;
 }
+
+// Matching engine types (lender preferences, scores, quality)
+export type {
+  RiskProfile,
+  CurrencyPreference,
+  LenderPreferences,
+  LenderPreferencesSerialized,
+  MatchQuality,
+  MatchResult,
+  OriginatorHistory,
+  ScoreBreakdown,
+} from './matching';
+export { DEFAULT_PREFERENCES, serializePreferences, deserializePreferences } from './matching';

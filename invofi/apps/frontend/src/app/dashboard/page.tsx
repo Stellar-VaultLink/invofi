@@ -20,6 +20,7 @@ import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import type { UserProfile, Invoice } from '@/types';
 import { ReputationCard } from '@/components/reputation/ReputationCard';
+import { SupabaseUser } from '@/lib/types/supabase-auth';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -33,25 +34,26 @@ export default function DashboardPage() {
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
-        // No Supabase session — AuthGuard already ensured a wallet is connected.
-        // Show an empty dashboard; the user can create invoices once on-chain.
-        setLoading(false);
-        return;
-      }
-      const p = await getUserProfile(user.id);
-      setProfile(p);
-
-      const { data } = await supabase
-        .from('invoices')
-        .select('*')
-        .eq('originator_id', user.id)
-        .order('created_at', { ascending: false });
-      if (data) setInvoices(data as unknown as Invoice[]);
+  supabase.auth.getUser().then(async ({ data }: { data: { user: SupabaseUser | null; }; }) => {
+    const { user } = data;
+    if (!user) {
+      // No Supabase session — AuthGuard already ensured a wallet is connected.
+      // Show an empty dashboard; the user can create invoices once on-chain.
       setLoading(false);
-    });
-  }, [router]);
+      return;
+    }
+    const p = await getUserProfile(user.id);
+    setProfile(p);
+
+    const { data: invoiceData } = await supabase
+      .from('invoices')
+      .select('*')
+      .eq('originator_id', user.id)
+      .order('created_at', { ascending: false });
+    if (invoiceData) setInvoices(invoiceData as unknown as Invoice[]);
+    setLoading(false);
+  });
+}, [router]);
 
   useEffect(() => {
     if (!publicKey) return;

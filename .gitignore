@@ -9,6 +9,7 @@ node_modules/
 .next/
 .swc/
 out/
+coverage/
 *.tsbuildinfo
 
 # ── Environment files ─────────────────────────────────────────────────────────

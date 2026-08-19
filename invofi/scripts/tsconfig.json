@@ -11,5 +11,5 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["keeper.ts", "e2e-onchain.ts"]
+  "include": ["keeper.ts", "keeper.test.ts", "e2e-onchain.ts"]
 }

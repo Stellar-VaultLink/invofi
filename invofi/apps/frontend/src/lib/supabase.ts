@@ -1,8 +1,18 @@
 import { createClient } from '@/utils/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { UserProfile, UserRole } from '@/types';
 
-// Singleton browser client — safe to use in 'use client' components
-export const supabase = createClient();
+// Singleton browser client — lazy initialization to avoid build-time errors during static generation
+let _supabase: SupabaseClient | null = null;
+
+export function getSupabaseClient(): SupabaseClient {
+  if (!_supabase) {
+    _supabase = createClient();
+  }
+  return _supabase;
+}
+
+export const supabase: SupabaseClient = getSupabaseClient(); // For backward compatibility
 
 export async function signUpWithEmail(
   email: string,

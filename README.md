@@ -62,8 +62,8 @@ InvoFi lives across **two repositories**, split so the fast-moving app layer and
 > - reputation: [`CCHKVUWGTQ56U53C5U7ZSOFDTTMGLMOFCL22DME5UMXIYWQNUYXOYPDN`](https://stellar.expert/explorer/testnet/contract/CCHKVUWGTQ56U53C5U7ZSOFDTTMGLMOFCL22DME5UMXIYWQNUYXOYPDN)
 > - position token: `POS` minted to lenders on acceptance ([`CBIXYAJPEOOVIALBUTA7X2H26WXSI5JDZCTE23RUMQR4QFJNMPL6767Z`](https://stellar.expert/explorer/testnet/contract/CBIXYAJPEOOVIALBUTA7X2H26WXSI5JDZCTE23RUMQR4QFJNMPL6767Z))
 >
-> A keeper automation (6-hourly GitHub Action) scans testnet, bumps contract-data TTLs,
-> and marks past-due Financed invoices Overdue — see `invofi/scripts/keeper.ts`.
+> A keeper automation (event-driven Soroban RPC getEvents polling for `inv_reg`/`off_acc` + 6-hourly fallback sweep)
+> bumps contract-data TTLs and marks past-due Financed invoices Overdue — see `invofi/scripts/keeper.ts`.
 >
 > Deploy your own via the **Deploy Contracts to Testnet** workflow in [invofi-contracts](https://github.com/Stellar-VaultLink/invofi-contracts) and set the three `NEXT_PUBLIC_*_CONTRACT_ID` variables in Vercel. Without a contract configured the app runs in alpha mode (off-chain only).
 
@@ -151,7 +151,7 @@ npm install && npm run dev
 │  reads protocol_stats     │   │  checkpointed event replay → protocol_stats  │
 └──────────────────────────┘   └──────────────────────────────────────────────┘
 
-keeper (T12) — 6-hourly GitHub Action: mark_overdue + TTL bumps (Soroban RPC)
+keeper (T12) — Event-driven RPC subscriptions (`inv_reg`/`off_acc`) + 6-hourly fallback sweep: mark_overdue + TTL bumps
 ```
 
 No always-on backend server to manage. 100% free hosting.
@@ -530,7 +530,7 @@ Both identities are auto-funded via Friendbot on testnet. See
 - [x] Marketplace sorting (newest, amount, due date) and Stellar Expert explorer links
 - [x] Insurance coverage pool with **payout on default**
 - [x] On-chain **reputation scoring** for originators
-- [x] Keeper automation — 6-hourly TTL bump + overdue marking
+- [x] Keeper automation — event-driven Soroban RPC subscriptions (`inv_reg`, `off_acc`) + 6-hourly fallback sweep
 - [x] SEP-41 token movement — `accept_offer` funds the business, `repay_invoice` repays principal + yield
 - [x] Split into 5 auditable contract crates — registry / financing / repayment / insurance / reputation
 - [x] Emergency pause / circuit breaker — admin-gated `pause` on every state-mutating function
@@ -581,6 +581,27 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/MJ-RWA">
+                    <img src="https://avatars.githubusercontent.com/u/240063069?v=4" width="100;" alt="MJ-RWA"/>
+                    <br />
+                    <sub><b>MJ | Dev 🏀</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Unclebaffa">
+                    <img src="https://avatars.githubusercontent.com/u/122823433?v=4" width="100;" alt="Unclebaffa"/>
+                    <br />
+                    <sub><b>Alhassan Nuhu Idris</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/retkatmun">
+                    <img src="https://avatars.githubusercontent.com/u/153809730?v=4" width="100;" alt="retkatmun"/>
+                    <br />
+                    <sub><b>scholar</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/Damieee">
                     <img src="https://avatars.githubusercontent.com/u/115638760?v=4" width="100;" alt="Damieee"/>
                     <br />
@@ -594,18 +615,13 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Ganesh chandra</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/Aycode01">
                     <img src="https://avatars.githubusercontent.com/u/145759024?v=4" width="100;" alt="Aycode01"/>
                     <br />
                     <sub><b>Omitogun Ayobami</b></sub>
-                </a>
-            </td>
-            <td align="center">
-                <a href="https://github.com/retkatmun">
-                    <img src="https://avatars.githubusercontent.com/u/153809730?v=4" width="100;" alt="retkatmun"/>
-                    <br />
-                    <sub><b>scholar</b></sub>
                 </a>
             </td>
             <td align="center">
@@ -615,8 +631,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Damilola Ogunrotimi</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/Jayking40">
                     <img src="https://avatars.githubusercontent.com/u/101714779?v=4" width="100;" alt="Jayking40"/>
@@ -645,6 +659,8 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Raw_Nuke</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/Jah-yee">
                     <img src="https://avatars.githubusercontent.com/u/166608075?v=4" width="100;" alt="Jah-yee"/>

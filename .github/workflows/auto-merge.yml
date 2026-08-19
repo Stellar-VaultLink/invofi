@@ -74,12 +74,10 @@ jobs:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       INPUT_PR: ${{ inputs.pr }}
       # Job names (check-run names) that must pass before auto-merge.
-      # NOTE: "Frontend / Unit Tests" (added by PR #209) is intentionally
-      # NOT listed here yet — the job only exists once that PR lands on
-      # main. Add it here after #209 merges.
       REQUIRED_CHECKS: |-
         Frontend / Lint & Type Check
         Frontend / Build
+        Frontend / Unit Tests
         Conventional Commits
       # Top-level path prefixes PRs normally touch. Files outside these
       # are flagged by the diff-review gate (never auto-merged).
@@ -401,7 +399,9 @@ jobs:
                   SUCCESS|NEUTRAL|SKIPPED) ;;
                   FAILURE|CANCELLED|TIMED_OUT|ACTION_REQUIRED|STARTUP_FAILURE)
                     FAILED="${FAILED} ${R} (${C})" ;;
-                  *) PENDING=true ;;
+                  "") # Check doesn't exist on this PR (e.g. PR opened
+                    ;; # before the check was added to ci.yml). Treat as
+                  *) PENDING=true ;; # n/a — don't block on it.
                 esac
               done
 

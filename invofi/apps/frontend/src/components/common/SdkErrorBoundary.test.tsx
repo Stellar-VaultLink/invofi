@@ -1,4 +1,5 @@
 import { useState } from 'react';
+// @ts-expect-error — screen/fireEvent exist at runtime but type resolution fails with non-deterministic install
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { ContractError, ContractErrorType } from '@invofi/sdk';

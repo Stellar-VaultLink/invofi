@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toStroopsBigInt } from '@/lib/utils';
 import { STROOPS_PER_XLM } from '@/lib/constants';
-import type { FinancingOffer, Invoice } from '@/types';
+import type { FinancingOffer } from '@/types';
 import type { SupabaseUser } from '@/lib/types/supabase-auth';
 
 export type TimeRange = '30d' | '90d' | '1y' | 'all';
@@ -81,8 +81,8 @@ function calculateMetrics(offers: FinancingOffer[]): PortfolioMetrics {
   const originatorSet = new Set<string>();
   for (const o of allFinanced) {
     currencies[o.currency] = (currencies[o.currency] ?? 0) + 1;
-    if (o.invoice && typeof o.invoice === 'object' && 'originator_id' in o.invoice) {
-      originatorSet.add((o.invoice as Invoice).originator_id);
+    if (o.invoice_id) {
+      originatorSet.add(o.invoice_id);
     }
   }
 

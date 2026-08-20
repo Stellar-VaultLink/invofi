@@ -13,7 +13,7 @@ import {
   Share2,
   BarChart3,
   PieChart as PieIcon,
-  Copies,
+  Copy,
   Globe,
 } from 'lucide-react';
 import {
@@ -295,7 +295,7 @@ function DiversificationCard({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Copies className="h-4 w-4 text-muted-foreground" />
+          <Copy className="h-4 w-4 text-muted-foreground" />
           Diversification
         </CardTitle>
       </CardHeader>

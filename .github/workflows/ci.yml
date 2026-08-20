@@ -20,10 +20,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: invofi/apps/frontend/package-lock.json
-      - run: npm ci
+      - run: npm install --legacy-peer-deps
       - run: npm run lint
       - run: npm run type-check
 
@@ -37,10 +37,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: invofi/apps/frontend/package-lock.json
-      - run: npm ci
+      - run: npm install --legacy-peer-deps
       - run: npm test
 
   frontend-build:
@@ -51,11 +51,11 @@ jobs:
       run:
         working-directory: invofi/apps/frontend
     env:
-      # Placeholder values — CI only needs the build to succeed, not to talk to
+      # Placeholder values â€” CI only needs the build to succeed, not to talk to
       # a real Supabase project or contract. Real secrets live in Vercel.
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
-      # Live v0.3 contract on Stellar testnet — matches README's Live Demo section.
+      # Live v0.3 contract on Stellar testnet â€” matches README's Live Demo section.
       NEXT_PUBLIC_REGISTRY_CONTRACT_ID: CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7
       NEXT_PUBLIC_FINANCING_CONTRACT_ID: CBGRA3457ZFXYZNEQLO4YGUQ3OBEWOE6US6ZREHK6NF2DLZYBO73IFVW
       NEXT_PUBLIC_REPAYMENT_CONTRACT_ID: CCDATW5GMVDOPK55Q4MLXV5SGA3VLXPD67ABLBNMHWFF6BLL2IZBUVEP
@@ -66,10 +66,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: invofi/apps/frontend/package-lock.json
-      - run: npm ci
+      - run: npm install --legacy-peer-deps
       - run: npm run build
 
   commitlint:
@@ -88,3 +88,4 @@ jobs:
 
   # Smart contract tests and WASM builds moved to Stellar-VaultLink/invofi-contracts
   # (Rust-only CI) as part of the two-repo topology migration.
+

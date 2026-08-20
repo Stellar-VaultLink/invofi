@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { accountExists, fundAccountViaFriendbot } from '@/lib/horizon';
 import { amountToStroops, generateInvoiceId } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { HighValueBanner } from '@/components/multisig/HighValueBanner';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { Currency } from '@/types';
@@ -255,6 +256,10 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
             />
             {errors.dueDate && <p className="text-xs text-red-500">{errors.dueDate.message}</p>}
           </div>
+
+          {/* High-value operations require multi-sig approval (issue #219). Shown
+              only once the amount crosses the per-currency threshold. */}
+          <HighValueBanner amount={values.amount || '0'} currency={values.currency as Currency} />
 
           {!isConnected && (
             <p className="text-sm text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">

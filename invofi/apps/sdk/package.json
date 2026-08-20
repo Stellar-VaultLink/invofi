@@ -11,10 +11,12 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^16.0.1"
+    "@stellar/stellar-sdk": "^16.0.1",
+    "idb": "^8.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.5.4",
+    "fake-indexeddb": "^6.2.5",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
   }

@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Store,
   Briefcase,
+  ShieldCheck,
   Settings,
   LogOut,
   Sun,
@@ -20,6 +21,7 @@ import { WalletButton } from "@/components/auth/WalletButton";
 import { useWallet } from "@/components/auth/WalletProvider";
 import { supabase } from "@/lib/supabase";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { NavbarEventIndicator } from "@/components/NavbarEventIndicator";
 
 import { useTranslations } from 'next-intl';
 
@@ -38,6 +40,7 @@ export function Navbar() {
     { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
     { href: "/marketplace", label: t("marketplace"), icon: Store },
     { href: "/portfolio", label: t("portfolio"), icon: Briefcase },
+    { href: "/transactions", label: t("approvals"), icon: ShieldCheck },
   ];
 
   const [mounted, setMounted] = useState(false);
@@ -118,6 +121,8 @@ export function Navbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
+            <NavbarEventIndicator />
+
             <button
               onClick={toggleTheme}
               className="p-2 rounded-md text-muted-foreground hover:bg-accent transition-colors"

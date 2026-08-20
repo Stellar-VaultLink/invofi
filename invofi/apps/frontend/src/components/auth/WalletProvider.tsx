@@ -9,6 +9,8 @@ import {
   probeWalletNetwork,
 } from '@/lib/walletkit';
 import { APPROVED_WALLETS } from '@/lib/approved-wallets';
+import { isMockMode } from '@/lib/mock-mode';
+import { MOCK_WALLET_ADDRESS } from '@/lib/mock';
 import type { WalletState } from '@/types';
 
 interface WalletContextValue extends WalletState {
@@ -32,6 +34,10 @@ const WalletContext = createContext<WalletContextValue>({
 const EXPECTED_NETWORK = (
   process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet'
 ).toLowerCase();
+
+// Offline demo mode (#177): auto-connect a mock wallet so protected pages are
+// reachable without a browser extension or testnet access.
+const MOCK_MODE = isMockMode();
 
 function networkMismatchFor(walletNet: string | null): boolean {
   if (!walletNet) return false;
@@ -84,15 +90,26 @@ function persistLastWallet(walletId: string, publicKey: string): void {
 }
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const [isCheckingWallet, setIsCheckingWallet] = useState(true);
-  const [state, setState] = useState<WalletState>({
-    publicKey: null,
-    walletId: null,
-    isConnected: false,
-    isConnecting: false,
-    isInstalled: false,
-    networkMismatch: false,
-  });
+  const [isCheckingWallet, setIsCheckingWallet] = useState(!MOCK_MODE);
+  const [state, setState] = useState<WalletState>(
+    MOCK_MODE
+      ? {
+          publicKey: MOCK_WALLET_ADDRESS,
+          walletId: 'mock',
+          isConnected: true,
+          isConnecting: false,
+          isInstalled: true,
+          networkMismatch: false,
+        }
+      : {
+          publicKey: null,
+          walletId: null,
+          isConnected: false,
+          isConnecting: false,
+          isInstalled: false,
+          networkMismatch: false,
+        },
+  );
 
   /**
    * Attempts to restore a previously-granted wallet session (Freighter returns
@@ -128,6 +145,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (MOCK_MODE) return;
+
     initWalletKit();
 
     (async () => {
@@ -163,6 +182,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }, [tryRestoreWallet]);
 
   const connect = useCallback(async (walletId: string): Promise<string> => {
+    if (MOCK_MODE) return MOCK_WALLET_ADDRESS;
     setState(s => ({ ...s, isConnecting: true }));
     try {
       StellarWalletsKit.setWallet(walletId);
@@ -192,6 +212,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const disconnect = useCallback(() => {
+    // The demo stays connected — there is no real wallet to disconnect.
+    if (MOCK_MODE) return;
     setActiveWallet(null);
     setState(s => ({
       ...s,

@@ -1,4 +1,8 @@
+import type { Currency } from '@invofi/sdk';
+import { Networks } from '@invofi/sdk';
+
 export const STELLAR_NETWORK = (process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet') as 'testnet' | 'mainnet';
+export const NETWORK_PASSPHRASE = STELLAR_NETWORK === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET;
 
 export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? 'https://soroban-testnet.stellar.org';
 export const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon-testnet.stellar.org';
@@ -54,3 +58,40 @@ export const RISK_TIERS = {
 
 export const QUERY_STALE_TIME = 30_000;
 export const QUERY_GC_TIME = 5 * 60_000;
+
+// ── Multi-signature transaction approval (issue #219) ────────────────────────
+// High-value operations route through an M-of-N approval queue instead of a
+// single signature. Thresholds are per-currency and expressed in human units
+// (not stroops); an operation whose amount is strictly greater than the
+// threshold for its currency requires multi-sig. All three knobs are
+// deployment-overridable via NEXT_PUBLIC_* so an institution can tune them
+// without a code change.
+const numFromEnv = (raw: string | undefined, fallback: number): number => {
+  const n = Number(raw);
+  return raw !== undefined && Number.isFinite(n) && n >= 0 ? n : fallback;
+};
+
+export const MULTISIG_THRESHOLDS: Record<Currency, number> = {
+  XLM: numFromEnv(process.env.NEXT_PUBLIC_MULTISIG_THRESHOLD_XLM, 10_000),
+  USDC: numFromEnv(process.env.NEXT_PUBLIC_MULTISIG_THRESHOLD_USDC, 1_000),
+};
+
+/** Signatures required before a queued transaction can execute (M of N). */
+export const MULTISIG_REQUIRED_SIGNATURES = Math.max(
+  2,
+  Math.trunc(numFromEnv(process.env.NEXT_PUBLIC_MULTISIG_REQUIRED_SIGNATURES, 3)),
+);
+
+/** A queued transaction auto-rejects if not fully approved within this window. */
+export const MULTISIG_TIMEOUT_SECS = Math.trunc(
+  numFromEnv(process.env.NEXT_PUBLIC_MULTISIG_TIMEOUT_SECS, 24 * 60 * 60),
+);
+
+/**
+ * Global Horizon HTTP timeout (ms). stellar-sdk v16 has no per-`Server` timeout
+ * option, so multisig applies this via `Config.setTimeout` — a stalled node
+ * then fails fast instead of leaving approve/execute spinning indefinitely.
+ */
+export const HORIZON_TIMEOUT_MS = Math.trunc(
+  numFromEnv(process.env.NEXT_PUBLIC_HORIZON_TIMEOUT_MS, 20_000),
+);

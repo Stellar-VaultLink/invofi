@@ -10,12 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { OfferList } from '@/components/invoices/OfferList';
+import { MessagingPanel } from '@/components/invoices/MessagingPanel';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { getInvoice, cancelInvoice } from '@/lib/contract';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
-import type { Invoice } from '@/types';
+import type { Invoice, FinancingOffer } from '@/types';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +28,9 @@ export default function InvoiceDetailPage() {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
+  // Counterparty address for the messaging panel.  Derived from the accepted
+  // offer once offers are loaded: originator ↔ accepted lender.
+  const [counterpartyAddress, setCounterpartyAddress] = useState<string>('');
 
   const handleCancel = async () => {
     if (!invoice || !publicKey) return;
@@ -62,6 +66,46 @@ export default function InvoiceDetailPage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Derive the counterparty address for messaging.
+  // - If current user is the originator → counterparty is the lender from the accepted/financed offer.
+  // - If current user is a lender → counterparty is the invoice originator.
+  useEffect(() => {
+    if (!id || !publicKey || !invoice) return;
+
+    const isOriginator = publicKey === invoice.originator;
+
+    if (!isOriginator) {
+      // Current user is a lender; counterparty is always the originator.
+      setCounterpartyAddress(invoice.originator);
+      return;
+    }
+
+    // Current user is the originator; find the accepted/financed offer to get
+    // the lender address.  Only invoices in Financed/Repaid/Overdue/Defaulted
+    // states have an accepted offer.
+    const financedStatuses = ['Financed', 'Repaid', 'Overdue', 'Defaulted', 'Disputed'];
+    if (!financedStatuses.includes(invoice.status)) {
+      setCounterpartyAddress('');
+      return;
+    }
+
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('financing_offers')
+          .select('lender, status')
+          .eq('invoice_id', id)
+          .in('status', ['Accepted', 'Financed', 'Repaid', 'Defaulted'])
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const offer = (data as Pick<FinancingOffer, 'lender' | 'status'>[] | null)?.[0];
+        setCounterpartyAddress(offer?.lender ?? '');
+      } catch {
+        setCounterpartyAddress('');
+      }
+    })();
+  }, [id, publicKey, invoice]);
 
   return (
     <AuthGuard isUnauthorized={isUnauthorized}>
@@ -142,6 +186,18 @@ export default function InvoiceDetailPage() {
 
             {/* Financing offers */}
             <OfferList invoiceId={id} invoice={invoice} onUpdate={setInvoice} />
+
+            {/* Private messaging — only shown when both parties are known */}
+            {publicKey && counterpartyAddress && (
+              <MessagingPanel
+                invoiceId={id}
+                currentAddress={publicKey}
+                counterpartyAddress={counterpartyAddress}
+                counterpartyLabel={
+                  publicKey === invoice.originator ? 'Lender' : 'Business'
+                }
+              />
+            )}
           </div>
         )}
 

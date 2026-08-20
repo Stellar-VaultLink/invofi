@@ -21,6 +21,14 @@ export interface InvofiClientConfig {
    */
   positionTokenAsset?: string;
   /**
+   * The connected wallet's Stellar address, if any. Used only to scope the
+   * offline cache (Task 218) per-account so switching wallets never serves
+   * one identity's cached reads to another — omit while no wallet is
+   * connected. Every state-changing call still takes its own explicit
+   * address argument; this is not used for authorization.
+   */
+  accountAddress?: string;
+  /**
    * Signs an XDR transaction with the connected wallet. The SDK assembles and
    * simulates the transaction, then hands it to this callback and submits the
    * returned signature.

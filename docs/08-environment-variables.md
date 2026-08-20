@@ -17,6 +17,8 @@ All environment variables for the InvoFi frontend are prefixed with `NEXT_PUBLIC
 | `NEXT_PUBLIC_RPC_URL` | Yes | See below | Soroban RPC endpoint (differs by network) |
 | `NEXT_PUBLIC_HORIZON_URL` | Yes | See below | Stellar Horizon REST API (differs by network) |
 | `NEXT_PUBLIC_USDC_ISSUER` | No | `GBBD47IF...` | USDC issuer address. Required to display USDC balances. |
+| `NEXT_PUBLIC_WS_URL` | No | `wss://relay.invofi.dev` | WebSocket relay for the live portfolio dashboard (issue #221). When empty or unreachable the dashboard degrades to Soroban event-stream + Supabase polling. |
+| `NEXT_PUBLIC_XLM_USD_PRICE` | No | `0.15` | XLM/USD fallback price used for live USD position values when the live price feed (CoinGecko) is unreachable. |
 
 \* Legacy fallback: if the three `*_CONTRACT_ID` variables are unset, the app
 uses the single `NEXT_PUBLIC_CONTRACT_ID` and routes every call to that one
@@ -79,3 +81,5 @@ To use different values for Preview and Production deployments, set the environm
 | `RPC_URL` | `lib/contract.ts` — Soroban RPC for simulating and sending transactions |
 | `HORIZON_URL` | `lib/horizon.ts` — reads account balances and transaction history |
 | `USDC_ISSUER` | `lib/horizon.ts` — identifies the USDC asset when reading balances |
+| `WS_URL` | `lib/live/*` — live portfolio dashboard WebSocket relay; falls back to polling |
+| `XLM_USD_PRICE` | `lib/live/prices.ts` — fallback XLM/USD price for live USD position values |

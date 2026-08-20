@@ -62,6 +62,70 @@ export interface WalletState {
   networkMismatch: boolean;
 }
 
+// ── Multi-signature transaction approval (issue #219) ────────────────────────
+
+export type PendingTransactionStatus =
+  | 'Pending' // awaiting the required number of approvals
+  | 'Executed' // threshold met and submitted to the network
+  | 'Rejected' // a party rejected it before it could execute
+  | 'Expired'; // the 24h approval window elapsed
+
+/**
+ * A high-value transaction awaiting M-of-N wallet approvals before it can be
+ * submitted (issue #219). The `xdr` is the base transaction envelope with no
+ * signatures; each approver signs that same envelope and their signature is
+ * stored as a {@link TransactionApproval}. Once the required number of
+ * signatures is collected they are combined onto the envelope and submitted.
+ *
+ * Off-chain coordination by design — the row lives in the Supabase mirror, not
+ * on-chain, so the shape lives here rather than in @invofi/sdk.
+ */
+export interface PendingTransaction {
+  id: string;
+  /** Human label shown in the queue, e.g. "Treasury payment — 12,000 XLM". */
+  title: string;
+  /** What kind of operation this envelope performs (payment, invoice, …). */
+  operation: string;
+  /** Stellar address that created the request (the transaction source). */
+  initiator: string;
+  initiator_id: string | null;
+  /** Base transaction envelope XDR, unsigned. */
+  xdr: string;
+  network_passphrase: string;
+  /** Amount in human units (mirror convention), for threshold display. */
+  amount: string;
+  currency: Currency;
+  /** Signatures needed before the transaction may execute. */
+  required_signatures: number;
+  status: PendingTransactionStatus;
+  /** Network hash, set once the combined transaction is submitted. */
+  tx_hash: string | null;
+  /** ISO timestamp after which an un-approved request auto-rejects. */
+  expires_at: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+/**
+ * One co-signer's approval of a {@link PendingTransaction}. `signature` is a
+ * base64-encoded Stellar `DecoratedSignature` over the base envelope; the set
+ * of approvals is combined onto the envelope at execution time.
+ */
+export interface TransactionApproval {
+  id: string;
+  pending_tx_id: string;
+  approver_address: string;
+  approver_id: string | null;
+  /** base64 DecoratedSignature over the pending transaction's `xdr`. */
+  signature: string;
+  created_at: string;
+}
+
+/** A pending transaction with its approvals joined (Supabase nested select). */
+export interface PendingTransactionWithApprovals extends PendingTransaction {
+  transaction_approvals: TransactionApproval[];
+}
+
 // Matching engine types (lender preferences, scores, quality)
 export type {
   RiskProfile,

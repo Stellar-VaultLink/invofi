@@ -11,6 +11,25 @@ export { createInvofiClient, type InvofiClient, SdkValidationError, ErrorCode } 
 export type { InvofiClientConfig } from './config';
 export type { Currency, FinancingOffer, Invoice, InvoiceStatus, OfferStatus } from './types';
 
+// ── Offline mock client (#177) ──────────────────────────────────────────────
+// `createMockClient` is a drop-in replacement for `createInvofiClient` backed
+// by in-memory state — no RPC, Horizon, wallet, or testnet required. It is for
+// UI development only (no crypto/signing simulation). Deterministic fixtures
+// cover every invoice status, offers, and position-token balances.
+export {
+  createMockClient,
+  type MockClient,
+  type MockClientOptions,
+  // Deterministic mock identities + fixtures (shared with the frontend mock).
+  MOCK_WALLET_ADDRESS,
+  MOCK_BUSINESS_A,
+  MOCK_BUSINESS_B,
+  MOCK_BUSINESS_C,
+  MOCK_LENDER_B,
+  MOCK_POSITION_TOKEN_ID,
+  MOCK_POSITION_BALANCE,
+} from './mock';
+
 // Validation helpers re-exported for consumers who want to pre-validate
 // before calling SDK methods (e.g. form-level validation in the frontend).
 export { validate, type ErrorCode as ValidationErrorCode } from './validation';
@@ -99,3 +118,55 @@ export type {
   PoolPayoutData,
   ReputationRecordedData,
 } from './events';
+
+// ── Contract interaction testing framework (#226) ───────────────────────────
+// `createTestInvoice` / `createTestOffer` — typed factory helpers with
+// sensible defaults + partial overrides.
+// `MockServerBuilder` — fluent builder for configuring failure scenarios on
+// the mock client (insufficient balance, auth errors, network errors, …).
+// `EventTracker` — wraps any InvofiClient and captures protocol events emitted
+// by each state-changing call so tests can assert on event history.
+export {
+  createTestInvoice,
+  createTestOffer,
+  MockServerBuilder,
+  createMockServerBuilder,
+  EventTracker,
+  createEventTracker,
+} from './testing';
+export type { TrackedEventType, TrackedEvent } from './testing';
+
+// ── Offline cache (IndexedDB, stale-while-revalidate) ───────────────────────
+// Browser-only, gracefully no-ops under SSR/Node (see cache.ts). Caches
+// invoice/offer/position reads with configurable per-type TTLs and evicts
+// least-recently-used entries once total cached size exceeds 50 MB.
+//
+// Instance-scoped, not module-global (PR #236 review): `createCache(scope)`
+// returns a handle bound to one immutable network+account `CacheScope`, each
+// with its own private IndexedDB connection, so concurrent handles never
+// race over which database is "current" and switching wallets never serves
+// one identity's cached data to another. `createInvofiClient` builds one
+// automatically from `cfg.networkPassphrase`/`cfg.accountAddress` and
+// exposes it as `client.cache` — its state-changing methods
+// (register/accept/reject/repay/etc.) already call `cache.invalidate()`
+// internally on success. On an explicit wallet disconnect, call
+// `client.cache.clearCache()` to wipe the departing account's store.
+//
+// @example
+// ```ts
+// import { createCache, CACHE_TTL_MS } from '@invofi/sdk';
+//
+// // Usually just `client.cache` from createInvofiClient — shown standalone
+// // here for a caller that wants a cache without a full client.
+// const cache = createCache({ network: cfg.networkPassphrase, accountAddress });
+//
+// const { data, isStale, refresh } = await cache.staleWhileRevalidate(
+//   `invoices:${status}:${page}`,
+//   CACHE_TTL_MS.invoices,
+//   () => client.listInvoices(status, page),
+// );
+// // Render `data` immediately (may be null/stale); `refresh` resolves once
+// // the background re-fetch has silently updated the cache.
+// ```
+export { createCache, isIndexedDbAvailable, CACHE_TTL_MS, MAX_CACHE_SIZE_BYTES } from './cache';
+export type { CacheEntry, CacheHandle, CacheScope, StaleWhileRevalidateResult } from './cache';

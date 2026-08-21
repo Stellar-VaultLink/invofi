@@ -11,7 +11,8 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:a11y": "playwright test e2e/a11y.spec.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^8.0.0",
@@ -61,6 +62,7 @@
     "@testing-library/react": "^16.3.2",
     "@vitest/coverage-v8": "^2.1.9",
     "jsdom": "^26.1.0",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.9",
+    "@axe-core/playwright": "^4.13.0"
   }
 }

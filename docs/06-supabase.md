@@ -89,6 +89,51 @@ create table position_listings (
   updated_at timestamptz default now()
 );
 
+-- Invoice proof documents (issue #222) — the access-controlled index to files
+-- pinned on IPFS. Bytes live on IPFS; this table stores the content address
+-- (CID) plus a SHA-256 hash of the file for tamper detection.
+-- Full DDL with policies lives in
+-- apps/frontend/src/lib/migrations/002_invoice_documents.sql.
+create table invoice_documents (
+  id            uuid primary key default gen_random_uuid(),
+  invoice_id    text not null references invoices(id) on delete cascade,
+  uploader_id   uuid not null references auth.users(id),
+  file_name     text not null,
+  mime_type     text not null
+    check (mime_type in ('application/pdf', 'image/jpeg', 'image/png')),
+  file_size     integer not null check (file_size > 0 and file_size <= 10485760),
+  ipfs_cid      text not null,
+  document_hash text not null,          -- SHA-256 hex of the file
+  status        text not null default 'pending'
+    check (status in ('pending', 'verified', 'rejected')),
+  verification_comment text,
+  verified_by   uuid references auth.users(id),
+  verified_at   timestamptz,
+  created_at    timestamptz not null default now()
+);
+
+-- RLS: only invoice parties can read documents, the originator can attach
+-- them, and only a lender with an offer on the invoice can verify them.
+alter table invoice_documents enable row level security;
+
+create policy "documents_select" on invoice_documents
+  for select using (
+    auth.uid() = uploader_id
+    or exists (select 1 from invoices i where i.id = invoice_documents.invoice_id and i.originator_id = auth.uid())
+    or exists (select 1 from financing_offers f where f.invoice_id = invoice_documents.invoice_id and f.lender_id = auth.uid())
+  );
+create policy "documents_insert" on invoice_documents
+  for insert with check (
+    exists (select 1 from invoices i where i.id = invoice_id and i.originator_id = auth.uid())
+  );
+create policy "documents_verify" on invoice_documents
+  for update using (
+    exists (select 1 from financing_offers f where f.invoice_id = invoice_documents.invoice_id and f.lender_id = auth.uid())
+  );
+-- Plus a BEFORE UPDATE trigger (enforce_document_verification_update) that
+-- restricts changes to the verification columns and stamps verified_by /
+-- verified_at from the caller's session.
+
 -- ── Row Level Security ─────────────────────────────────────────────────────────
 
 alter table user_profiles enable row level security;
@@ -149,6 +194,9 @@ create index offers_status_idx on financing_offers (status);
 create index listings_status_idx on position_listings (status);
 create index listings_invoice_id_idx on position_listings (invoice_id);
 create index listings_seller_id_idx on position_listings (seller_id);
+create index invoice_documents_invoice_id_idx on invoice_documents (invoice_id);
+create index invoice_documents_uploader_id_idx on invoice_documents (uploader_id);
+create index invoice_documents_status_idx on invoice_documents (status);
 ```
 
 ---
@@ -173,6 +221,7 @@ Re-enable this before going to mainnet.
 | `invoices` | Fast-read invoice list | Soroban contract (authoritative) |
 | `financing_offers` | Fast-read offer list | Soroban contract (authoritative) |
 | `position_listings` | Secondary-market asks for position tokens (discovery only) | Supabase (authoritative — a listing is an advertisement, not chain state) |
+| `invoice_documents` | Invoice proof files (CID + SHA-256 hash + verification state); bytes on IPFS | IPFS/Pinata for bytes; Supabase (authoritative) for the index |
 
 The `invoices` and `financing_offers` tables are display caches. When a user performs an action (register invoice, submit offer, accept, repay), the frontend writes to both the Soroban contract and Supabase simultaneously. If the contract call fails, the Supabase write is skipped.
 

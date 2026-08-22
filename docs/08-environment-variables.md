@@ -28,6 +28,13 @@ Most environment variables for the InvoFi frontend are prefixed with `NEXT_PUBLI
 uses the single `NEXT_PUBLIC_CONTRACT_ID` and routes every call to that one
 contract (pre-3-contract deployments keep working).
 
+\** Pinata variables are only needed for the invoice document workflow.
+
+> **Server-only secrets**: `PINATA_API_KEY` and `PINATA_SECRET_API_KEY` are the
+> stack's first server-only secrets. They must never be prefixed with
+> `NEXT_PUBLIC_` (that would ship them to every browser) and are only read by
+> the `app/api/documents/*` route handlers on the Node.js runtime.
+
 ---
 
 ## Server-Side Secrets

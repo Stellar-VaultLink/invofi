@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { OfferList } from '@/components/invoices/OfferList';
+import { InvoiceDocuments } from '@/components/invoices/documents/InvoiceDocuments';
 import { MessagingPanel } from '@/components/invoices/MessagingPanel';
 import { EventTimeline } from '@/components/invoices/EventTimeline';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -184,6 +185,9 @@ export default function InvoiceDetailPage() {
                 />
               </CardContent>
             </Card>
+
+            {/* Invoice proof documents */}
+            <InvoiceDocuments invoice={invoice} />
 
             {/* Financing offers */}
             <OfferList invoiceId={id} invoice={invoice} onUpdate={setInvoice} />

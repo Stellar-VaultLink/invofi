@@ -229,13 +229,17 @@ export async function mockSupabaseAuth(page: Page): Promise<void> {
 /** Stubs the invoice / offer mirror reads the marketplace and detail pages use. */
 export async function mockSupabaseMirror(
   page: Page,
-  data: { invoices?: MirrorInvoice[]; offers?: object[] } = {},
+  data: { invoices?: MirrorInvoice[]; offers?: object[]; documents?: object[] } = {},
 ): Promise<void> {
   await page.route('**/rest/v1/invoices**', (route) =>
     route.fulfill({ json: data.invoices ?? SMOKE_INVOICES }),
   );
   await page.route('**/rest/v1/financing_offers**', (route) =>
     route.fulfill({ json: data.offers ?? [] }),
+  );
+  // Invoice proof documents (issue #222) — default to none attached.
+  await page.route('**/rest/v1/invoice_documents**', (route) =>
+    route.fulfill({ json: data.documents ?? [] }),
   );
 }
 

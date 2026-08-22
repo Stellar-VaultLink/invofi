@@ -168,6 +168,40 @@ export default function DashboardPage() {
 
 ---
 
+## Rate Limiting (roadmap v0.4)
+
+Auth and wallet-sign endpoints are rate-limited at the **Vercel middleware layer**
+(`src/middleware.ts`) using an in-memory, fixed-window token bucket per client IP
+(`src/lib/rate-limit.ts`). This throttles abuse *before* it reaches a Route Handler
+or the Supabase auth backend.
+
+**Throttled paths** (each gets its own independent per-IP bucket):
+
+| Path | Purpose |
+| --- | --- |
+| `POST /api/auth/sep10/challenge` | SEP-10 challenge issuance (wallet sign-in) |
+| `POST /api/auth/sep10/verify` | SEP-10 challenge verification (wallet sign-in) |
+| `/auth/login` | Email/password login page |
+| `/auth/register` | Email/password registration page |
+
+**Config** — the limits are defined as constants at the top of `src/middleware.ts`:
+
+| Constant | Default | Meaning |
+| --- | --- | --- |
+| `AUTH_RATE_LIMIT` | `10` | Max requests per IP per window |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | `60_000` | Window size in ms (1 minute) |
+
+When a client exceeds the limit, the middleware returns `429 Too Many Requests`
+with a `Retry-After` header; the request never reaches the auth handler. The
+limiter is in-memory and per-instance, so on a multi-instance Vercel deployment
+the *effective* limit scales with instance count — an accepted tradeoff that still
+stops a single client from hammering an endpoint (see the note in `lib/rate-limit.ts`).
+
+Legitimate flows are unaffected: a normal login/registration or SEP-10 sign-in
+makes only a handful of requests per minute, well under the limit.
+
+---
+
 ## Security Notes
 
 - Supabase session tokens are managed by the `@supabase/ssr` client via cookies (`sameSite: 'lax'`, `httpOnly: false`) — readable by client-side JS, not `HttpOnly`. The browser client needs that access to track and refresh the session itself; this is Supabase's standard SSR cookie mechanism, not something this app opts out of.

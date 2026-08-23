@@ -766,6 +766,13 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/waterWang">
+                    <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
+                    <br />
+                    <sub><b>water</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/Fury03">
                     <img src="https://avatars.githubusercontent.com/u/98775983?v=4" width="100;" alt="Fury03"/>
                     <br />
@@ -779,6 +786,8 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>joseph okoronkwo</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/Pavel-glitch-ui">
                     <img src="https://avatars.githubusercontent.com/u/208336145?v=4" width="100;" alt="Pavel-glitch-ui"/>
@@ -786,8 +795,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Pavel</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/Meet-hybrid">
                     <img src="https://avatars.githubusercontent.com/u/231819661?v=4" width="100;" alt="Meet-hybrid"/>
@@ -821,13 +828,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <img src="https://avatars.githubusercontent.com/u/114710463?v=4" width="100;" alt="mansur-codes"/>
                     <br />
                     <sub><b>levi</b></sub>
-                </a>
-            </td>
-            <td align="center">
-                <a href="https://github.com/waterWang">
-                    <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
-                    <br />
-                    <sub><b>water</b></sub>
                 </a>
             </td>
 		</tr>

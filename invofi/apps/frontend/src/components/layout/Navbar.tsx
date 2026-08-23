@@ -20,10 +20,10 @@ import { cn } from "@/lib/utils";
 import { WalletButton } from "@/components/auth/WalletButton";
 import { useWallet } from "@/components/auth/WalletProvider";
 import { supabase } from "@/lib/supabase";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { NavbarEventIndicator } from "@/components/NavbarEventIndicator";
 
 import { useTranslations } from 'next-intl';
+import { useTheme } from 'next-themes';
 
 const NETWORK = (
   process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? "testnet"
@@ -35,6 +35,8 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { networkMismatch } = useWallet();
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
 
   const NAV_LINKS = [
     { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
@@ -46,20 +48,9 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const [theme, setTheme] = useLocalStorage<"light" | "dark">("theme", "light");
-
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme, mounted]);
 
   // Close drawer on route change
   useEffect(() => {
@@ -129,10 +120,10 @@ export function Navbar() {
               title={t("toggleTheme")}
               aria-label={t("toggleTheme")}
             >
-              {theme === "light" ? (
-                <Moon className="h-5 w-5" />
-              ) : (
+              {isDark ? (
                 <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
               )}
             </button>
 

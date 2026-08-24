@@ -34,10 +34,9 @@ import { cn } from '@/lib/utils';
 import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import { MatchQualityBadge } from '@/components/marketplace/MatchQualityBadge';
 import type { MatchResult, ScoreBreakdown } from '@/types/matching';
+import { ExplorerLink } from '@/components/common/ExplorerLink';
 import type { Invoice } from '@/types';
 
-const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
-const STELLAR_EXPERT = `https://stellar.expert/explorer/${NETWORK}`;
 
 // ── Due label (extracted from MarketplaceCard, kept consistent) ───────────────
 
@@ -140,16 +139,14 @@ function MatchedInvoiceCard({ result }: MatchedInvoiceCardProps) {
         <div className="flex items-start justify-between mb-3 gap-2">
           <div className="flex items-center gap-1 min-w-0">
             <p className="text-xs font-mono text-muted-foreground truncate max-w-[90px]">{invoice.id}</p>
-            <a
-              href={`${STELLAR_EXPERT}/contract/${invoice.originator}`}
-              target="_blank"
-              rel="noreferrer noopener"
+            <ExplorerLink
+              type="contract"
+              value={invoice.originator}
               title="View on Stellar Expert"
-              onClick={e => e.stopPropagation()}
               className="text-muted-foreground hover:text-blue-500 transition-colors shrink-0"
             >
               <ExternalLink className="h-3 w-3" />
-            </a>
+            </ExplorerLink>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <MatchQualityBadge quality={quality} score={score} />
@@ -193,14 +190,13 @@ function MatchedInvoiceCard({ result }: MatchedInvoiceCardProps) {
 
           <p className="text-xs text-muted-foreground font-mono">
             Originator:{' '}
-            <a
-              href={`${STELLAR_EXPERT}/account/${invoice.originator}`}
-              target="_blank"
-              rel="noreferrer noopener"
+            <ExplorerLink
+              type="account"
+              value={invoice.originator}
               className="hover:text-blue-500 hover:underline transition-colors"
             >
               {formatAddress(invoice.originator)}
-            </a>
+            </ExplorerLink>
           </p>
         </div>
 

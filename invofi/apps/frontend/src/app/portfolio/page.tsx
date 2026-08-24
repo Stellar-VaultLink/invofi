@@ -19,6 +19,7 @@ import { stroopsToUsd } from '@/lib/live/prices';
 import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
 import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
+import { ExplorerLink } from '@/components/common/ExplorerLink';
 import type { LivePosition } from '@/lib/live/types';
 
 
@@ -296,14 +297,13 @@ function PositionCard({ offer }: { offer: LivePosition }) {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <CopyId id={offer.invoice_id} />
-                <a
-                  href={`https://stellar.expert/explorer/${NETWORK}/contract/${offer.invoice_id}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
+                <ExplorerLink
+                  type="contract"
+                  value={offer.invoice_id}
                   className="text-xs text-blue-500 hover:underline"
                 >
                   ↗
-                </a>
+                </ExplorerLink>
               </div>
               <p className="text-xs text-muted-foreground">
                 {interestRateLabel(offer.interest_rate)} · {durationLabel(offer.duration)}

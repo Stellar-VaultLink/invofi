@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import { Calendar, DollarSign, ArrowRight, ExternalLink, Clock, AlertTriangle } from 'lucide-react';
+import { ExplorerLink } from '@/components/common/ExplorerLink';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import type { Invoice } from '@/types';
 
-const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
-const STELLAR_EXPERT = `https://stellar.expert/explorer/${NETWORK}`;
 
 function DueLabel({ dueDateUnix }: { dueDateUnix: number }) {
   const now = Date.now() / 1000;
@@ -47,16 +46,14 @@ export function MarketplaceCard({ invoice }: MarketplaceCardProps) {
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-1 min-w-0">
             <p className="text-xs font-mono text-muted-foreground truncate max-w-[110px]">{invoice.id}</p>
-            <a
-              href={`${STELLAR_EXPERT}/contract/${invoice.originator}`}
-              target="_blank"
-              rel="noreferrer noopener"
+            <ExplorerLink
+              type="contract"
+              value={invoice.originator}
               title="View on Stellar Expert"
-              onClick={e => e.stopPropagation()}
               className="text-muted-foreground hover:text-blue-500 transition-colors shrink-0"
             >
               <ExternalLink className="h-3 w-3" />
-            </a>
+            </ExplorerLink>
           </div>
           <Badge className={INVOICE_STATUS_COLORS[invoice.status]}>{invoice.status}</Badge>
         </div>
@@ -76,14 +73,13 @@ export function MarketplaceCard({ invoice }: MarketplaceCardProps) {
 
           <p className="text-xs text-muted-foreground font-mono">
             Originator:{' '}
-            <a
-              href={`${STELLAR_EXPERT}/account/${invoice.originator}`}
-              target="_blank"
-              rel="noreferrer noopener"
+            <ExplorerLink
+              type="account"
+              value={invoice.originator}
               className="hover:text-blue-500 hover:underline transition-colors"
             >
               {formatAddress(invoice.originator)}
-            </a>
+            </ExplorerLink>
           </p>
         </div>
 

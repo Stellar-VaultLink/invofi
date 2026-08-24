@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { REGISTRY_CONTRACT_ID, STELLAR_NETWORK, explorerContractUrl } from '@/lib/constants';
+import { ExplorerLink } from '@/components/common/ExplorerLink';
+import { REGISTRY_CONTRACT_ID, STELLAR_NETWORK } from '@/lib/constants';
 import { Heart } from 'lucide-react';
 
 const SITE_MAP = {
@@ -107,15 +108,14 @@ export function Footer() {
           {REGISTRY_CONTRACT_ID && (
             <p className="text-xs text-muted-foreground">
               {t('contractOnStellar', { network: STELLAR_NETWORK })}{' '}
-              <a
-                href={explorerContractUrl(REGISTRY_CONTRACT_ID)}
-                target="_blank"
-                rel="noreferrer"
+              <ExplorerLink
+                type="contract"
+                value={REGISTRY_CONTRACT_ID}
                 className="font-mono underline decoration-dotted underline-offset-2 hover:text-foreground transition-colors"
                 title={t('viewOnStellarExpert')}
               >
                 {REGISTRY_CONTRACT_ID.slice(0, 8)}…{REGISTRY_CONTRACT_ID.slice(-8)}
-              </a>
+              </ExplorerLink>
             </p>
           )}
 

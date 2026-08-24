@@ -7,11 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LISTING_STATUS_COLORS, unitPrice } from '@/lib/listings';
+import { ExplorerLink } from '@/components/common/ExplorerLink';
 import { formatAddress } from '@/lib/utils';
 import type { PositionListing, PositionListingStatus } from '@/types';
 
-const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
-const STELLAR_EXPERT = `https://stellar.expert/explorer/${NETWORK}`;
 
 interface PositionListingCardProps {
   listing: PositionListing;
@@ -71,14 +70,13 @@ export function PositionListingCard({ listing, isOwn, onStatusChange, busy }: Po
 
           <p className="text-xs text-muted-foreground font-mono">
             Seller:{' '}
-            <a
-              href={`${STELLAR_EXPERT}/account/${listing.seller}`}
-              target="_blank"
-              rel="noreferrer noopener"
+            <ExplorerLink
+              type="account"
+              value={listing.seller}
               className="hover:text-blue-500 hover:underline transition-colors"
             >
               {formatAddress(listing.seller)} <ExternalLink className="inline h-3 w-3" />
-            </a>
+            </ExplorerLink>
           </p>
 
           {listing.note && (

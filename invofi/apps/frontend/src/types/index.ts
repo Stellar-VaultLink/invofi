@@ -171,3 +171,46 @@ export type {
   ScoreBreakdown,
 } from './matching';
 export { DEFAULT_PREFERENCES, serializePreferences, deserializePreferences } from './matching';
+
+// ── Real-time notification system (issue #255) ────────────────────────────────
+
+/** Broad category used for panel filtering tabs. */
+export type NotificationCategory = 'offer' | 'repayment' | 'alert' | 'info';
+
+/** A single user-facing notification derived from a Soroban contract event. */
+export interface AppNotification {
+  /** Unique identifier (generated client-side). */
+  id: string;
+  /** Human-readable title, e.g. "New offer received". */
+  title: string;
+  /** Supporting detail text. */
+  body: string;
+  /** Category determines the panel tab and the icon. */
+  category: NotificationCategory;
+  /** Whether the user has seen / clicked this notification. */
+  read: boolean;
+  /** ISO timestamp when the notification was created. */
+  createdAt: string;
+  /** Invoice or offer id for deep-link navigation (optional). */
+  subjectId?: string;
+  /** Raw contract event type that triggered this notification. */
+  eventType: string;
+}
+
+/** Per-event-type opt-in configuration persisted to localStorage. */
+export interface NotificationPreferences {
+  /** Show notification when a new offer arrives on one of the user's invoices. */
+  offer_new: boolean;
+  /** Show notification when an offer is accepted. */
+  offer_accepted: boolean;
+  /** Show notification when an offer is rejected or withdrawn. */
+  offer_rejected: boolean;
+  /** Show notification when an invoice is marked overdue. */
+  invoice_overdue: boolean;
+  /** Show notification when a repayment is made. */
+  repayment: boolean;
+  /** Show notification when a dispute is raised or resolved. */
+  dispute: boolean;
+  /** Also send OS-level browser notifications (requires permission grant). */
+  browserNotifications: boolean;
+}

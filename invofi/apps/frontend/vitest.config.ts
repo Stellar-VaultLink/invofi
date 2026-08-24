@@ -38,6 +38,10 @@ export default defineConfig({
         'src/hooks/useDebounce.ts',
         'src/hooks/useLocalStorage.ts',
         'src/hooks/useMediaQuery.ts',
+        // Notification system (issue #255)
+        'src/lib/notifications/store.ts',
+        'src/lib/notifications/eventMap.ts',
+        'src/lib/notifications/browserNotifications.ts',
       ],
     },
   },

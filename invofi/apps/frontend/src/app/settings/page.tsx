@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
+import { NotificationPreferencesPanel } from '@/components/notifications/NotificationPreferencesPanel';
+
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -65,6 +67,15 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">Notifications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NotificationPreferencesPanel />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">Account</CardTitle>
           </CardHeader>
           <CardContent>
@@ -77,3 +88,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

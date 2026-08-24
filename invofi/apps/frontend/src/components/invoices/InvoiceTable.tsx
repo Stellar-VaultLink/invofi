@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { formatAmount, formatDate, formatWalletAddress } from '@/lib/formatters';
 import type { Invoice } from '@/types';
@@ -20,9 +21,10 @@ type SortDir = 'asc' | 'desc';
 interface InvoiceTableProps {
   invoices: Invoice[];
   onRowClick?: (invoice: Invoice) => void;
+  loading?: boolean;
 }
 
-export function InvoiceTable({ invoices, onRowClick }: InvoiceTableProps) {
+export function InvoiceTable({ invoices, onRowClick, loading }: InvoiceTableProps) {
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
@@ -63,6 +65,35 @@ export function InvoiceTable({ invoices, onRowClick }: InvoiceTableProps) {
           <SortIcon field={field} />
         </span>
       </TableHead>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Invoice ID</TableHead>
+              <TableHead>Business</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Due Date</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     );
   }
 

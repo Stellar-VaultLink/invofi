@@ -216,6 +216,7 @@ export default function InvoiceDetailPage() {
           description="The invoice will be cancelled on-chain and can no longer receive financing offers. This cannot be undone."
           confirmLabel="Cancel Invoice"
           variant="destructive"
+          holdToConfirm
           onConfirm={() => {
             setConfirmCancel(false);
             handleCancel();

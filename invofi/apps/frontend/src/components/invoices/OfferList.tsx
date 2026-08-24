@@ -406,6 +406,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         }
         confirmLabel={confirmTarget?.kind === 'reclaim' ? 'Reclaim' : 'Reject'}
         variant={confirmTarget?.kind === 'reclaim' ? 'destructive' : 'default'}
+        holdToConfirm={confirmTarget?.kind === 'reclaim'}
         onConfirm={() => {
           if (!confirmTarget) return;
           const { offer, kind } = confirmTarget;

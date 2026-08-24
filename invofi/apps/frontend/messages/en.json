@@ -121,5 +121,274 @@
     "minutesAgo": "{m}m ago",
     "hoursAgo": "{h}h ago",
     "daysAgo": "{d}d ago"
+  },
+  "Settings": {
+    "title": "Settings",
+    "description": "Manage your account preferences",
+    "profile": {
+      "label": "Profile",
+      "hint": "Edit your display name and view account details"
+    },
+    "language": {
+      "title": "Language",
+      "label": "Display language",
+      "hint": "Changes the interface language, number and date formats, and text direction."
+    },
+    "network": {
+      "title": "Network & Contracts",
+      "label": "Stellar Network",
+      "connected": "Connected"
+    },
+    "account": {
+      "title": "Account",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…",
+      "signedOut": "Signed out successfully"
+    },
+    "contracts": {
+      "title": "Contracts",
+      "rpcUrl": "RPC URL",
+      "horizonUrl": "Horizon URL",
+      "registry": "Registry",
+      "financing": "Financing",
+      "repayment": "Repayment",
+      "notConfigured": "not configured",
+      "copy": "Copy",
+      "copied": "Copied",
+      "explorer": "Explorer",
+      "copyAria": "Copy {label} contract ID",
+      "explorerAria": "Open {label} contract on Stellar Expert",
+      "copyFailed": "Copy failed",
+      "copyFailedHint": "Could not access the clipboard."
+    }
+  },
+  "Errors": {
+    "forbidden": {
+      "title": "Access forbidden",
+      "description": "You don’t have permission to access this resource.",
+      "backHome": "Back to home"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you’re looking for doesn’t exist or has been moved.",
+      "backHome": "Back to home"
+    },
+    "unexpected": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred. Please try again.",
+      "retry": "Try again",
+      "reload": "Retry"
+    }
+  },
+  "Status": {
+    "Pending": "Pending",
+    "Financed": "Financed",
+    "Repaid": "Repaid",
+    "Overdue": "Overdue",
+    "Cancelled": "Cancelled",
+    "Accepted": "Accepted",
+    "Rejected": "Rejected",
+    "Defaulted": "Defaulted"
+  },
+  "Common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "saving": "Saving…",
+    "loading": "Loading…",
+    "retry": "Retry",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "submitting": "Submitting…",
+    "copy": "Copy",
+    "copied": "Copied",
+    "export": "Export",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "none": "None",
+    "optional": "Optional",
+    "hold": {
+      "start": "Hold to confirm",
+      "almost": "Hold a little longer to confirm",
+      "cancelled": "Confirmation cancelled"
+    }
+  },
+  "Dashboard": {
+    "titleBusiness": "Invoice Dashboard",
+    "titleLender": "Lender Portfolio",
+    "welcomeBack": "Welcome back",
+    "newInvoice": "New Invoice",
+    "yourInvoices": "Your Invoices",
+    "yourInvestments": "Your Investments",
+    "browseMarketplace": "Browse Marketplace",
+    "exportCsv": "Export CSV",
+    "role": {
+      "business": "Business",
+      "lender": "Lender",
+      "admin": "Admin"
+    },
+    "wallet": {
+      "title": "Stellar Wallet",
+      "connected": "Wallet connected. You can sign transactions.",
+      "disconnected": "Connect your Stellar wallet to interact with contracts."
+    },
+    "stats": {
+      "totalInvoices": "Total Invoices",
+      "pending": "Pending",
+      "financed": "Financed",
+      "repaid": "Repaid",
+      "activeInvestments": "Active Investments",
+      "pendingOffers": "Pending Offers",
+      "totalYield": "Total Yield"
+    },
+    "view": {
+      "grid": "Grid view",
+      "table": "Table view"
+    },
+    "empty": {
+      "invoices": "No invoices yet.",
+      "createFirst": "Create your first invoice",
+      "investments": "No active investments yet."
+    },
+    "cancel": {
+      "action": "Cancel invoice",
+      "title": "Cancel invoice?",
+      "description": "Invoice {id} will be marked as Cancelled. This cannot be undone.",
+      "confirm": "Yes, cancel"
+    }
+  },
+  "Marketplace": {
+    "title": "Invoice Marketplace",
+    "description": "Browse invoices available for financing and submit offers to earn yield.",
+    "searchPlaceholder": "Search by invoice ID, debtor name, or originator…",
+    "view": {
+      "suggested": "Suggested for me",
+      "browseAll": "Browse all"
+    },
+    "filters": {
+      "allStatuses": "All statuses",
+      "allCurrencies": "All currencies"
+    },
+    "sort": {
+      "label": "Sort invoices",
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "amount_desc": "Amount: high to low",
+      "amount_asc": "Amount: low to high",
+      "due_soonest": "Due date: soonest"
+    },
+    "empty": {
+      "title": "No invoices match your filters",
+      "hint": "Try adjusting the search or filters."
+    },
+    "clearSearch": "Clear search"
+  },
+  "Portfolio": {
+    "title": "Your Portfolio",
+    "description": "Track your financing offers and returns — updates stream in live",
+    "refresh": "Refresh",
+    "exportCsv": "Export CSV",
+    "stats": {
+      "active": "Active Investments",
+      "pending": "Pending Offers",
+      "completed": "Completed",
+      "value": "Portfolio Value (USD)",
+      "priceNote": "XLM/USD {price} {source}{asOf} — approximate",
+      "priceAsOf": " · as of {time}",
+      "priceSource": {
+        "coingecko": "(CoinGecko)",
+        "env": "(env override)",
+        "default": "(default)"
+      }
+    },
+    "yield": {
+      "estimated": "Est. yield earned to date: {amount}",
+      "accruing": "Accruing in real time across {count, plural, =0 {no active positions} one {# active position} other {# active positions}}",
+      "realized": "Realized yield: {amount}",
+      "acrossRepaid": "Across {count, plural, one {# repaid offer} other {# repaid offers}}"
+    },
+    "empty": {
+      "title": "No financing offers yet.",
+      "browse": "Browse the marketplace"
+    },
+    "position": {
+      "days": "{count, plural, one {# day} other {# days}}",
+      "funded": "Funded {date}",
+      "apy": "APY",
+      "earnedToDate": "Earned to date",
+      "repayment": "Repayment",
+      "percentRepaid": "{percent} repaid",
+      "progressLabel": "{percent} of total due repaid",
+      "repaidRemaining": "{repaid} repaid · {remaining} remaining",
+      "updated": "updated {when}"
+    },
+    "transfer": {
+      "title": "Transfer Position",
+      "description": "Position tokens represent your claim on financed invoices (1 token = 1 base unit of principal). Send them to another Stellar wallet to transfer the position.",
+      "secondaryBoard": "Looking for a buyer? <link>List the position on the secondary board</link> — settlement still happens here, with this transfer.",
+      "prefilled": "Amount prefilled from your listing ({amount} tokens). Enter the buyer’s address to settle.",
+      "refreshBalance": "Refresh balance",
+      "connectWallet": "Connect a wallet to view and transfer positions.",
+      "notConfigured": "Position tokens are not configured on this deployment yet.",
+      "needsTrustline": "Position tokens are Stellar assets — add a POS trustline once to receive and transfer them.",
+      "addTrustline": "Add POS trustline",
+      "adding": "Adding…",
+      "trustlineAdded": "Trustline added",
+      "trustlineAddedHint": "Your wallet can now hold POS position tokens.",
+      "trustlineFailed": "Trustline failed",
+      "trustlineFailedHint": "Trustline setup failed",
+      "recipientLabel": "Recipient address",
+      "amountLabel": "Amount",
+      "available": "(available: {balance})",
+      "transfer": "Transfer",
+      "transferring": "Transferring…",
+      "invalidAddress": "Invalid address",
+      "invalidAddressHint": "Enter a valid Stellar address (G…).",
+      "invalidAmount": "Invalid amount",
+      "invalidAmountHint": "Enter an amount with at most {decimals} decimal places.",
+      "insufficient": "Insufficient balance",
+      "insufficientHint": "You do not hold enough position tokens for this transfer.",
+      "recipientTrustline": "Recipient needs a trustline",
+      "recipientTrustlineHint": "The recipient wallet has no POS trustline yet. Ask them to add one (any wallet or this app) before transferring.",
+      "transferred": "Position transferred",
+      "transferredHint": "Sent {amount} position tokens to {recipient}.",
+      "transferFailed": "Transfer failed",
+      "transferFailedHint": "Transaction failed"
+    }
+  },
+  "Invoice": {
+    "title": "Invoice",
+    "backToDashboard": "Back to dashboard",
+    "print": "Print / Export PDF",
+    "notFound": "Invoice not found",
+    "fields": {
+      "amount": "Amount",
+      "currency": "Currency",
+      "dueDate": "Due Date",
+      "originator": "Originator"
+    },
+    "counterparty": {
+      "lender": "Lender",
+      "business": "Business"
+    },
+    "cancel": {
+      "action": "Cancel",
+      "title": "Cancel this invoice?",
+      "description": "The invoice will be cancelled on-chain and can no longer receive financing offers. This cannot be undone.",
+      "confirm": "Cancel Invoice",
+      "done": "Invoice cancelled",
+      "doneHint": "The invoice is now cancelled on-chain.",
+      "failed": "Failed to cancel invoice",
+      "undo": "Undo",
+      "undoAlt": "Undo cancel",
+      "restored": "Invoice restored",
+      "restoredHint": "A new invoice with the same terms has been created.",
+      "restoreFailed": "Failed to restore invoice",
+      "previewTitle": "Preview: Cancel Invoice",
+      "previewDescription": "Review the expected effects before cancelling this invoice on-chain."
+    }
   }
 }

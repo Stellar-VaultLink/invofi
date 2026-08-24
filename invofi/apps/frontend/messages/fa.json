@@ -1,0 +1,297 @@
+{
+  "Navbar": {
+    "dashboard": "داشبورد",
+    "marketplace": "بازار",
+    "portfolio": "سبد",
+    "approvals": "تأییدها",
+    "wrongNetwork": "شبکه نادرست",
+    "toggleTheme": "تغییر پوسته",
+    "testnet": "شبکه آزمایشی",
+    "viewContracts": "نمایش نشانی قراردادهای هوشمند",
+    "settings": "تنظیمات",
+    "signOut": "خروج"
+  },
+  "Footer": {
+    "tagline": "تأمین مالی غیرمتمرکز فاکتور روی استلار سوروبان",
+    "stats": "آمار",
+    "github": "گیت‌هاب",
+    "docs": "مستندات",
+    "issues": "مسائل",
+    "contractOnStellar": "قرارداد روی استلار {network}:",
+    "viewOnStellarExpert": "نمایش قرارداد InvoFi در Stellar Expert",
+    "openSource": "متن‌باز"
+  },
+  "DashboardLayout": {
+    "title": "داشبورد",
+    "description": "فاکتورهای ثبت‌شده را مدیریت کنید، پیشنهادهای تأمین مالی را دنبال کنید و وضعیت بازپرداخت را پایش کنید."
+  },
+  "Settings": {
+    "title": "تنظیمات",
+    "description": "ترجیحات حساب خود را مدیریت کنید",
+    "profile": {
+      "label": "نمایه",
+      "hint": "نام نمایشی را ویرایش کنید و جزئیات حساب را ببینید"
+    },
+    "language": {
+      "title": "زبان",
+      "label": "زبان نمایش",
+      "hint": "زبان رابط، قالب اعداد و تاریخ، و جهت متن را تغییر می‌دهد."
+    },
+    "network": {
+      "title": "شبکه و قراردادها",
+      "label": "شبکه استلار",
+      "connected": "متصل"
+    },
+    "account": {
+      "title": "حساب",
+      "signOut": "خروج",
+      "signingOut": "در حال خروج…",
+      "signedOut": "با موفقیت خارج شدید"
+    },
+    "contracts": {
+      "title": "قراردادها",
+      "rpcUrl": "نشانی RPC",
+      "horizonUrl": "نشانی Horizon",
+      "registry": "ثبت",
+      "financing": "تأمین مالی",
+      "repayment": "بازپرداخت",
+      "notConfigured": "پیکربندی‌نشده",
+      "copy": "رونوشت",
+      "copied": "رونوشت شد",
+      "explorer": "کاوشگر",
+      "copyAria": "رونوشت شناسهٔ قرارداد {label}",
+      "explorerAria": "گشودن قرارداد {label} در Stellar Expert",
+      "copyFailed": "رونوشت ناموفق",
+      "copyFailedHint": "دسترسی به حافظهٔ موقت ممکن نشد."
+    }
+  },
+  "Errors": {
+    "forbidden": {
+      "title": "دسترسی ممنوع",
+      "description": "اجازهٔ دسترسی به این منبع را ندارید.",
+      "backHome": "بازگشت به خانه"
+    },
+    "notFound": {
+      "title": "صفحه یافت نشد",
+      "description": "صفحه‌ای که می‌خواهید وجود ندارد یا جابه‌جا شده است.",
+      "backHome": "بازگشت به خانه"
+    },
+    "unexpected": {
+      "title": "خطایی رخ داد",
+      "description": "خطای پیش‌بینی‌نشده‌ای رخ داد. دوباره تلاش کنید.",
+      "retry": "تلاش دوباره",
+      "reload": "تلاش دوباره"
+    }
+  },
+  "Status": {
+    "Pending": "در انتظار",
+    "Financed": "تأمین‌شده",
+    "Repaid": "بازپرداخت‌شده",
+    "Overdue": "سررسیدگذشته",
+    "Cancelled": "لغوشده",
+    "Accepted": "پذیرفته‌شده",
+    "Rejected": "ردشده",
+    "Defaulted": "نکول‌شده"
+  },
+  "Common": {
+    "confirm": "تأیید",
+    "cancel": "لغو",
+    "close": "بستن",
+    "save": "ذخیره",
+    "saving": "در حال ذخیره…",
+    "loading": "در حال بارگذاری…",
+    "retry": "تلاش دوباره",
+    "back": "بازگشت",
+    "next": "بعدی",
+    "submit": "ارسال",
+    "submitting": "در حال ارسال…",
+    "copy": "رونوشت",
+    "copied": "رونوشت شد",
+    "export": "برون‌بری",
+    "search": "جست‌وجو",
+    "filter": "پالایه",
+    "all": "همه",
+    "none": "هیچ‌کدام",
+    "optional": "اختیاری",
+    "hold": {
+      "start": "برای تأیید نگه دارید",
+      "almost": "کمی بیشتر نگه دارید تا تأیید شود",
+      "cancelled": "تأیید لغو شد"
+    }
+  },
+  "Dashboard": {
+    "titleBusiness": "داشبورد فاکتورها",
+    "titleLender": "سبد تأمین‌کننده",
+    "welcomeBack": "خوش آمدید",
+    "newInvoice": "فاکتور تازه",
+    "yourInvoices": "فاکتورهای شما",
+    "yourInvestments": "سرمایه‌گذاری‌های شما",
+    "browseMarketplace": "مرور بازار",
+    "exportCsv": "برون‌بری CSV",
+    "role": {
+      "business": "کسب‌وکار",
+      "lender": "تأمین‌کننده",
+      "admin": "مدیر"
+    },
+    "wallet": {
+      "title": "کیف‌پول استلار",
+      "connected": "کیف‌پول متصل است. می‌توانید تراکنش‌ها را امضا کنید.",
+      "disconnected": "برای کار با قراردادها کیف‌پول استلار خود را متصل کنید."
+    },
+    "stats": {
+      "totalInvoices": "کل فاکتورها",
+      "pending": "در انتظار",
+      "financed": "تأمین‌شده",
+      "repaid": "بازپرداخت‌شده",
+      "activeInvestments": "سرمایه‌گذاری‌های فعال",
+      "pendingOffers": "پیشنهادهای در انتظار",
+      "totalYield": "کل بازده"
+    },
+    "view": {
+      "grid": "نمای شبکه‌ای",
+      "table": "نمای جدولی"
+    },
+    "empty": {
+      "invoices": "هنوز فاکتوری نیست.",
+      "createFirst": "نخستین فاکتور خود را بسازید",
+      "investments": "هنوز سرمایه‌گذاری فعالی نیست."
+    },
+    "cancel": {
+      "action": "لغو فاکتور",
+      "title": "فاکتور لغو شود؟",
+      "description": "فاکتور {id} «لغوشده» علامت می‌خورد. این کار بازگشت‌پذیر نیست.",
+      "confirm": "بله، لغو کن"
+    }
+  },
+  "Marketplace": {
+    "title": "بازار فاکتور",
+    "description": "فاکتورهای آمادهٔ تأمین مالی را مرور کنید و برای کسب بازده پیشنهاد بدهید.",
+    "searchPlaceholder": "جست‌وجو بر پایهٔ شناسهٔ فاکتور، نام بدهکار یا صادرکننده…",
+    "view": {
+      "suggested": "پیشنهاد برای من",
+      "browseAll": "مرور همه"
+    },
+    "filters": {
+      "allStatuses": "همهٔ وضعیت‌ها",
+      "allCurrencies": "همهٔ ارزها"
+    },
+    "sort": {
+      "label": "مرتب‌سازی فاکتورها",
+      "newest": "تازه‌ترین",
+      "oldest": "قدیمی‌ترین",
+      "amount_desc": "مبلغ: از زیاد به کم",
+      "amount_asc": "مبلغ: از کم به زیاد",
+      "due_soonest": "سررسید: نزدیک‌ترین"
+    },
+    "empty": {
+      "title": "فاکتوری با این پالایه‌ها یافت نشد",
+      "hint": "جست‌وجو یا پالایه‌ها را تغییر دهید."
+    },
+    "clearSearch": "پاک کردن جست‌وجو"
+  },
+  "Portfolio": {
+    "title": "سبد شما",
+    "description": "پیشنهادهای تأمین مالی و بازده را دنبال کنید — به‌روزرسانی‌ها زنده می‌رسند",
+    "refresh": "به‌روزرسانی",
+    "exportCsv": "برون‌بری CSV",
+    "stats": {
+      "active": "سرمایه‌گذاری‌های فعال",
+      "pending": "پیشنهادهای در انتظار",
+      "completed": "تکمیل‌شده",
+      "value": "ارزش سبد (دلار)",
+      "priceNote": "XLM/USD ‏{price} {source}{asOf} — تقریبی",
+      "priceAsOf": " · تا {time}",
+      "priceSource": {
+        "coingecko": "(CoinGecko)",
+        "env": "(بازنویسی محیطی)",
+        "default": "(پیش‌فرض)"
+      }
+    },
+    "yield": {
+      "estimated": "بازده برآوردی تا امروز: {amount}",
+      "accruing": "به‌صورت زنده روی {count, plural, one {# موقعیت فعال} other {# موقعیت فعال}} انباشته می‌شود",
+      "realized": "بازده محقق‌شده: {amount}",
+      "acrossRepaid": "روی {count, plural, one {# پیشنهاد بازپرداخت‌شده} other {# پیشنهاد بازپرداخت‌شده}}"
+    },
+    "empty": {
+      "title": "هنوز پیشنهاد تأمین مالی نیست.",
+      "browse": "مرور بازار"
+    },
+    "position": {
+      "days": "{count, plural, one {# روز} other {# روز}}",
+      "funded": "تأمین‌شده در {date}",
+      "apy": "بازده سالانه",
+      "earnedToDate": "کسب‌شده تا امروز",
+      "repayment": "بازپرداخت",
+      "percentRepaid": "{percent} بازپرداخت شد",
+      "progressLabel": "{percent} از کل بدهی بازپرداخت شد",
+      "repaidRemaining": "{repaid} بازپرداخت‌شده · {remaining} مانده",
+      "updated": "به‌روزرسانی {when}"
+    },
+    "transfer": {
+      "title": "انتقال موقعیت",
+      "description": "توکن‌های موقعیت نشان‌دهندهٔ حق شما بر فاکتورهای تأمین‌شده‌اند (هر توکن = یک واحد پایه از اصل مبلغ). برای انتقال موقعیت آن‌ها را به کیف‌پول استلار دیگری بفرستید.",
+      "secondaryBoard": "به دنبال خریدارید؟ <link>موقعیت را در تابلوی ثانویه فهرست کنید</link> — تسویه همچنان همین‌جا و با همین انتقال انجام می‌شود.",
+      "prefilled": "مبلغ از فهرست شما پر شد ({amount} توکن). برای تسویه نشانی خریدار را وارد کنید.",
+      "refreshBalance": "به‌روزرسانی موجودی",
+      "connectWallet": "برای دیدن و انتقال موقعیت‌ها کیف‌پول متصل کنید.",
+      "notConfigured": "توکن‌های موقعیت هنوز در این استقرار پیکربندی نشده‌اند.",
+      "needsTrustline": "توکن‌های موقعیت دارایی استلار هستند — یک‌بار خط اعتماد POS بیفزایید تا بتوانید آن‌ها را دریافت و منتقل کنید.",
+      "addTrustline": "افزودن خط اعتماد POS",
+      "adding": "در حال افزودن…",
+      "trustlineAdded": "خط اعتماد افزوده شد",
+      "trustlineAddedHint": "کیف‌پول شما اکنون می‌تواند توکن موقعیت POS نگه دارد.",
+      "trustlineFailed": "خط اعتماد ناموفق",
+      "trustlineFailedHint": "برپایی خط اعتماد ناموفق بود",
+      "recipientLabel": "نشانی گیرنده",
+      "amountLabel": "مبلغ",
+      "available": "(موجود: {balance})",
+      "transfer": "انتقال",
+      "transferring": "در حال انتقال…",
+      "invalidAddress": "نشانی نامعتبر",
+      "invalidAddressHint": "یک نشانی معتبر استلار وارد کنید (G…).",
+      "invalidAmount": "مبلغ نامعتبر",
+      "invalidAmountHint": "مبلغی با حداکثر {decimals} رقم اعشار وارد کنید.",
+      "insufficient": "موجودی ناکافی",
+      "insufficientHint": "توکن موقعیت کافی برای این انتقال ندارید.",
+      "recipientTrustline": "گیرنده به خط اعتماد نیاز دارد",
+      "recipientTrustlineHint": "کیف‌پول گیرنده هنوز خط اعتماد POS ندارد. پیش از انتقال از او بخواهید یکی بیفزاید (در هر کیف‌پولی یا در همین برنامه).",
+      "transferred": "موقعیت منتقل شد",
+      "transferredHint": "{amount} توکن موقعیت به {recipient} فرستاده شد.",
+      "transferFailed": "انتقال ناموفق",
+      "transferFailedHint": "تراکنش ناموفق بود"
+    }
+  },
+  "Invoice": {
+    "title": "فاکتور",
+    "backToDashboard": "بازگشت به داشبورد",
+    "print": "چاپ / برون‌بری PDF",
+    "notFound": "فاکتور یافت نشد",
+    "fields": {
+      "amount": "مبلغ",
+      "currency": "ارز",
+      "dueDate": "سررسید",
+      "originator": "صادرکننده"
+    },
+    "counterparty": {
+      "lender": "تأمین‌کننده",
+      "business": "کسب‌وکار"
+    },
+    "cancel": {
+      "action": "لغو",
+      "title": "این فاکتور لغو شود؟",
+      "description": "فاکتور روی زنجیره لغو می‌شود و دیگر پیشنهاد تأمین مالی نمی‌پذیرد. این کار بازگشت‌پذیر نیست.",
+      "confirm": "لغو فاکتور",
+      "done": "فاکتور لغو شد",
+      "doneHint": "فاکتور اکنون روی زنجیره لغو شده است.",
+      "failed": "لغو فاکتور ناموفق بود",
+      "undo": "واگرد",
+      "undoAlt": "واگرد لغو",
+      "restored": "فاکتور بازیابی شد",
+      "restoredHint": "فاکتور تازه‌ای با همان شرایط ساخته شد.",
+      "restoreFailed": "بازیابی فاکتور ناموفق بود",
+      "previewTitle": "پیش‌نمایش: لغو فاکتور",
+      "previewDescription": "پیش از لغو این فاکتور روی زنجیره، اثرهای مورد انتظار را مرور کنید."
+    }
+  }
+}

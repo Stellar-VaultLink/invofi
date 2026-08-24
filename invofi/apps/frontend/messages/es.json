@@ -1,0 +1,297 @@
+{
+  "Navbar": {
+    "dashboard": "Panel",
+    "marketplace": "Mercado",
+    "portfolio": "Cartera",
+    "approvals": "Aprobaciones",
+    "wrongNetwork": "red incorrecta",
+    "toggleTheme": "Cambiar tema",
+    "testnet": "Testnet",
+    "viewContracts": "Ver las direcciones de los contratos inteligentes",
+    "settings": "Ajustes",
+    "signOut": "Cerrar sesión"
+  },
+  "Footer": {
+    "tagline": "Financiación descentralizada de facturas en Stellar Soroban",
+    "stats": "Estadísticas",
+    "github": "GitHub",
+    "docs": "Documentación",
+    "issues": "Incidencias",
+    "contractOnStellar": "Contrato en Stellar {network}:",
+    "viewOnStellarExpert": "Ver el contrato de InvoFi en Stellar Expert",
+    "openSource": "Código abierto"
+  },
+  "DashboardLayout": {
+    "title": "Panel",
+    "description": "Gestiona tus facturas registradas, sigue las ofertas de financiación y controla el estado de los reembolsos."
+  },
+  "Settings": {
+    "title": "Ajustes",
+    "description": "Gestiona las preferencias de tu cuenta",
+    "profile": {
+      "label": "Perfil",
+      "hint": "Edita tu nombre visible y consulta los datos de la cuenta"
+    },
+    "language": {
+      "title": "Idioma",
+      "label": "Idioma de la interfaz",
+      "hint": "Cambia el idioma de la interfaz, el formato de números y fechas y la dirección del texto."
+    },
+    "network": {
+      "title": "Red y contratos",
+      "label": "Red de Stellar",
+      "connected": "Conectado"
+    },
+    "account": {
+      "title": "Cuenta",
+      "signOut": "Cerrar sesión",
+      "signingOut": "Cerrando sesión…",
+      "signedOut": "Sesión cerrada correctamente"
+    },
+    "contracts": {
+      "title": "Contratos",
+      "rpcUrl": "URL de RPC",
+      "horizonUrl": "URL de Horizon",
+      "registry": "Registro",
+      "financing": "Financiación",
+      "repayment": "Reembolso",
+      "notConfigured": "sin configurar",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "explorer": "Explorador",
+      "copyAria": "Copiar el ID del contrato {label}",
+      "explorerAria": "Abrir el contrato {label} en Stellar Expert",
+      "copyFailed": "No se pudo copiar",
+      "copyFailedHint": "No se pudo acceder al portapapeles."
+    }
+  },
+  "Errors": {
+    "forbidden": {
+      "title": "Acceso denegado",
+      "description": "No tienes permiso para acceder a este recurso.",
+      "backHome": "Volver al inicio"
+    },
+    "notFound": {
+      "title": "Página no encontrada",
+      "description": "La página que buscas no existe o se ha movido.",
+      "backHome": "Volver al inicio"
+    },
+    "unexpected": {
+      "title": "Algo ha salido mal",
+      "description": "Se ha producido un error inesperado. Inténtalo de nuevo.",
+      "retry": "Reintentar",
+      "reload": "Reintentar"
+    }
+  },
+  "Status": {
+    "Pending": "Pendiente",
+    "Financed": "Financiada",
+    "Repaid": "Reembolsada",
+    "Overdue": "Vencida",
+    "Cancelled": "Cancelada",
+    "Accepted": "Aceptada",
+    "Rejected": "Rechazada",
+    "Defaulted": "En impago"
+  },
+  "Common": {
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "loading": "Cargando…",
+    "retry": "Reintentar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "submit": "Enviar",
+    "submitting": "Enviando…",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "export": "Exportar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "all": "Todo",
+    "none": "Ninguno",
+    "optional": "Opcional",
+    "hold": {
+      "start": "Mantén pulsado para confirmar",
+      "almost": "Mantén un poco más para confirmar",
+      "cancelled": "Confirmación cancelada"
+    }
+  },
+  "Dashboard": {
+    "titleBusiness": "Panel de facturas",
+    "titleLender": "Cartera del prestamista",
+    "welcomeBack": "Bienvenido de nuevo",
+    "newInvoice": "Nueva factura",
+    "yourInvoices": "Tus facturas",
+    "yourInvestments": "Tus inversiones",
+    "browseMarketplace": "Explorar el mercado",
+    "exportCsv": "Exportar CSV",
+    "role": {
+      "business": "Empresa",
+      "lender": "Prestamista",
+      "admin": "Administrador"
+    },
+    "wallet": {
+      "title": "Cartera de Stellar",
+      "connected": "Cartera conectada. Puedes firmar transacciones.",
+      "disconnected": "Conecta tu cartera de Stellar para interactuar con los contratos."
+    },
+    "stats": {
+      "totalInvoices": "Facturas totales",
+      "pending": "Pendientes",
+      "financed": "Financiadas",
+      "repaid": "Reembolsadas",
+      "activeInvestments": "Inversiones activas",
+      "pendingOffers": "Ofertas pendientes",
+      "totalYield": "Rendimiento total"
+    },
+    "view": {
+      "grid": "Vista de cuadrícula",
+      "table": "Vista de tabla"
+    },
+    "empty": {
+      "invoices": "Todavía no hay facturas.",
+      "createFirst": "Crea tu primera factura",
+      "investments": "Todavía no hay inversiones activas."
+    },
+    "cancel": {
+      "action": "Cancelar factura",
+      "title": "¿Cancelar la factura?",
+      "description": "La factura {id} se marcará como cancelada. Esta acción no se puede deshacer.",
+      "confirm": "Sí, cancelar"
+    }
+  },
+  "Marketplace": {
+    "title": "Mercado de facturas",
+    "description": "Explora las facturas disponibles para financiación y envía ofertas para obtener rendimiento.",
+    "searchPlaceholder": "Buscar por ID de factura, nombre del deudor o emisor…",
+    "view": {
+      "suggested": "Sugeridas para mí",
+      "browseAll": "Ver todas"
+    },
+    "filters": {
+      "allStatuses": "Todos los estados",
+      "allCurrencies": "Todas las monedas"
+    },
+    "sort": {
+      "label": "Ordenar facturas",
+      "newest": "Más recientes primero",
+      "oldest": "Más antiguas primero",
+      "amount_desc": "Importe: de mayor a menor",
+      "amount_asc": "Importe: de menor a mayor",
+      "due_soonest": "Vencimiento: más próximo"
+    },
+    "empty": {
+      "title": "Ninguna factura coincide con tus filtros",
+      "hint": "Prueba a ajustar la búsqueda o los filtros."
+    },
+    "clearSearch": "Borrar la búsqueda"
+  },
+  "Portfolio": {
+    "title": "Tu cartera",
+    "description": "Sigue tus ofertas de financiación y tus rendimientos: las actualizaciones llegan en directo",
+    "refresh": "Actualizar",
+    "exportCsv": "Exportar CSV",
+    "stats": {
+      "active": "Inversiones activas",
+      "pending": "Ofertas pendientes",
+      "completed": "Completadas",
+      "value": "Valor de la cartera (USD)",
+      "priceNote": "XLM/USD {price} {source}{asOf} — aproximado",
+      "priceAsOf": " · a las {time}",
+      "priceSource": {
+        "coingecko": "(CoinGecko)",
+        "env": "(anulación de entorno)",
+        "default": "(predeterminado)"
+      }
+    },
+    "yield": {
+      "estimated": "Rendimiento estimado hasta la fecha: {amount}",
+      "accruing": "Acumulándose en tiempo real en {count, plural, =0 {ninguna posición activa} one {# posición activa} other {# posiciones activas}}",
+      "realized": "Rendimiento realizado: {amount}",
+      "acrossRepaid": "En {count, plural, one {# oferta reembolsada} other {# ofertas reembolsadas}}"
+    },
+    "empty": {
+      "title": "Todavía no hay ofertas de financiación.",
+      "browse": "Explorar el mercado"
+    },
+    "position": {
+      "days": "{count, plural, one {# día} other {# días}}",
+      "funded": "Financiada el {date}",
+      "apy": "TAE",
+      "earnedToDate": "Ganado hasta la fecha",
+      "repayment": "Reembolso",
+      "percentRepaid": "{percent} reembolsado",
+      "progressLabel": "{percent} del total adeudado reembolsado",
+      "repaidRemaining": "{repaid} reembolsado · {remaining} restante",
+      "updated": "actualizado {when}"
+    },
+    "transfer": {
+      "title": "Transferir posición",
+      "description": "Los tokens de posición representan tu derecho sobre facturas financiadas (1 token = 1 unidad base del principal). Envíalos a otra cartera de Stellar para transferir la posición.",
+      "secondaryBoard": "¿Buscas comprador? <link>Publica la posición en el tablón secundario</link>: la liquidación sigue haciéndose aquí, con esta transferencia.",
+      "prefilled": "Importe rellenado a partir de tu publicación ({amount} tokens). Introduce la dirección del comprador para liquidar.",
+      "refreshBalance": "Actualizar saldo",
+      "connectWallet": "Conecta una cartera para ver y transferir posiciones.",
+      "notConfigured": "Los tokens de posición aún no están configurados en este despliegue.",
+      "needsTrustline": "Los tokens de posición son activos de Stellar: añade una línea de confianza POS una vez para recibirlos y transferirlos.",
+      "addTrustline": "Añadir línea de confianza POS",
+      "adding": "Añadiendo…",
+      "trustlineAdded": "Línea de confianza añadida",
+      "trustlineAddedHint": "Tu cartera ya puede mantener tokens de posición POS.",
+      "trustlineFailed": "Error en la línea de confianza",
+      "trustlineFailedHint": "No se pudo configurar la línea de confianza",
+      "recipientLabel": "Dirección del destinatario",
+      "amountLabel": "Importe",
+      "available": "(disponible: {balance})",
+      "transfer": "Transferir",
+      "transferring": "Transfiriendo…",
+      "invalidAddress": "Dirección no válida",
+      "invalidAddressHint": "Introduce una dirección de Stellar válida (G…).",
+      "invalidAmount": "Importe no válido",
+      "invalidAmountHint": "Introduce un importe con {decimals} decimales como máximo.",
+      "insufficient": "Saldo insuficiente",
+      "insufficientHint": "No tienes suficientes tokens de posición para esta transferencia.",
+      "recipientTrustline": "El destinatario necesita una línea de confianza",
+      "recipientTrustlineHint": "La cartera del destinatario aún no tiene línea de confianza POS. Pídele que añada una (en cualquier cartera o en esta aplicación) antes de transferir.",
+      "transferred": "Posición transferida",
+      "transferredHint": "Se han enviado {amount} tokens de posición a {recipient}.",
+      "transferFailed": "Error en la transferencia",
+      "transferFailedHint": "La transacción ha fallado"
+    }
+  },
+  "Invoice": {
+    "title": "Factura",
+    "backToDashboard": "Volver al panel",
+    "print": "Imprimir / Exportar PDF",
+    "notFound": "Factura no encontrada",
+    "fields": {
+      "amount": "Importe",
+      "currency": "Moneda",
+      "dueDate": "Vencimiento",
+      "originator": "Emisor"
+    },
+    "counterparty": {
+      "lender": "Prestamista",
+      "business": "Empresa"
+    },
+    "cancel": {
+      "action": "Cancelar",
+      "title": "¿Cancelar esta factura?",
+      "description": "La factura se cancelará on-chain y ya no podrá recibir ofertas de financiación. Esta acción no se puede deshacer.",
+      "confirm": "Cancelar factura",
+      "done": "Factura cancelada",
+      "doneHint": "La factura ya está cancelada on-chain.",
+      "failed": "No se pudo cancelar la factura",
+      "undo": "Deshacer",
+      "undoAlt": "Deshacer la cancelación",
+      "restored": "Factura restaurada",
+      "restoredHint": "Se ha creado una factura nueva con las mismas condiciones.",
+      "restoreFailed": "No se pudo restaurar la factura",
+      "previewTitle": "Vista previa: cancelar factura",
+      "previewDescription": "Revisa los efectos esperados antes de cancelar esta factura on-chain."
+    }
+  }
+}

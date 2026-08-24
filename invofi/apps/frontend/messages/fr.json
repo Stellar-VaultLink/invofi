@@ -1,0 +1,297 @@
+{
+  "Navbar": {
+    "dashboard": "Tableau de bord",
+    "marketplace": "Place de marché",
+    "portfolio": "Portefeuille",
+    "approvals": "Approbations",
+    "wrongNetwork": "réseau incorrect",
+    "toggleTheme": "Changer de thème",
+    "testnet": "Testnet",
+    "viewContracts": "Voir les adresses des contrats intelligents",
+    "settings": "Paramètres",
+    "signOut": "Se déconnecter"
+  },
+  "Footer": {
+    "tagline": "Financement décentralisé de factures sur Stellar Soroban",
+    "stats": "Statistiques",
+    "github": "GitHub",
+    "docs": "Documentation",
+    "issues": "Tickets",
+    "contractOnStellar": "Contrat sur Stellar {network} :",
+    "viewOnStellarExpert": "Voir le contrat InvoFi sur Stellar Expert",
+    "openSource": "Open source"
+  },
+  "DashboardLayout": {
+    "title": "Tableau de bord",
+    "description": "Gérez vos factures enregistrées, suivez les offres de financement et surveillez l’état des remboursements."
+  },
+  "Settings": {
+    "title": "Paramètres",
+    "description": "Gérez les préférences de votre compte",
+    "profile": {
+      "label": "Profil",
+      "hint": "Modifiez votre nom affiché et consultez les détails du compte"
+    },
+    "language": {
+      "title": "Langue",
+      "label": "Langue d’affichage",
+      "hint": "Modifie la langue de l’interface, le format des nombres et des dates, ainsi que le sens du texte."
+    },
+    "network": {
+      "title": "Réseau et contrats",
+      "label": "Réseau Stellar",
+      "connected": "Connecté"
+    },
+    "account": {
+      "title": "Compte",
+      "signOut": "Se déconnecter",
+      "signingOut": "Déconnexion…",
+      "signedOut": "Déconnexion réussie"
+    },
+    "contracts": {
+      "title": "Contrats",
+      "rpcUrl": "URL RPC",
+      "horizonUrl": "URL Horizon",
+      "registry": "Registre",
+      "financing": "Financement",
+      "repayment": "Remboursement",
+      "notConfigured": "non configuré",
+      "copy": "Copier",
+      "copied": "Copié",
+      "explorer": "Explorateur",
+      "copyAria": "Copier l’identifiant du contrat {label}",
+      "explorerAria": "Ouvrir le contrat {label} dans Stellar Expert",
+      "copyFailed": "Échec de la copie",
+      "copyFailedHint": "Impossible d’accéder au presse-papiers."
+    }
+  },
+  "Errors": {
+    "forbidden": {
+      "title": "Accès interdit",
+      "description": "Vous n’avez pas l’autorisation d’accéder à cette ressource.",
+      "backHome": "Retour à l’accueil"
+    },
+    "notFound": {
+      "title": "Page introuvable",
+      "description": "La page que vous cherchez n’existe pas ou a été déplacée.",
+      "backHome": "Retour à l’accueil"
+    },
+    "unexpected": {
+      "title": "Une erreur est survenue",
+      "description": "Une erreur inattendue s’est produite. Veuillez réessayer.",
+      "retry": "Réessayer",
+      "reload": "Réessayer"
+    }
+  },
+  "Status": {
+    "Pending": "En attente",
+    "Financed": "Financée",
+    "Repaid": "Remboursée",
+    "Overdue": "En retard",
+    "Cancelled": "Annulée",
+    "Accepted": "Acceptée",
+    "Rejected": "Refusée",
+    "Defaulted": "En défaut"
+  },
+  "Common": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "loading": "Chargement…",
+    "retry": "Réessayer",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Envoyer",
+    "submitting": "Envoi…",
+    "copy": "Copier",
+    "copied": "Copié",
+    "export": "Exporter",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "all": "Tout",
+    "none": "Aucun",
+    "optional": "Facultatif",
+    "hold": {
+      "start": "Maintenez pour confirmer",
+      "almost": "Maintenez encore un instant pour confirmer",
+      "cancelled": "Confirmation annulée"
+    }
+  },
+  "Dashboard": {
+    "titleBusiness": "Tableau de bord des factures",
+    "titleLender": "Portefeuille du prêteur",
+    "welcomeBack": "Bon retour",
+    "newInvoice": "Nouvelle facture",
+    "yourInvoices": "Vos factures",
+    "yourInvestments": "Vos investissements",
+    "browseMarketplace": "Parcourir la place de marché",
+    "exportCsv": "Exporter en CSV",
+    "role": {
+      "business": "Entreprise",
+      "lender": "Prêteur",
+      "admin": "Administrateur"
+    },
+    "wallet": {
+      "title": "Portefeuille Stellar",
+      "connected": "Portefeuille connecté. Vous pouvez signer des transactions.",
+      "disconnected": "Connectez votre portefeuille Stellar pour interagir avec les contrats."
+    },
+    "stats": {
+      "totalInvoices": "Total des factures",
+      "pending": "En attente",
+      "financed": "Financées",
+      "repaid": "Remboursées",
+      "activeInvestments": "Investissements actifs",
+      "pendingOffers": "Offres en attente",
+      "totalYield": "Rendement total"
+    },
+    "view": {
+      "grid": "Vue en grille",
+      "table": "Vue en tableau"
+    },
+    "empty": {
+      "invoices": "Aucune facture pour l’instant.",
+      "createFirst": "Créez votre première facture",
+      "investments": "Aucun investissement actif pour l’instant."
+    },
+    "cancel": {
+      "action": "Annuler la facture",
+      "title": "Annuler la facture ?",
+      "description": "La facture {id} sera marquée comme annulée. Cette action est irréversible.",
+      "confirm": "Oui, annuler"
+    }
+  },
+  "Marketplace": {
+    "title": "Place de marché des factures",
+    "description": "Parcourez les factures disponibles au financement et soumettez des offres pour générer du rendement.",
+    "searchPlaceholder": "Rechercher par identifiant de facture, nom du débiteur ou émetteur…",
+    "view": {
+      "suggested": "Suggérées pour moi",
+      "browseAll": "Tout parcourir"
+    },
+    "filters": {
+      "allStatuses": "Tous les statuts",
+      "allCurrencies": "Toutes les devises"
+    },
+    "sort": {
+      "label": "Trier les factures",
+      "newest": "Les plus récentes d’abord",
+      "oldest": "Les plus anciennes d’abord",
+      "amount_desc": "Montant : décroissant",
+      "amount_asc": "Montant : croissant",
+      "due_soonest": "Échéance : la plus proche"
+    },
+    "empty": {
+      "title": "Aucune facture ne correspond à vos filtres",
+      "hint": "Essayez d’ajuster la recherche ou les filtres."
+    },
+    "clearSearch": "Effacer la recherche"
+  },
+  "Portfolio": {
+    "title": "Votre portefeuille",
+    "description": "Suivez vos offres de financement et vos rendements — les mises à jour arrivent en direct",
+    "refresh": "Actualiser",
+    "exportCsv": "Exporter en CSV",
+    "stats": {
+      "active": "Investissements actifs",
+      "pending": "Offres en attente",
+      "completed": "Terminés",
+      "value": "Valeur du portefeuille (USD)",
+      "priceNote": "XLM/USD {price} {source}{asOf} — approximatif",
+      "priceAsOf": " · à {time}",
+      "priceSource": {
+        "coingecko": "(CoinGecko)",
+        "env": "(remplacement par l’environnement)",
+        "default": "(par défaut)"
+      }
+    },
+    "yield": {
+      "estimated": "Rendement estimé à ce jour : {amount}",
+      "accruing": "S’accumule en temps réel sur {count, plural, =0 {aucune position active} one {# position active} other {# positions actives}}",
+      "realized": "Rendement réalisé : {amount}",
+      "acrossRepaid": "Sur {count, plural, one {# offre remboursée} other {# offres remboursées}}"
+    },
+    "empty": {
+      "title": "Aucune offre de financement pour l’instant.",
+      "browse": "Parcourir la place de marché"
+    },
+    "position": {
+      "days": "{count, plural, one {# jour} other {# jours}}",
+      "funded": "Financée le {date}",
+      "apy": "TAEG",
+      "earnedToDate": "Gagné à ce jour",
+      "repayment": "Remboursement",
+      "percentRepaid": "{percent} remboursé",
+      "progressLabel": "{percent} du total dû remboursé",
+      "repaidRemaining": "{repaid} remboursé · {remaining} restant",
+      "updated": "mis à jour {when}"
+    },
+    "transfer": {
+      "title": "Transférer la position",
+      "description": "Les jetons de position représentent votre créance sur des factures financées (1 jeton = 1 unité de base du principal). Envoyez-les à un autre portefeuille Stellar pour transférer la position.",
+      "secondaryBoard": "Vous cherchez un acheteur ? <link>Publiez la position sur le tableau secondaire</link> — le règlement a toujours lieu ici, via ce transfert.",
+      "prefilled": "Montant prérempli depuis votre annonce ({amount} jetons). Saisissez l’adresse de l’acheteur pour régler.",
+      "refreshBalance": "Actualiser le solde",
+      "connectWallet": "Connectez un portefeuille pour consulter et transférer des positions.",
+      "notConfigured": "Les jetons de position ne sont pas encore configurés sur ce déploiement.",
+      "needsTrustline": "Les jetons de position sont des actifs Stellar — ajoutez une ligne de confiance POS une fois pour les recevoir et les transférer.",
+      "addTrustline": "Ajouter une ligne de confiance POS",
+      "adding": "Ajout…",
+      "trustlineAdded": "Ligne de confiance ajoutée",
+      "trustlineAddedHint": "Votre portefeuille peut désormais détenir des jetons de position POS.",
+      "trustlineFailed": "Échec de la ligne de confiance",
+      "trustlineFailedHint": "La configuration de la ligne de confiance a échoué",
+      "recipientLabel": "Adresse du destinataire",
+      "amountLabel": "Montant",
+      "available": "(disponible : {balance})",
+      "transfer": "Transférer",
+      "transferring": "Transfert…",
+      "invalidAddress": "Adresse invalide",
+      "invalidAddressHint": "Saisissez une adresse Stellar valide (G…).",
+      "invalidAmount": "Montant invalide",
+      "invalidAmountHint": "Saisissez un montant comportant au plus {decimals} décimales.",
+      "insufficient": "Solde insuffisant",
+      "insufficientHint": "Vous ne détenez pas assez de jetons de position pour ce transfert.",
+      "recipientTrustline": "Le destinataire a besoin d’une ligne de confiance",
+      "recipientTrustlineHint": "Le portefeuille du destinataire n’a pas encore de ligne de confiance POS. Demandez-lui d’en ajouter une (dans n’importe quel portefeuille ou dans cette application) avant le transfert.",
+      "transferred": "Position transférée",
+      "transferredHint": "{amount} jetons de position envoyés à {recipient}.",
+      "transferFailed": "Échec du transfert",
+      "transferFailedHint": "La transaction a échoué"
+    }
+  },
+  "Invoice": {
+    "title": "Facture",
+    "backToDashboard": "Retour au tableau de bord",
+    "print": "Imprimer / Exporter en PDF",
+    "notFound": "Facture introuvable",
+    "fields": {
+      "amount": "Montant",
+      "currency": "Devise",
+      "dueDate": "Échéance",
+      "originator": "Émetteur"
+    },
+    "counterparty": {
+      "lender": "Prêteur",
+      "business": "Entreprise"
+    },
+    "cancel": {
+      "action": "Annuler",
+      "title": "Annuler cette facture ?",
+      "description": "La facture sera annulée on-chain et ne pourra plus recevoir d’offres de financement. Cette action est irréversible.",
+      "confirm": "Annuler la facture",
+      "done": "Facture annulée",
+      "doneHint": "La facture est désormais annulée on-chain.",
+      "failed": "Échec de l’annulation de la facture",
+      "undo": "Annuler",
+      "undoAlt": "Annuler l’annulation",
+      "restored": "Facture restaurée",
+      "restoredHint": "Une nouvelle facture aux mêmes conditions a été créée.",
+      "restoreFailed": "Échec de la restauration de la facture",
+      "previewTitle": "Aperçu : annuler la facture",
+      "previewDescription": "Vérifiez les effets attendus avant d’annuler cette facture on-chain."
+    }
+  }
+}

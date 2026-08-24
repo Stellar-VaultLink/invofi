@@ -1,4 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+// `render` wraps in NextIntlClientProvider — the settings page reads its copy
+// from the message catalogue (issue #227).
+import { render } from '@/test/intl';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ComponentType } from 'react';
 

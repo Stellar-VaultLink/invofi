@@ -468,7 +468,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
             disabled={offers.length === 0}
             title={offers.length === 0 ? 'No offers to export' : 'Export offers as CSV'}
           >
-            <Download className="h-3 w-3 mr-1" /> Export
+            <Download className="h-3 w-3 me-1" /> Export
           </Button>
           {canMarkOverdue && (
             <Button
@@ -477,13 +477,13 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               onClick={handleMarkOverdue}
               disabled={actionId === '__overdue__'}
             >
-              {actionId === '__overdue__' && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              {actionId === '__overdue__' && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
               Mark Overdue
             </Button>
           )}
           {canMakeOffer && (
             <Button size="sm" onClick={() => setShowForm(v => !v)}>
-              <Plus className="h-4 w-4 mr-1" /> Make Offer
+              <Plus className="h-4 w-4 me-1" /> Make Offer
             </Button>
           )}
         </div>
@@ -527,7 +527,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
             />
             <div className="flex gap-2">
               <Button type="submit" size="sm" disabled={loading}>
-                {loading && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                {loading && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
                 Submit Offer
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -583,7 +583,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                     onClick={() => setSimTarget({ offer, kind: 'accept' })}
                     disabled={actionId === offer.id}
                   >
-                    {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                    {actionId === offer.id && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
                     Accept
                   </Button>
                   <Button
@@ -622,20 +622,21 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                     }}
                     disabled={actionId === offer.id}
                   >
-                    {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                    {actionId === offer.id && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
                     Repay
                   </Button>
                 </div>
               )}
-              {canReclaim(offer) && (                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => setSimTarget({ offer, kind: 'reclaim' })}
-                    disabled={actionId === offer.id}
-                  >
-                    {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                    Reclaim
-                  </Button>
+              {canReclaim(offer) && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setSimTarget({ offer, kind: 'reclaim' })}
+                  disabled={actionId === offer.id}
+                >
+                  {actionId === offer.id && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
+                  Reclaim
+                </Button>
               )}
             </div>
           </div>

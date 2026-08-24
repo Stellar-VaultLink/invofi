@@ -1,0 +1,297 @@
+{
+  "Navbar": {
+    "dashboard": "Panel",
+    "marketplace": "Pazar",
+    "portfolio": "Portföy",
+    "approvals": "Onaylar",
+    "wrongNetwork": "yanlış ağ",
+    "toggleTheme": "Temayı değiştir",
+    "testnet": "Test ağı",
+    "viewContracts": "Akıllı sözleşme adreslerini gör",
+    "settings": "Ayarlar",
+    "signOut": "Çıkış yap"
+  },
+  "Footer": {
+    "tagline": "Stellar Soroban üzerinde merkeziyetsiz fatura finansmanı",
+    "stats": "İstatistikler",
+    "github": "GitHub",
+    "docs": "Belgeler",
+    "issues": "Sorunlar",
+    "contractOnStellar": "Stellar {network} üzerindeki sözleşme:",
+    "viewOnStellarExpert": "InvoFi sözleşmesini Stellar Expert’te gör",
+    "openSource": "Açık kaynak"
+  },
+  "DashboardLayout": {
+    "title": "Panel",
+    "description": "Kayıtlı faturalarını yönet, finansman tekliflerini izle ve geri ödeme durumunu takip et."
+  },
+  "Settings": {
+    "title": "Ayarlar",
+    "description": "Hesap tercihlerini yönet",
+    "profile": {
+      "label": "Profil",
+      "hint": "Görünen adını düzenle ve hesap ayrıntılarını gör"
+    },
+    "language": {
+      "title": "Dil",
+      "label": "Görüntüleme dili",
+      "hint": "Arayüz dilini, sayı ve tarih biçimlerini ve metin yönünü değiştirir."
+    },
+    "network": {
+      "title": "Ağ ve sözleşmeler",
+      "label": "Stellar ağı",
+      "connected": "Bağlı"
+    },
+    "account": {
+      "title": "Hesap",
+      "signOut": "Çıkış yap",
+      "signingOut": "Çıkış yapılıyor…",
+      "signedOut": "Başarıyla çıkış yapıldı"
+    },
+    "contracts": {
+      "title": "Sözleşmeler",
+      "rpcUrl": "RPC adresi",
+      "horizonUrl": "Horizon adresi",
+      "registry": "Kayıt",
+      "financing": "Finansman",
+      "repayment": "Geri ödeme",
+      "notConfigured": "yapılandırılmadı",
+      "copy": "Kopyala",
+      "copied": "Kopyalandı",
+      "explorer": "Gezgin",
+      "copyAria": "{label} sözleşme kimliğini kopyala",
+      "explorerAria": "{label} sözleşmesini Stellar Expert’te aç",
+      "copyFailed": "Kopyalanamadı",
+      "copyFailedHint": "Panoya erişilemedi."
+    }
+  },
+  "Errors": {
+    "forbidden": {
+      "title": "Erişim reddedildi",
+      "description": "Bu kaynağa erişim izniniz yok.",
+      "backHome": "Ana sayfaya dön"
+    },
+    "notFound": {
+      "title": "Sayfa bulunamadı",
+      "description": "Aradığınız sayfa yok ya da taşınmış.",
+      "backHome": "Ana sayfaya dön"
+    },
+    "unexpected": {
+      "title": "Bir şeyler ters gitti",
+      "description": "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+      "retry": "Tekrar dene",
+      "reload": "Yeniden dene"
+    }
+  },
+  "Status": {
+    "Pending": "Beklemede",
+    "Financed": "Finanse edildi",
+    "Repaid": "Geri ödendi",
+    "Overdue": "Gecikmiş",
+    "Cancelled": "İptal edildi",
+    "Accepted": "Kabul edildi",
+    "Rejected": "Reddedildi",
+    "Defaulted": "Temerrüde düştü"
+  },
+  "Common": {
+    "confirm": "Onayla",
+    "cancel": "Vazgeç",
+    "close": "Kapat",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor…",
+    "loading": "Yükleniyor…",
+    "retry": "Tekrar dene",
+    "back": "Geri",
+    "next": "İleri",
+    "submit": "Gönder",
+    "submitting": "Gönderiliyor…",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "export": "Dışa aktar",
+    "search": "Ara",
+    "filter": "Filtrele",
+    "all": "Tümü",
+    "none": "Hiçbiri",
+    "optional": "İsteğe bağlı",
+    "hold": {
+      "start": "Onaylamak için basılı tutun",
+      "almost": "Onaylamak için biraz daha tutun",
+      "cancelled": "Onay iptal edildi"
+    }
+  },
+  "Dashboard": {
+    "titleBusiness": "Fatura paneli",
+    "titleLender": "Finansör portföyü",
+    "welcomeBack": "Tekrar hoş geldiniz",
+    "newInvoice": "Yeni fatura",
+    "yourInvoices": "Faturalarınız",
+    "yourInvestments": "Yatırımlarınız",
+    "browseMarketplace": "Pazarı incele",
+    "exportCsv": "CSV dışa aktar",
+    "role": {
+      "business": "İşletme",
+      "lender": "Finansör",
+      "admin": "Yönetici"
+    },
+    "wallet": {
+      "title": "Stellar cüzdanı",
+      "connected": "Cüzdan bağlı. İşlemleri imzalayabilirsiniz.",
+      "disconnected": "Sözleşmelerle etkileşim için Stellar cüzdanınızı bağlayın."
+    },
+    "stats": {
+      "totalInvoices": "Toplam fatura",
+      "pending": "Beklemede",
+      "financed": "Finanse edildi",
+      "repaid": "Geri ödendi",
+      "activeInvestments": "Aktif yatırımlar",
+      "pendingOffers": "Bekleyen teklifler",
+      "totalYield": "Toplam getiri"
+    },
+    "view": {
+      "grid": "Izgara görünümü",
+      "table": "Tablo görünümü"
+    },
+    "empty": {
+      "invoices": "Henüz fatura yok.",
+      "createFirst": "İlk faturanızı oluşturun",
+      "investments": "Henüz aktif yatırım yok."
+    },
+    "cancel": {
+      "action": "Faturayı iptal et",
+      "title": "Fatura iptal edilsin mi?",
+      "description": "{id} numaralı fatura iptal edildi olarak işaretlenecek. Bu işlem geri alınamaz.",
+      "confirm": "Evet, iptal et"
+    }
+  },
+  "Marketplace": {
+    "title": "Fatura pazarı",
+    "description": "Finansmana açık faturaları inceleyin ve getiri için teklif verin.",
+    "searchPlaceholder": "Fatura kimliği, borçlu adı veya düzenleyene göre ara…",
+    "view": {
+      "suggested": "Bana önerilenler",
+      "browseAll": "Tümünü gör"
+    },
+    "filters": {
+      "allStatuses": "Tüm durumlar",
+      "allCurrencies": "Tüm para birimleri"
+    },
+    "sort": {
+      "label": "Faturaları sırala",
+      "newest": "Önce en yeni",
+      "oldest": "Önce en eski",
+      "amount_desc": "Tutar: yüksekten düşüğe",
+      "amount_asc": "Tutar: düşükten yükseğe",
+      "due_soonest": "Vade: en yakın"
+    },
+    "empty": {
+      "title": "Filtrelerinizle eşleşen fatura yok",
+      "hint": "Aramayı ya da filtreleri değiştirmeyi deneyin."
+    },
+    "clearSearch": "Aramayı temizle"
+  },
+  "Portfolio": {
+    "title": "Portföyünüz",
+    "description": "Finansman tekliflerinizi ve getirilerinizi izleyin — güncellemeler canlı akar",
+    "refresh": "Yenile",
+    "exportCsv": "CSV dışa aktar",
+    "stats": {
+      "active": "Aktif yatırımlar",
+      "pending": "Bekleyen teklifler",
+      "completed": "Tamamlanan",
+      "value": "Portföy değeri (USD)",
+      "priceNote": "XLM/USD {price} {source}{asOf} — yaklaşık",
+      "priceAsOf": " · {time} itibarıyla",
+      "priceSource": {
+        "coingecko": "(CoinGecko)",
+        "env": "(ortam geçersiz kılma)",
+        "default": "(varsayılan)"
+      }
+    },
+    "yield": {
+      "estimated": "Bugüne kadarki tahmini getiri: {amount}",
+      "accruing": "{count, plural, =0 {aktif pozisyon yok} other {# aktif pozisyon}} üzerinde gerçek zamanlı birikiyor",
+      "realized": "Gerçekleşen getiri: {amount}",
+      "acrossRepaid": "{count, plural, other {# geri ödenmiş teklif}} üzerinde"
+    },
+    "empty": {
+      "title": "Henüz finansman teklifi yok.",
+      "browse": "Pazarı incele"
+    },
+    "position": {
+      "days": "{count, plural, other {# gün}}",
+      "funded": "{date} tarihinde finanse edildi",
+      "apy": "Yıllık getiri",
+      "earnedToDate": "Bugüne kadar kazanılan",
+      "repayment": "Geri ödeme",
+      "percentRepaid": "{percent} geri ödendi",
+      "progressLabel": "Toplam borcun {percent} kadarı geri ödendi",
+      "repaidRemaining": "{repaid} ödendi · {remaining} kaldı",
+      "updated": "güncellendi {when}"
+    },
+    "transfer": {
+      "title": "Pozisyonu aktar",
+      "description": "Pozisyon jetonları finanse edilmiş faturalar üzerindeki hakkınızı temsil eder (1 jeton = anaparanın 1 temel birimi). Pozisyonu aktarmak için başka bir Stellar cüzdanına gönderin.",
+      "secondaryBoard": "Alıcı mı arıyorsunuz? <link>Pozisyonu ikincil panoda listeleyin</link> — mutabakat yine burada, bu aktarımla yapılır.",
+      "prefilled": "Tutar ilanınızdan dolduruldu ({amount} jeton). Mutabakat için alıcının adresini girin.",
+      "refreshBalance": "Bakiyeyi yenile",
+      "connectWallet": "Pozisyonları görmek ve aktarmak için bir cüzdan bağlayın.",
+      "notConfigured": "Pozisyon jetonları bu dağıtımda henüz yapılandırılmadı.",
+      "needsTrustline": "Pozisyon jetonları birer Stellar varlığıdır — bunları alıp aktarabilmek için bir kez POS güven hattı ekleyin.",
+      "addTrustline": "POS güven hattı ekle",
+      "adding": "Ekleniyor…",
+      "trustlineAdded": "Güven hattı eklendi",
+      "trustlineAddedHint": "Cüzdanınız artık POS pozisyon jetonu tutabilir.",
+      "trustlineFailed": "Güven hattı başarısız",
+      "trustlineFailedHint": "Güven hattı kurulamadı",
+      "recipientLabel": "Alıcı adresi",
+      "amountLabel": "Tutar",
+      "available": "(kullanılabilir: {balance})",
+      "transfer": "Aktar",
+      "transferring": "Aktarılıyor…",
+      "invalidAddress": "Geçersiz adres",
+      "invalidAddressHint": "Geçerli bir Stellar adresi girin (G…).",
+      "invalidAmount": "Geçersiz tutar",
+      "invalidAmountHint": "En fazla {decimals} ondalık basamaklı bir tutar girin.",
+      "insufficient": "Yetersiz bakiye",
+      "insufficientHint": "Bu aktarım için yeterli pozisyon jetonunuz yok.",
+      "recipientTrustline": "Alıcının güven hattına ihtiyacı var",
+      "recipientTrustlineHint": "Alıcının cüzdanında henüz POS güven hattı yok. Aktarmadan önce bir tane eklemesini isteyin (herhangi bir cüzdanda ya da bu uygulamada).",
+      "transferred": "Pozisyon aktarıldı",
+      "transferredHint": "{recipient} adresine {amount} pozisyon jetonu gönderildi.",
+      "transferFailed": "Aktarım başarısız",
+      "transferFailedHint": "İşlem başarısız oldu"
+    }
+  },
+  "Invoice": {
+    "title": "Fatura",
+    "backToDashboard": "Panele dön",
+    "print": "Yazdır / PDF olarak dışa aktar",
+    "notFound": "Fatura bulunamadı",
+    "fields": {
+      "amount": "Tutar",
+      "currency": "Para birimi",
+      "dueDate": "Vade",
+      "originator": "Düzenleyen"
+    },
+    "counterparty": {
+      "lender": "Finansör",
+      "business": "İşletme"
+    },
+    "cancel": {
+      "action": "İptal",
+      "title": "Bu fatura iptal edilsin mi?",
+      "description": "Fatura zincir üzerinde iptal edilecek ve artık finansman teklifi alamayacak. Bu işlem geri alınamaz.",
+      "confirm": "Faturayı iptal et",
+      "done": "Fatura iptal edildi",
+      "doneHint": "Fatura artık zincir üzerinde iptal edilmiş durumda.",
+      "failed": "Fatura iptal edilemedi",
+      "undo": "Geri al",
+      "undoAlt": "İptali geri al",
+      "restored": "Fatura geri yüklendi",
+      "restoredHint": "Aynı koşullarla yeni bir fatura oluşturuldu.",
+      "restoreFailed": "Fatura geri yüklenemedi",
+      "previewTitle": "Önizleme: faturayı iptal et",
+      "previewDescription": "Bu faturayı zincir üzerinde iptal etmeden önce beklenen etkileri gözden geçirin."
+    }
+  }
+}

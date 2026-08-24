@@ -729,26 +729,26 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/Damieee">
-                    <img src="https://avatars.githubusercontent.com/u/115638760?v=4" width="100;" alt="Damieee"/>
-                    <br />
-                    <sub><b>Oluwadamilare E</b></sub>
-                </a>
-            </td>
-            <td align="center">
                 <a href="https://github.com/Babigdk">
                     <img src="https://avatars.githubusercontent.com/u/29020286?v=4" width="100;" alt="Babigdk"/>
                     <br />
                     <sub><b>Abdulrazaq Isa Babi</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/waterWang">
                     <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
                     <br />
                     <sub><b>water</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/Damieee">
+                    <img src="https://avatars.githubusercontent.com/u/115638760?v=4" width="100;" alt="Damieee"/>
+                    <br />
+                    <sub><b>Oluwadamilare E</b></sub>
                 </a>
             </td>
             <td align="center">

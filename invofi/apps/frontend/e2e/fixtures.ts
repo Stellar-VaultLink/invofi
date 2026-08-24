@@ -318,7 +318,7 @@ function smokeTxHash(index: number): string {
  * (verified against testnet): a map of symbol-keyed fields with amount=i128,
  * due_date=u64, status=u32.
  */
-function invoiceScVal(invoice: OnChainInvoice) {
+export function invoiceScVal(invoice: OnChainInvoice) {
   return nativeToScVal(
     {
       id: invoice.id,
@@ -428,4 +428,67 @@ export async function authenticate(
     await mockInvoiceRead(page, options.invoice);
     await mockInvoiceEvents(page);
   }
+}
+
+/**
+ * Stubs the Freighter browser extension so wallet-gated UI (anything behind
+ * `useWallet().publicKey`) is reachable in tests.
+ *
+ * `@stellar/freighter-api` v6 talks to the extension's content script over
+ * `window.postMessage`: it posts `{ source: 'FREIGHTER_EXTERNAL_MSG_REQUEST',
+ * messageId, type }` and resolves on a reply whose `source` is
+ * `FREIGHTER_EXTERNAL_MSG_RESPONSE` and whose `messagedId` (sic — the
+ * upstream field name is misspelled) echoes the request id. This init script
+ * implements exactly that handshake, so the real WalletProvider →
+ * StellarWalletsKit → freighter-api path runs unmodified.
+ */
+export async function mockFreighter(
+  page: Page,
+  address: string = ORIGINATOR,
+): Promise<void> {
+  await page.addInitScript((addr: string) => {
+    const PASSPHRASE = 'Test SDF Network ; September 2015';
+    window.addEventListener('message', (event: MessageEvent) => {
+      const data = event.data as { source?: string; messageId?: number; type?: string } | null;
+      if (event.source !== window) return;
+      if (!data || data.source !== 'FREIGHTER_EXTERNAL_MSG_REQUEST') return;
+
+      const reply = (payload: Record<string, unknown>) =>
+        window.postMessage(
+          {
+            source: 'FREIGHTER_EXTERNAL_MSG_RESPONSE',
+            messagedId: data.messageId,
+            ...payload,
+          },
+          window.location.origin,
+        );
+
+      switch (data.type) {
+        case 'REQUEST_CONNECTION_STATUS':
+          return reply({ isConnected: true });
+        case 'REQUEST_ALLOWED_STATUS':
+        case 'SET_ALLOWED_STATUS':
+          return reply({ isAllowed: true });
+        case 'REQUEST_ACCESS':
+        case 'REQUEST_PUBLIC_KEY':
+          return reply({ publicKey: addr, address: addr });
+        case 'REQUEST_USER_INFO':
+          return reply({ userInfo: { publicKey: addr } });
+        case 'REQUEST_NETWORK':
+          return reply({ network: 'TESTNET', networkPassphrase: PASSPHRASE });
+        case 'REQUEST_NETWORK_DETAILS':
+          return reply({
+            networkDetails: {
+              network: 'TESTNET',
+              networkName: 'TESTNET',
+              networkUrl: 'https://horizon-testnet.stellar.org',
+              networkPassphrase: PASSPHRASE,
+              sorobanRpcUrl: 'https://soroban-testnet.stellar.org',
+            },
+          });
+        default:
+          return;
+      }
+    });
+  }, address);
 }

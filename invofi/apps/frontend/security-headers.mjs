@@ -80,10 +80,26 @@ export function buildConnectSrc() {
   return [...origins].filter(Boolean).join(' ');
 }
 
-export function buildContentSecurityPolicy() {
+/**
+ * `next dev` compiles modules with an eval-based devtool, so the dev server's
+ * own bootstrap is blocked outright by a policy without 'unsafe-eval' — the
+ * app renders a bare shell and every client component dies. Production builds
+ * contain no eval, so the allowance is scoped to development only and the
+ * shipped policy is unchanged.
+ *
+ * @param {{ allowEval?: boolean }} [options]
+ */
+export function buildContentSecurityPolicy({
+  allowEval = process.env.NODE_ENV === 'development',
+} = {}) {
+  const scriptSrc = [
+    "script-src 'self' 'unsafe-inline'",
+    WALLET_EXTENSION_SOURCES.join(' '),
+    ...(allowEval ? ["'unsafe-eval'"] : []),
+  ].join(' ');
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' ${WALLET_EXTENSION_SOURCES.join(' ')}`,
+    scriptSrc,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
@@ -97,17 +113,18 @@ export function buildContentSecurityPolicy() {
 }
 
 /**
- * @param {{ includeHsts?: boolean }} [options]
+ * @param {{ includeHsts?: boolean, allowEval?: boolean }} [options]
  * @returns {{ key: string, value: string }[]}
  */
 export function buildSecurityHeaders({
   includeHsts = process.env.NODE_ENV === 'production',
+  allowEval = process.env.NODE_ENV === 'development',
 } = {}) {
   const headers = [
     { key: 'X-Content-Type-Options', value: 'nosniff' },
     { key: 'X-Frame-Options', value: 'DENY' },
     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-    { key: 'Content-Security-Policy', value: buildContentSecurityPolicy() },
+    { key: 'Content-Security-Policy', value: buildContentSecurityPolicy({ allowEval }) },
   ];
   if (includeHsts) {
     headers.push({

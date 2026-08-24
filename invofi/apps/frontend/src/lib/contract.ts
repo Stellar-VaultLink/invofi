@@ -4,6 +4,7 @@
 // RPC/Horizon endpoints) and to the connected wallet's signer, then re-exports
 // the typed methods so components keep importing from '@/lib/contract'.
 import { Contract, Networks, createInvofiClient, createMockClient } from '@invofi/sdk';
+import type { Invoice } from '@invofi/sdk';
 import { isMockMode } from './mock-mode';
 import { signTransactionWithActiveWallet } from './walletkit';
 import { POSITION_TOKEN_ASSET } from './constants';
@@ -54,11 +55,34 @@ const client = isMockMode()
       signTransaction: signTransactionWithActiveWallet,
     });
 
-export const {
+// ── On-chain status normalisation (Issue #216) ───────────────────────────────
+// The registry contract serialises `InvoiceStatus` as its u32 discriminant, so
+// a raw read yields `status: 0`. Every consumer in this app — the status badge,
+// `INVOICE_STATUS_COLORS`, and the originator-only Cancel action — compares
+// against the string union in `@invofi/sdk`. Without this mapping the badge
+// renders a bare "0" and the Cancel action is unreachable, which would leave
+// the cancel simulation path dead. Normalise once, here at the binding point.
+const INVOICE_STATUS_BY_DISCRIMINANT: readonly Invoice['status'][] = [
+  'Pending',
+  'Financed',
+  'Repaid',
+  'Overdue',
+  'Cancelled',
+];
+
+/** Maps a raw contract read onto the SDK's string-union status. */
+export function normalizeInvoice(invoice: Invoice): Invoice {
+  const raw = invoice.status as unknown;
+  if (typeof raw !== 'number') return invoice;
+  const status = INVOICE_STATUS_BY_DISCRIMINANT[raw];
+  return status ? { ...invoice, status } : invoice;
+}
+
+const {
   // Registry
-  registerInvoice,
-  getInvoice,
-  cancelInvoice,
+  registerInvoice: rawRegisterInvoice,
+  getInvoice: rawGetInvoice,
+  cancelInvoice: rawCancelInvoice,
   // Financing
   createOffer,
   getOffer,
@@ -76,6 +100,29 @@ export const {
   hasPositionTrustline,
   addPositionTrustline,
 } = client;
+
+export const registerInvoice: typeof rawRegisterInvoice = (...args) =>
+  rawRegisterInvoice(...args).then(normalizeInvoice);
+export const getInvoice: typeof rawGetInvoice = (...args) =>
+  rawGetInvoice(...args).then(normalizeInvoice);
+export const cancelInvoice: typeof rawCancelInvoice = (...args) =>
+  rawCancelInvoice(...args).then(normalizeInvoice);
+
+export {
+  createOffer,
+  getOffer,
+  acceptOffer,
+  rejectOffer,
+  repayInvoice,
+  markOverdue,
+  reclaimInvoice,
+  getPositionTokenId,
+  getTokenBalance,
+  getTokenDecimals,
+  transferPositionToken,
+  hasPositionTrustline,
+  addPositionTrustline,
+};
 
 export { client };
 

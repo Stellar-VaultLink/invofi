@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,19 +11,87 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { SimulateConfirm } from '@/components/common/SimulateConfirm';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { createOffer, acceptOffer, rejectOffer, repayInvoice, markOverdue, reclaimInvoice } from '@/lib/contract';
+import {
+  simulateContractCall,
+  encodeSymbol,
+  encodeAddress,
+  encodeI128,
+} from '@/lib/simulate';
 import { supabase } from '@/lib/supabase';
 import { formatAmount } from '@/lib/formatters';
 import { formatAmount as formatUnits, interestRateLabel, durationLabel, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { toCsv, downloadCsv } from '@/lib/csv';
-import { GRACE_PERIOD_SECS, STROOPS_PER_XLM } from '@/lib/constants';
+import {
+  FINANCING_CONTRACT_ID as FINANCING_ID,
+  REPAYMENT_CONTRACT_ID as REPAYMENT_ID,
+  GRACE_PERIOD_SECS,
+  STROOPS_PER_XLM,
+} from '@/lib/constants';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { toErrorMessage } from '@/lib/errors';
 import { OfferTermsPreview } from './OfferTermsPreview';
 import type { Currency, FinancingOffer, Invoice } from '@/types';
+import type { SimulationResult } from '@/lib/simulate';
+
+/** The state-changing actions a lender/originator can take on an offer. */
+type SimKind = 'accept' | 'reject' | 'repay' | 'reclaim';
+
+interface SimTarget {
+  offer: FinancingOffer;
+  kind: SimKind;
+  /** Stroops, for `repay` only. */
+  amount?: bigint;
+}
+
+/** Dialog copy per action — the only thing that differs between previews. */
+const SIM_ACTIONS: Record<SimKind, {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  variant?: 'default' | 'destructive';
+  /** Irreversible actions require a press-and-hold, not a single click. */
+  holdToConfirm?: boolean;
+}> = {
+  accept: {
+    title: 'Preview: Accept Offer',
+    description: 'Review the expected effects before accepting this financing offer.',
+    confirmLabel: 'Accept Offer',
+  },
+  reject: {
+    title: 'Preview: Reject Offer',
+    description: 'Review the expected effects before rejecting this offer. The lender will be notified and this cannot be undone.',
+    confirmLabel: 'Reject Offer',
+  },
+  repay: {
+    title: 'Preview: Repay Invoice',
+    description: 'Review the expected token transfer before submitting repayment.',
+    confirmLabel: 'Submit Repayment',
+  },
+  reclaim: {
+    title: 'Preview: Reclaim Offer',
+    description: 'Review the expected effects before marking this offer Defaulted on-chain. Principal was already paid at acceptance — this does not return funds, and cannot be undone.',
+    confirmLabel: 'Reclaim',
+    variant: 'destructive',
+    holdToConfirm: true,
+  },
+};
+
+/** A blocked result — the dialog renders it as a failure and disables submit. */
+function emptySimulation(error: string): SimulationResult {
+  return {
+    success: false,
+    error,
+    tokenMovements: [],
+    stateChanges: [],
+    events: [],
+    resourceFee: '0',
+    latestLedger: 0,
+  };
+}
 
 const offerSchema = z.object({
   amount: z.string().regex(/^\d+(\.\d{1,7})?$/, 'Enter a valid amount'),
@@ -50,10 +118,10 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   const [actionId, setActionId] = useState<string | null>(null);
   /** IDs of offers currently being submitted/accepted on-chain (optimistic UI). */
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
-  const [confirmTarget, setConfirmTarget] = useState<
-    { offer: FinancingOffer; kind: 'reject' | 'reclaim' } | null
-  >(null);
   const [repayAmounts, setRepayAmounts] = useState<Record<string, string>>({});
+
+  // ── Simulation state: non-null while a preview dialog is open ───────────
+  const [simTarget, setSimTarget] = useState<SimTarget | null>(null);
 
   const { register, watch, handleSubmit, formState: { errors }, reset } = useForm<OfferFormValues>({
     resolver: zodResolver(offerSchema),
@@ -142,6 +210,38 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       setLoading(false);
     }
   };
+
+  // One simulation entry point for every action: which contract and method a
+  // preview targets is derived from `simTarget`, so adding an action means
+  // adding a case here and a row in SIM_ACTIONS — not a fifth near-identical
+  // callback/dialog pair.
+  const simulateAction = useCallback(async (): Promise<SimulationResult> => {
+    if (!simTarget || !publicKey) return emptySimulation('No action selected');
+    const { offer, kind, amount } = simTarget;
+    const source = encodeAddress(publicKey);
+
+    switch (kind) {
+      case 'accept':
+        return simulateContractCall(FINANCING_ID, 'accept_offer', [encodeSymbol(offer.id), source], publicKey);
+      case 'reject':
+        return simulateContractCall(FINANCING_ID, 'reject_offer', [encodeSymbol(offer.id), source], publicKey);
+      case 'repay':
+        if (!amount) return emptySimulation('No repayment amount entered');
+        return simulateContractCall(
+          REPAYMENT_ID,
+          'repay_invoice',
+          [encodeSymbol(invoiceId), encodeSymbol(offer.id), source, encodeI128(amount)],
+          publicKey,
+        );
+      case 'reclaim':
+        return simulateContractCall(
+          REPAYMENT_ID,
+          'reclaim_invoice',
+          [encodeSymbol(invoiceId), encodeSymbol(offer.id), source],
+          publicKey,
+        );
+    }
+  }, [simTarget, publicKey, invoiceId]);
 
   const handleAccept = async (offer: FinancingOffer) => {
     if (!publicKey) return;
@@ -282,6 +382,21 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   };
 
   const isOriginator = publicKey === invoice.originator;
+  /** Submits the previewed action once the user confirms a clean simulation. */
+  const runSimulatedAction = () => {
+    if (!simTarget) return;
+    const { offer, kind } = simTarget;
+    setSimTarget(null);
+    if (kind === 'accept') return handleAccept(offer);
+    if (kind === 'reject') return handleReject(offer);
+    if (kind === 'repay') return handleRepay(offer);
+    return handleReclaim(offer);
+  };
+
+  // Copy for the open preview; `accept` is an inert placeholder while closed,
+  // since Radix unmounts the dialog body when `open` is false.
+  const simAction = SIM_ACTIONS[simTarget?.kind ?? 'accept'];
+
   const canMakeOffer = invoice.status === 'Pending' && publicKey && !isOriginator;
   const nowSecs = Math.floor(Date.now() / 1000);
   const canMarkOverdue = invoice.status === 'Financed' && publicKey && nowSecs > invoice.due_date;
@@ -439,7 +554,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                 <>
                   <Button
                     size="sm"
-                    onClick={() => handleAccept(offer)}
+                    onClick={() => setSimTarget({ offer, kind: 'accept' })}
                     disabled={actionId === offer.id}
                   >
                     {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
@@ -448,7 +563,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setConfirmTarget({ offer, kind: 'reject' })}
+                    onClick={() => setSimTarget({ offer, kind: 'reject' })}
                     disabled={actionId === offer.id}
                   >
                     Reject
@@ -466,7 +581,19 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                   />
                   <Button
                     size="sm"
-                    onClick={() => handleRepay(offer)}
+                    onClick={() => {
+                      const raw = (repayAmounts[offer.id] ?? '').trim();
+                      if (!/^\d+(\.\d{1,7})?$/.test(raw)) {
+                        toast({ title: 'Enter a valid amount', variant: 'destructive' });
+                        return;
+                      }
+                      const amountStroops = amountToStroops(raw);
+                      if (amountStroops <= 0n) {
+                        toast({ title: 'Amount must be greater than zero', variant: 'destructive' });
+                        return;
+                      }
+                      setSimTarget({ offer, kind: 'repay', amount: amountStroops });
+                    }}
                     disabled={actionId === offer.id}
                   >
                     {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
@@ -474,16 +601,15 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                   </Button>
                 </div>
               )}
-              {canReclaim(offer) && (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => setConfirmTarget({ offer, kind: 'reclaim' })}
-                  disabled={actionId === offer.id}
-                >
-                  {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                  Reclaim
-                </Button>
+              {canReclaim(offer) && (                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setSimTarget({ offer, kind: 'reclaim' })}
+                    disabled={actionId === offer.id}
+                  >
+                    {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                    Reclaim
+                  </Button>
               )}
             </div>
           </div>
@@ -491,25 +617,17 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         })}
       </CardContent>
 
-      <ConfirmDialog
-        open={confirmTarget !== null}
-        onOpenChange={open => { if (!open) setConfirmTarget(null); }}
-        title={confirmTarget?.kind === 'reclaim' ? 'Reclaim this offer?' : 'Reject this offer?'}
-        description={
-          confirmTarget?.kind === 'reclaim'
-            ? 'This marks the offer Defaulted on-chain. Principal was already paid to the business at acceptance — this does not return funds, and cannot be undone.'
-            : 'The lender will be notified their offer was rejected. This cannot be undone.'
-        }
-        confirmLabel={confirmTarget?.kind === 'reclaim' ? 'Reclaim' : 'Reject'}
-        variant={confirmTarget?.kind === 'reclaim' ? 'destructive' : 'default'}
-        holdToConfirm={confirmTarget?.kind === 'reclaim'}
-        onConfirm={() => {
-          if (!confirmTarget) return;
-          const { offer, kind } = confirmTarget;
-          setConfirmTarget(null);
-          if (kind === 'reclaim') handleReclaim(offer);
-          else handleReject(offer);
-        }}
+      {/* ── Simulation gate: every state-changing action passes through here ── */}
+      <SimulateConfirm
+        open={simTarget !== null}
+        onOpenChange={open => { if (!open) setSimTarget(null); }}
+        title={simAction.title}
+        description={simAction.description}
+        onSimulate={simulateAction}
+        onConfirm={runSimulatedAction}
+        confirmLabel={simAction.confirmLabel}
+        variant={simAction.variant}
+        holdToConfirm={simAction.holdToConfirm}
       />
     </Card>
   );

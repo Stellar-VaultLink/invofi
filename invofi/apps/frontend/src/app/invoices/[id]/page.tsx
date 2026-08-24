@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { getInvoice, cancelInvoice } from '@/lib/contract';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import type { Invoice, FinancingOffer } from '@/types';
 
@@ -45,7 +46,7 @@ export default function InvoiceDetailPage() {
     } catch (err: unknown) {
       toast({
         title: 'Failed to cancel invoice',
-        description: err instanceof Error ? err.message : 'Error',
+        description: toErrorMessage(err, 'Error'),
         variant: 'destructive',
       });
     } finally {

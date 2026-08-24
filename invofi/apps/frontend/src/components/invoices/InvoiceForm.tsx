@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { accountExists, fundAccountViaFriendbot } from '@/lib/horizon';
 import { amountToStroops, generateInvoiceId } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import { HighValueBanner } from '@/components/multisig/HighValueBanner';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -140,7 +141,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
     } catch (err: unknown) {
       toast({
         title: 'Funding failed',
-        description: err instanceof Error ? err.message : 'Could not fund account',
+        description: toErrorMessage(err, 'Could not fund account'),
         variant: 'destructive',
       });
     } finally {
@@ -213,7 +214,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
     } catch (err: unknown) {
       toast({
         title: 'Failed to register invoice',
-        description: err instanceof Error ? err.message : 'Transaction failed',
+        description: toErrorMessage(err, 'Transaction failed'),
         variant: 'destructive',
       });
     } finally {

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   Account,
-  Contract,
+  Address,
   SorobanDataBuilder,
   nativeToScVal,
   rpc as SorobanRpc,
@@ -56,14 +56,14 @@ function transferEventXdr(amount: bigint): string {
   );
   const event = new xdr.ContractEvent({
     ext: new xdr.ExtensionPoint(0),
-    contractId: new Contract(CONTRACT).address().toBuffer() as unknown as xdr.Hash,
+    contractId: Address.fromString(CONTRACT).toBuffer() as unknown as xdr.Hash,
     type: xdr.ContractEventType.contract(),
     body,
   });
   return new xdr.DiagnosticEvent({ inSuccessfulContractCall: true, event }).toXDR('base64');
 }
 
-const CONTRACT_ADDRESS = new Contract(CONTRACT).address().toScAddress();
+const CONTRACT_ADDRESS = Address.fromString(CONTRACT).toScAddress();
 const ENTRY_KEY = nativeToScVal(['Invoice', 'inv_state'], { type: ['symbol', 'symbol'] });
 
 /** The ledger key an invoice status write would touch. */
@@ -146,6 +146,28 @@ describe('simulateContractCall', () => {
     expect(result.events[0]).toContain('transfer');
   });
 
+  it('decodes i128 amounts beyond 2^53 and below zero', async () => {
+    // 10 billion XLM in stroops — well past Number.MAX_SAFE_INTEGER, where a
+    // Number()-based decode silently rounds.
+    simulateTransaction.mockResolvedValue(successResponse(100_000_000_000_000_000n));
+    const big = await simulateContractCall(
+      CONTRACT,
+      'repay_invoice',
+      [encodeSymbol('inv_big'), encodeAddress(SOURCE)],
+      SOURCE,
+    );
+    expect(big.tokenMovements[0].amount).toBe('10000000000');
+
+    simulateTransaction.mockResolvedValue(successResponse(-25_000_000n));
+    const negative = await simulateContractCall(
+      CONTRACT,
+      'repay_invoice',
+      [encodeSymbol('inv_negative'), encodeAddress(SOURCE)],
+      SOURCE,
+    );
+    expect(negative.tokenMovements[0].amount).toBe('-2.5');
+  });
+
   it('describes ledger state changes in readable terms', async () => {
     simulateTransaction.mockResolvedValue(successResponse(25_000_000n, true));
 
@@ -198,6 +220,18 @@ describe('simulateContractCall', () => {
       [encodeSymbol('inv_cache_other'), encodeAddress(SOURCE)],
       SOURCE,
     );
+    expect(simulateTransaction).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not share a cache entry across source accounts', async () => {
+    simulateTransaction.mockResolvedValue(successResponse());
+    const args = [encodeSymbol('inv_source'), encodeAddress(SOURCE)];
+
+    await simulateContractCall(CONTRACT, 'cancel_invoice', args, SOURCE);
+    // Same call, different signer: auth can differ, so the preview must be
+    // re-simulated rather than served from the first wallet's entry.
+    await simulateContractCall(CONTRACT, 'cancel_invoice', args, RECIPIENT);
+
     expect(simulateTransaction).toHaveBeenCalledTimes(2);
   });
 

@@ -62,12 +62,17 @@ const client = isMockMode()
 // against the string union in `@invofi/sdk`. Without this mapping the badge
 // renders a bare "0" and the Cancel action is unreachable, which would leave
 // the cancel simulation path dead. Normalise once, here at the binding point.
+// Index === the contract's u32 discriminant. Must stay in lockstep with
+// `InvoiceStatus` in @invofi/sdk and `STATUS` in invofi/scripts/keeper.ts —
+// a short array silently leaves the tail statuses rendering as raw numbers.
 const INVOICE_STATUS_BY_DISCRIMINANT: readonly Invoice['status'][] = [
   'Pending',
   'Financed',
   'Repaid',
   'Overdue',
   'Cancelled',
+  'Disputed',
+  'Defaulted',
 ];
 
 /** Maps a raw contract read onto the SDK's string-union status. */

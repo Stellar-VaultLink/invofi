@@ -294,9 +294,11 @@ export default function InvoiceDetailPage() {
           variant="destructive"
           confirmLabel="Cancel Invoice"
           holdToConfirm
+          // Returned so `SimulateConfirm` can await the submission and keep
+          // its "Submitting…" state up while the wallet signs.
           onConfirm={() => {
             setSimCancel(false);
-            handleCancel();
+            return handleCancel();
           }}
         />
       </div>

@@ -10,7 +10,7 @@
 
 import {
   Address,
-  Contract,
+  Operation,
   rpc as SorobanRpc,
   TransactionBuilder,
   nativeToScVal,
@@ -75,8 +75,19 @@ function encodeU64(value: bigint): xdr.ScVal {
   return nativeToScVal(value, { type: 'u64' });
 }
 
-function cacheKey(contractId: string, method: string, args: xdr.ScVal[]): string {
-  return `${contractId}:${method}:${args.map(a => a.toXDR('base64')).join(':')}`;
+/**
+ * The full identity of a simulation. `sourceAddress` is part of it: the same
+ * call simulated from a different wallet can succeed or fail on auth, so
+ * omitting it would let a wallet switch inside the 5 s window show the
+ * previous account's preview.
+ */
+function cacheKey(
+  contractId: string,
+  method: string,
+  args: xdr.ScVal[],
+  sourceAddress: string,
+): string {
+  return `${contractId}:${method}:${sourceAddress}:${args.map(a => a.toXDR('base64')).join(':')}`;
 }
 
 // ── Simulation cache ────────────────────────────────────────────────────────
@@ -111,7 +122,7 @@ export async function simulateContractCall(
   args: xdr.ScVal[],
   sourceAddress: string,
 ): Promise<SimulationResult> {
-  const key = cacheKey(contractId, method, args);
+  const key = cacheKey(contractId, method, args, sourceAddress);
   const cached = getCached(key);
   if (cached) return cached;
 
@@ -138,12 +149,17 @@ export async function simulateContractCall(
     }
   }
 
-  const contract = new Contract(contractId);
+  // Builds the same host-function operation the SDK's client would, without
+  // constructing a contract handle here — scripts/check-sdk-parity.js reserves
+  // direct contract construction for @invofi/sdk. Simulation is a read-only
+  // preview the SDK does not expose, so it composes the operation itself.
   const tx = new TransactionBuilder(account, {
     fee: BASE_FEE,
     networkPassphrase: NETWORK_PASSPHRASE,
   })
-    .addOperation(contract.call(method, ...args))
+    .addOperation(
+      Operation.invokeContractFunction({ contract: contractId, function: method, args }),
+    )
     .setTimeout(30)
     .build();
 
@@ -231,17 +247,10 @@ function extractTokenMovements(
           const value = v0.data();
           let amount = '0';
           if (value?.switch().name === 'scvI128') {
-            const i128Val = value.i128();
-            const hi = Number(i128Val.hi());
-            const lo = Number(i128Val.lo());
-            const bigVal = (BigInt(hi) << 64n) | BigInt(lo);
-            // Convert from stroops to human units (7 decimals)
-            const divisor = 10_000_000n;
-            const whole = bigVal / divisor;
-            const frac = bigVal % divisor;
-            amount = frac > 0n
-              ? `${whole}.${frac.toString().padStart(7, '0').replace(/0+$/, '')}`
-              : whole.toString();
+            // `scValToNative` reassembles the two's-complement i128 as a
+            // bigint. Reading `hi`/`lo` through `Number()` instead would lose
+            // precision above 2^53 and mis-decode negative amounts entirely.
+            amount = stroopsToDecimal(scValToNative(value) as bigint);
           }
           movements.push({ from: fromAddr, to: toAddr, amount, asset: 'SEP-41' });
         }
@@ -303,6 +312,17 @@ function extractEvents(
   }
 
   return events;
+}
+
+/** Stroops (7 dp) → a plain decimal string, sign preserved. */
+function stroopsToDecimal(value: bigint): string {
+  const negative = value < 0n;
+  const magnitude = negative ? -value : value;
+  const divisor = 10_000_000n;
+  const whole = magnitude / divisor;
+  const frac = (magnitude % divisor).toString().padStart(7, '0').replace(/0+$/, '');
+  const text = frac.length > 0 ? `${whole}.${frac}` : whole.toString();
+  return negative ? `-${text}` : text;
 }
 
 /**

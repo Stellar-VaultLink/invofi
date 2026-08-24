@@ -293,5 +293,86 @@
       "previewTitle": "Prévia: cancelar fatura",
       "previewDescription": "Revise os efeitos esperados antes de cancelar esta fatura on-chain."
     }
+  },
+  "Offers": {
+    "title": "Ofertas de financiamento ({count})",
+    "empty": "Ainda não há ofertas.",
+    "makeOffer": "Fazer oferta",
+    "markOverdue": "Marcar como vencida",
+    "exportHint": "Exportar ofertas em CSV",
+    "exportEmpty": "Não há ofertas para exportar",
+    "accept": "Aceitar",
+    "reject": "Recusar",
+    "repay": "Pagar",
+    "reclaim": "Reivindicar",
+    "repayAmount": "Valor do pagamento",
+    "days": "{count, plural, one {# dia} other {# dias}}",
+    "repaid": "{amount} pago",
+    "remaining": "{amount} restante",
+    "remainingBalance": "Saldo restante: {remaining} (total devido {total} menos {repaid})",
+    "form": {
+      "title": "Nova oferta de financiamento",
+      "amount": "Valor",
+      "currency": "Moeda",
+      "interest": "Juros (pontos-base)",
+      "interestHint": "500 = {example}",
+      "duration": "Duração (dias)",
+      "submit": "Enviar oferta"
+    },
+    "confirm": {
+      "rejectTitle": "Recusar esta oferta?",
+      "rejectDescription": "O financiador será notificado de que a oferta foi recusada. Esta ação não pode ser desfeita.",
+      "reclaimTitle": "Reivindicar esta oferta?",
+      "reclaimDescription": "Isto marca a oferta como inadimplente on-chain. O principal já foi pago à empresa na aceitação — isto não devolve fundos e não pode ser desfeito."
+    },
+    "toast": {
+      "submitted": "Oferta enviada!",
+      "submittedHint": "O emissor da fatura será notificado.",
+      "submitFailed": "Falha ao enviar a oferta",
+      "accepted": "Oferta aceita!",
+      "acceptedHint": "A fatura agora está marcada como financiada.",
+      "acceptFailed": "Falha ao aceitar a oferta",
+      "rejected": "Oferta recusada.",
+      "rejectFailed": "Falha ao recusar a oferta",
+      "invalidAmount": "Informe um valor válido",
+      "amountTooSmall": "O valor deve ser maior que zero",
+      "repaidFull": "Fatura totalmente paga",
+      "repaidFullHint": "Principal + rendimento transferidos ao financiador. A fatura está paga.",
+      "repaidPartial": "Pagamento enviado",
+      "repaidPartialHint": "Pagamento parcial registrado on-chain. Continue pagando até quitar o saldo.",
+      "repayFailed": "Falha ao pagar",
+      "markedOverdue": "Fatura marcada como vencida.",
+      "overdueFailed": "Falha ao marcar como vencida",
+      "reclaimed": "Oferta marcada como inadimplente.",
+      "reclaimedHint": "É um registro on-chain — a recuperação é feita fora da cadeia.",
+      "reclaimFailed": "Falha ao reivindicar",
+      "undo": "Desfazer",
+      "undoRejectAlt": "Desfazer a recusa",
+      "rejectUndone": "Recusa desfeita",
+      "rejectUndoneHint": "A oferta está pendente novamente.",
+      "undoRejectFailed": "Falha ao desfazer a recusa"
+    },
+    "preview": {
+      "accept": {
+        "title": "Prévia: aceitar oferta",
+        "description": "Revise os efeitos esperados antes de aceitar esta oferta de financiamento.",
+        "confirm": "Aceitar oferta"
+      },
+      "reject": {
+        "title": "Prévia: recusar oferta",
+        "description": "Revise os efeitos esperados antes de recusar esta oferta. O financiador será notificado e isto não pode ser desfeito.",
+        "confirm": "Recusar oferta"
+      },
+      "repay": {
+        "title": "Prévia: pagar fatura",
+        "description": "Revise a transferência esperada antes de enviar o pagamento.",
+        "confirm": "Enviar pagamento"
+      },
+      "reclaim": {
+        "title": "Prévia: reivindicar oferta",
+        "description": "Revise os efeitos esperados antes de marcar esta oferta como inadimplente on-chain. O principal já foi pago na aceitação — isto não devolve fundos e não pode ser desfeito.",
+        "confirm": "Reivindicar"
+      }
+    }
   }
 }

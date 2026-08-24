@@ -293,5 +293,86 @@
       "previewTitle": "Vista previa: cancelar factura",
       "previewDescription": "Revisa los efectos esperados antes de cancelar esta factura on-chain."
     }
+  },
+  "Offers": {
+    "title": "Ofertas de financiación ({count})",
+    "empty": "Todavía no hay ofertas.",
+    "makeOffer": "Hacer una oferta",
+    "markOverdue": "Marcar como vencida",
+    "exportHint": "Exportar ofertas en CSV",
+    "exportEmpty": "No hay ofertas que exportar",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "repay": "Reembolsar",
+    "reclaim": "Reclamar",
+    "repayAmount": "Importe del reembolso",
+    "days": "{count, plural, one {# día} other {# días}}",
+    "repaid": "{amount} reembolsado",
+    "remaining": "{amount} restante",
+    "remainingBalance": "Saldo pendiente: {remaining} (total adeudado {total} menos {repaid})",
+    "form": {
+      "title": "Nueva oferta de financiación",
+      "amount": "Importe",
+      "currency": "Moneda",
+      "interest": "Interés (puntos básicos)",
+      "interestHint": "500 = {example}",
+      "duration": "Duración (días)",
+      "submit": "Enviar oferta"
+    },
+    "confirm": {
+      "rejectTitle": "¿Rechazar esta oferta?",
+      "rejectDescription": "Se notificará al prestamista que su oferta fue rechazada. Esta acción no se puede deshacer.",
+      "reclaimTitle": "¿Reclamar esta oferta?",
+      "reclaimDescription": "Esto marca la oferta como en impago on-chain. El principal ya se pagó a la empresa al aceptarla: esto no devuelve fondos y no se puede deshacer."
+    },
+    "toast": {
+      "submitted": "¡Oferta enviada!",
+      "submittedHint": "Se notificará al emisor de la factura.",
+      "submitFailed": "No se pudo enviar la oferta",
+      "accepted": "¡Oferta aceptada!",
+      "acceptedHint": "La factura ya está marcada como financiada.",
+      "acceptFailed": "No se pudo aceptar la oferta",
+      "rejected": "Oferta rechazada.",
+      "rejectFailed": "No se pudo rechazar la oferta",
+      "invalidAmount": "Introduce un importe válido",
+      "amountTooSmall": "El importe debe ser mayor que cero",
+      "repaidFull": "Factura reembolsada por completo",
+      "repaidFullHint": "Principal + rendimiento transferidos al prestamista. La factura ya está reembolsada.",
+      "repaidPartial": "Reembolso enviado",
+      "repaidPartialHint": "Reembolso parcial registrado on-chain. Sigue reembolsando hasta saldar el importe.",
+      "repayFailed": "No se pudo reembolsar",
+      "markedOverdue": "Factura marcada como vencida.",
+      "overdueFailed": "No se pudo marcar como vencida",
+      "reclaimed": "Oferta marcada en impago.",
+      "reclaimedHint": "Es un registro on-chain: la recuperación se gestiona fuera de la cadena.",
+      "reclaimFailed": "No se pudo reclamar",
+      "undo": "Deshacer",
+      "undoRejectAlt": "Deshacer el rechazo",
+      "rejectUndone": "Rechazo deshecho",
+      "rejectUndoneHint": "La oferta vuelve a estar pendiente.",
+      "undoRejectFailed": "No se pudo deshacer el rechazo"
+    },
+    "preview": {
+      "accept": {
+        "title": "Vista previa: aceptar oferta",
+        "description": "Revisa los efectos esperados antes de aceptar esta oferta de financiación.",
+        "confirm": "Aceptar oferta"
+      },
+      "reject": {
+        "title": "Vista previa: rechazar oferta",
+        "description": "Revisa los efectos esperados antes de rechazar esta oferta. Se notificará al prestamista y no se puede deshacer.",
+        "confirm": "Rechazar oferta"
+      },
+      "repay": {
+        "title": "Vista previa: reembolsar factura",
+        "description": "Revisa la transferencia esperada antes de enviar el reembolso.",
+        "confirm": "Enviar reembolso"
+      },
+      "reclaim": {
+        "title": "Vista previa: reclamar oferta",
+        "description": "Revisa los efectos esperados antes de marcar esta oferta como en impago on-chain. El principal ya se pagó al aceptarla: esto no devuelve fondos y no se puede deshacer.",
+        "confirm": "Reclamar"
+      }
+    }
   }
 }

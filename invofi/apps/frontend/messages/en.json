@@ -390,5 +390,86 @@
       "previewTitle": "Preview: Cancel Invoice",
       "previewDescription": "Review the expected effects before cancelling this invoice on-chain."
     }
+  },
+  "Offers": {
+    "title": "Financing Offers ({count})",
+    "empty": "No offers yet.",
+    "makeOffer": "Make Offer",
+    "markOverdue": "Mark Overdue",
+    "exportHint": "Export offers as CSV",
+    "exportEmpty": "No offers to export",
+    "accept": "Accept",
+    "reject": "Reject",
+    "repay": "Repay",
+    "reclaim": "Reclaim",
+    "repayAmount": "Repayment amount",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "repaid": "{amount} repaid",
+    "remaining": "{amount} remaining",
+    "remainingBalance": "Remaining balance: {remaining} (total due {total} minus {repaid})",
+    "form": {
+      "title": "New Financing Offer",
+      "amount": "Amount",
+      "currency": "Currency",
+      "interest": "Interest (basis pts)",
+      "interestHint": "500 = {example}",
+      "duration": "Duration (days)",
+      "submit": "Submit Offer"
+    },
+    "confirm": {
+      "rejectTitle": "Reject this offer?",
+      "rejectDescription": "The lender will be notified their offer was rejected. This cannot be undone.",
+      "reclaimTitle": "Reclaim this offer?",
+      "reclaimDescription": "This marks the offer Defaulted on-chain. Principal was already paid to the business at acceptance — this does not return funds, and cannot be undone."
+    },
+    "toast": {
+      "submitted": "Offer submitted!",
+      "submittedHint": "The invoice originator will be notified.",
+      "submitFailed": "Failed to submit offer",
+      "accepted": "Offer accepted!",
+      "acceptedHint": "Invoice is now marked as Financed.",
+      "acceptFailed": "Failed to accept offer",
+      "rejected": "Offer rejected.",
+      "rejectFailed": "Failed to reject offer",
+      "invalidAmount": "Enter a valid amount",
+      "amountTooSmall": "Amount must be greater than zero",
+      "repaidFull": "Invoice fully repaid",
+      "repaidFullHint": "Principal + yield transferred to the lender. The invoice is now Repaid.",
+      "repaidPartial": "Repayment sent",
+      "repaidPartialHint": "Partial repayment recorded on-chain. Continue repaying until the balance clears.",
+      "repayFailed": "Failed to repay",
+      "markedOverdue": "Invoice marked overdue.",
+      "overdueFailed": "Failed to mark overdue",
+      "reclaimed": "Offer marked defaulted.",
+      "reclaimedHint": "This is an on-chain record — pursue recovery off-chain.",
+      "reclaimFailed": "Failed to reclaim",
+      "undo": "Undo",
+      "undoRejectAlt": "Undo reject",
+      "rejectUndone": "Rejection undone",
+      "rejectUndoneHint": "Offer is now Pending again.",
+      "undoRejectFailed": "Failed to undo reject"
+    },
+    "preview": {
+      "accept": {
+        "title": "Preview: Accept Offer",
+        "description": "Review the expected effects before accepting this financing offer.",
+        "confirm": "Accept Offer"
+      },
+      "reject": {
+        "title": "Preview: Reject Offer",
+        "description": "Review the expected effects before rejecting this offer. The lender will be notified and this cannot be undone.",
+        "confirm": "Reject Offer"
+      },
+      "repay": {
+        "title": "Preview: Repay Invoice",
+        "description": "Review the expected token transfer before submitting repayment.",
+        "confirm": "Submit Repayment"
+      },
+      "reclaim": {
+        "title": "Preview: Reclaim Offer",
+        "description": "Review the expected effects before marking this offer Defaulted on-chain. Principal was already paid at acceptance — this does not return funds, and cannot be undone.",
+        "confirm": "Reclaim"
+      }
+    }
   }
 }

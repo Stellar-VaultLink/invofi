@@ -293,5 +293,86 @@
       "previewTitle": "Önizleme: faturayı iptal et",
       "previewDescription": "Bu faturayı zincir üzerinde iptal etmeden önce beklenen etkileri gözden geçirin."
     }
+  },
+  "Offers": {
+    "title": "Finansman teklifleri ({count})",
+    "empty": "Henüz teklif yok.",
+    "makeOffer": "Teklif ver",
+    "markOverdue": "Gecikmiş olarak işaretle",
+    "exportHint": "Teklifleri CSV olarak dışa aktar",
+    "exportEmpty": "Dışa aktarılacak teklif yok",
+    "accept": "Kabul et",
+    "reject": "Reddet",
+    "repay": "Geri öde",
+    "reclaim": "Geri al",
+    "repayAmount": "Geri ödeme tutarı",
+    "days": "{count, plural, other {# gün}}",
+    "repaid": "{amount} ödendi",
+    "remaining": "{amount} kaldı",
+    "remainingBalance": "Kalan bakiye: {remaining} (toplam borç {total} eksi {repaid})",
+    "form": {
+      "title": "Yeni finansman teklifi",
+      "amount": "Tutar",
+      "currency": "Para birimi",
+      "interest": "Faiz (baz puan)",
+      "interestHint": "500 = {example}",
+      "duration": "Süre (gün)",
+      "submit": "Teklifi gönder"
+    },
+    "confirm": {
+      "rejectTitle": "Bu teklif reddedilsin mi?",
+      "rejectDescription": "Finansöre teklifinin reddedildiği bildirilecek. Bu işlem geri alınamaz.",
+      "reclaimTitle": "Bu teklif geri alınsın mı?",
+      "reclaimDescription": "Bu işlem teklifi zincir üzerinde temerrüde düşmüş olarak işaretler. Anapara kabul sırasında işletmeye ödenmişti — bu işlem parayı geri getirmez ve geri alınamaz."
+    },
+    "toast": {
+      "submitted": "Teklif gönderildi!",
+      "submittedHint": "Faturayı düzenleyene bildirilecek.",
+      "submitFailed": "Teklif gönderilemedi",
+      "accepted": "Teklif kabul edildi!",
+      "acceptedHint": "Fatura artık finanse edildi olarak işaretli.",
+      "acceptFailed": "Teklif kabul edilemedi",
+      "rejected": "Teklif reddedildi.",
+      "rejectFailed": "Teklif reddedilemedi",
+      "invalidAmount": "Geçerli bir tutar girin",
+      "amountTooSmall": "Tutar sıfırdan büyük olmalı",
+      "repaidFull": "Fatura tamamen geri ödendi",
+      "repaidFullHint": "Anapara ve getiri finansöre aktarıldı. Fatura geri ödendi.",
+      "repaidPartial": "Geri ödeme gönderildi",
+      "repaidPartialHint": "Kısmi geri ödeme zincire yazıldı. Bakiye kapanana dek ödemeye devam edin.",
+      "repayFailed": "Geri ödeme başarısız",
+      "markedOverdue": "Fatura gecikmiş olarak işaretlendi.",
+      "overdueFailed": "Gecikmiş olarak işaretlenemedi",
+      "reclaimed": "Teklif temerrüt olarak işaretlendi.",
+      "reclaimedHint": "Bu bir zincir kaydıdır — tahsilatı zincir dışında sürdürün.",
+      "reclaimFailed": "Geri alma başarısız",
+      "undo": "Geri al",
+      "undoRejectAlt": "Reddi geri al",
+      "rejectUndone": "Ret geri alındı",
+      "rejectUndoneHint": "Teklif yeniden beklemede.",
+      "undoRejectFailed": "Ret geri alınamadı"
+    },
+    "preview": {
+      "accept": {
+        "title": "Önizleme: teklifi kabul et",
+        "description": "Bu finansman teklifini kabul etmeden önce beklenen etkileri gözden geçirin.",
+        "confirm": "Teklifi kabul et"
+      },
+      "reject": {
+        "title": "Önizleme: teklifi reddet",
+        "description": "Bu teklifi reddetmeden önce beklenen etkileri gözden geçirin. Finansöre bildirilecek ve bu işlem geri alınamaz.",
+        "confirm": "Teklifi reddet"
+      },
+      "repay": {
+        "title": "Önizleme: faturayı geri öde",
+        "description": "Geri ödemeyi göndermeden önce beklenen transferi gözden geçirin.",
+        "confirm": "Geri ödemeyi gönder"
+      },
+      "reclaim": {
+        "title": "Önizleme: teklifi geri al",
+        "description": "Bu teklifi zincir üzerinde temerrüt olarak işaretlemeden önce beklenen etkileri gözden geçirin. Anapara kabul sırasında ödenmişti — bu işlem parayı geri getirmez ve geri alınamaz.",
+        "confirm": "Geri al"
+      }
+    }
   }
 }

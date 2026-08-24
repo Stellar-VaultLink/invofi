@@ -293,5 +293,86 @@
       "previewTitle": "미리 보기: 인보이스 취소",
       "previewDescription": "이 인보이스를 온체인에서 취소하기 전에 예상되는 영향을 확인하세요."
     }
+  },
+  "Offers": {
+    "title": "금융 제안 ({count})",
+    "empty": "아직 제안이 없습니다.",
+    "makeOffer": "제안하기",
+    "markOverdue": "연체로 표시",
+    "exportHint": "제안을 CSV로 내보내기",
+    "exportEmpty": "내보낼 제안이 없습니다",
+    "accept": "수락",
+    "reject": "거절",
+    "repay": "상환",
+    "reclaim": "회수",
+    "repayAmount": "상환 금액",
+    "days": "{count, plural, other {# 일}}",
+    "repaid": "{amount} 상환",
+    "remaining": "{amount} 남음",
+    "remainingBalance": "남은 잔액: {remaining} (총 상환액 {total}에서 {repaid} 차감)",
+    "form": {
+      "title": "새 금융 제안",
+      "amount": "금액",
+      "currency": "통화",
+      "interest": "이자 (베이시스 포인트)",
+      "interestHint": "500 = {example}",
+      "duration": "기간 (일)",
+      "submit": "제안 보내기"
+    },
+    "confirm": {
+      "rejectTitle": "이 제안을 거절할까요?",
+      "rejectDescription": "대출자에게 제안이 거절되었음이 통보됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "reclaimTitle": "이 제안을 회수할까요?",
+      "reclaimDescription": "이 작업은 제안을 온체인에서 부도로 표시합니다. 원금은 수락 시 이미 기업에 지급되었습니다 — 자금이 반환되지 않으며 되돌릴 수 없습니다."
+    },
+    "toast": {
+      "submitted": "제안을 보냈습니다!",
+      "submittedHint": "인보이스 발행자에게 알림이 갑니다.",
+      "submitFailed": "제안 전송에 실패했습니다",
+      "accepted": "제안을 수락했습니다!",
+      "acceptedHint": "인보이스가 이제 금융 완료로 표시됩니다.",
+      "acceptFailed": "제안 수락에 실패했습니다",
+      "rejected": "제안을 거절했습니다.",
+      "rejectFailed": "제안 거절에 실패했습니다",
+      "invalidAmount": "유효한 금액을 입력하세요",
+      "amountTooSmall": "금액은 0보다 커야 합니다",
+      "repaidFull": "인보이스를 전액 상환했습니다",
+      "repaidFullHint": "원금과 수익이 대출자에게 이체되었습니다. 인보이스가 상환 완료되었습니다.",
+      "repaidPartial": "상환을 보냈습니다",
+      "repaidPartialHint": "부분 상환이 온체인에 기록되었습니다. 잔액이 정리될 때까지 계속 상환하세요.",
+      "repayFailed": "상환에 실패했습니다",
+      "markedOverdue": "인보이스를 연체로 표시했습니다.",
+      "overdueFailed": "연체 표시에 실패했습니다",
+      "reclaimed": "제안을 부도로 표시했습니다.",
+      "reclaimedHint": "온체인 기록입니다 — 회수는 오프체인에서 진행하세요.",
+      "reclaimFailed": "회수에 실패했습니다",
+      "undo": "실행 취소",
+      "undoRejectAlt": "거절 되돌리기",
+      "rejectUndone": "거절을 되돌렸습니다",
+      "rejectUndoneHint": "제안이 다시 대기 중입니다.",
+      "undoRejectFailed": "거절을 되돌리지 못했습니다"
+    },
+    "preview": {
+      "accept": {
+        "title": "미리 보기: 제안 수락",
+        "description": "이 금융 제안을 수락하기 전에 예상되는 영향을 확인하세요.",
+        "confirm": "제안 수락"
+      },
+      "reject": {
+        "title": "미리 보기: 제안 거절",
+        "description": "이 제안을 거절하기 전에 예상되는 영향을 확인하세요. 대출자에게 통보되며 되돌릴 수 없습니다.",
+        "confirm": "제안 거절"
+      },
+      "repay": {
+        "title": "미리 보기: 인보이스 상환",
+        "description": "상환을 제출하기 전에 예상되는 토큰 이체를 확인하세요.",
+        "confirm": "상환 제출"
+      },
+      "reclaim": {
+        "title": "미리 보기: 제안 회수",
+        "description": "이 제안을 온체인에서 부도로 표시하기 전에 예상되는 영향을 확인하세요. 원금은 수락 시 이미 지급되었습니다 — 자금이 반환되지 않으며 되돌릴 수 없습니다.",
+        "confirm": "회수"
+      }
+    }
   }
 }

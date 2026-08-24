@@ -293,5 +293,86 @@
       "previewTitle": "Aperçu : annuler la facture",
       "previewDescription": "Vérifiez les effets attendus avant d’annuler cette facture on-chain."
     }
+  },
+  "Offers": {
+    "title": "Offres de financement ({count})",
+    "empty": "Aucune offre pour l’instant.",
+    "makeOffer": "Faire une offre",
+    "markOverdue": "Marquer en retard",
+    "exportHint": "Exporter les offres en CSV",
+    "exportEmpty": "Aucune offre à exporter",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "repay": "Rembourser",
+    "reclaim": "Récupérer",
+    "repayAmount": "Montant du remboursement",
+    "days": "{count, plural, one {# jour} other {# jours}}",
+    "repaid": "{amount} remboursé",
+    "remaining": "{amount} restant",
+    "remainingBalance": "Solde restant : {remaining} (total dû {total} moins {repaid})",
+    "form": {
+      "title": "Nouvelle offre de financement",
+      "amount": "Montant",
+      "currency": "Devise",
+      "interest": "Intérêt (points de base)",
+      "interestHint": "500 = {example}",
+      "duration": "Durée (jours)",
+      "submit": "Envoyer l’offre"
+    },
+    "confirm": {
+      "rejectTitle": "Refuser cette offre ?",
+      "rejectDescription": "Le prêteur sera informé du refus de son offre. Cette action est irréversible.",
+      "reclaimTitle": "Récupérer cette offre ?",
+      "reclaimDescription": "Cela marque l’offre en défaut on-chain. Le principal a déjà été versé à l’entreprise à l’acceptation — cela ne restitue pas les fonds et est irréversible."
+    },
+    "toast": {
+      "submitted": "Offre envoyée !",
+      "submittedHint": "L’émetteur de la facture en sera informé.",
+      "submitFailed": "Échec de l’envoi de l’offre",
+      "accepted": "Offre acceptée !",
+      "acceptedHint": "La facture est désormais marquée comme financée.",
+      "acceptFailed": "Échec de l’acceptation de l’offre",
+      "rejected": "Offre refusée.",
+      "rejectFailed": "Échec du refus de l’offre",
+      "invalidAmount": "Saisissez un montant valide",
+      "amountTooSmall": "Le montant doit être supérieur à zéro",
+      "repaidFull": "Facture intégralement remboursée",
+      "repaidFullHint": "Principal + rendement transférés au prêteur. La facture est remboursée.",
+      "repaidPartial": "Remboursement envoyé",
+      "repaidPartialHint": "Remboursement partiel enregistré on-chain. Continuez jusqu’à apurement du solde.",
+      "repayFailed": "Échec du remboursement",
+      "markedOverdue": "Facture marquée en retard.",
+      "overdueFailed": "Échec du marquage en retard",
+      "reclaimed": "Offre marquée en défaut.",
+      "reclaimedHint": "C’est un enregistrement on-chain — le recouvrement se poursuit hors chaîne.",
+      "reclaimFailed": "Échec de la récupération",
+      "undo": "Annuler",
+      "undoRejectAlt": "Annuler le refus",
+      "rejectUndone": "Refus annulé",
+      "rejectUndoneHint": "L’offre est de nouveau en attente.",
+      "undoRejectFailed": "Échec de l’annulation du refus"
+    },
+    "preview": {
+      "accept": {
+        "title": "Aperçu : accepter l’offre",
+        "description": "Vérifiez les effets attendus avant d’accepter cette offre de financement.",
+        "confirm": "Accepter l’offre"
+      },
+      "reject": {
+        "title": "Aperçu : refuser l’offre",
+        "description": "Vérifiez les effets attendus avant de refuser cette offre. Le prêteur en sera informé et l’action est irréversible.",
+        "confirm": "Refuser l’offre"
+      },
+      "repay": {
+        "title": "Aperçu : rembourser la facture",
+        "description": "Vérifiez le transfert attendu avant d’envoyer le remboursement.",
+        "confirm": "Envoyer le remboursement"
+      },
+      "reclaim": {
+        "title": "Aperçu : récupérer l’offre",
+        "description": "Vérifiez les effets attendus avant de marquer cette offre en défaut on-chain. Le principal a déjà été versé à l’acceptation — cela ne restitue pas les fonds et est irréversible.",
+        "confirm": "Récupérer"
+      }
+    }
   }
 }

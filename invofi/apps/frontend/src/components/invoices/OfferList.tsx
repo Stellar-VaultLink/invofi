@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -21,8 +22,7 @@ import {
   encodeI128,
 } from '@/lib/simulate';
 import { supabase } from '@/lib/supabase';
-import { formatAmount } from '@/lib/formatters';
-import { formatAmount as formatUnits, interestRateLabel, durationLabel, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
+import { formatAmount as formatUnits, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import {
   FINANCING_CONTRACT_ID as FINANCING_ID,
@@ -32,6 +32,7 @@ import {
 } from '@/lib/constants';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { useFormat } from '@/hooks/useFormat';
 import { toErrorMessage } from '@/lib/errors';
 import { OfferTermsPreview } from './OfferTermsPreview';
 import type { Currency, FinancingOffer, Invoice } from '@/types';
@@ -48,36 +49,20 @@ interface SimTarget {
 }
 
 /** Dialog copy per action — the only thing that differs between previews. */
+/**
+ * Per-action dialog behaviour. The *copy* lives in the `Offers.preview`
+ * namespace and is looked up by kind, so a preview reads in the reader's
+ * language; only the presentation flags stay in code.
+ */
 const SIM_ACTIONS: Record<SimKind, {
-  title: string;
-  description: string;
-  confirmLabel: string;
   variant?: 'default' | 'destructive';
   /** Irreversible actions require a press-and-hold, not a single click. */
   holdToConfirm?: boolean;
 }> = {
-  accept: {
-    title: 'Preview: Accept Offer',
-    description: 'Review the expected effects before accepting this financing offer.',
-    confirmLabel: 'Accept Offer',
-  },
-  reject: {
-    title: 'Preview: Reject Offer',
-    description: 'Review the expected effects before rejecting this offer. The lender will be notified and this cannot be undone.',
-    confirmLabel: 'Reject Offer',
-  },
-  repay: {
-    title: 'Preview: Repay Invoice',
-    description: 'Review the expected token transfer before submitting repayment.',
-    confirmLabel: 'Submit Repayment',
-  },
-  reclaim: {
-    title: 'Preview: Reclaim Offer',
-    description: 'Review the expected effects before marking this offer Defaulted on-chain. Principal was already paid at acceptance — this does not return funds, and cannot be undone.',
-    confirmLabel: 'Reclaim',
-    variant: 'destructive',
-    holdToConfirm: true,
-  },
+  accept: {},
+  reject: {},
+  repay: {},
+  reclaim: { variant: 'destructive', holdToConfirm: true },
 };
 
 /** A blocked result — the dialog renders it as a failure and disables submit. */
@@ -109,6 +94,10 @@ interface OfferListProps {
 }
 
 export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
+  const t = useTranslations('Offers');
+  const tStatus = useTranslations('Status');
+  const tCommon = useTranslations('Common');
+  const format = useFormat();
   const { publicKey } = useWallet();
   const { toast } = useToast();
   const [offers, setOffers] = useState<FinancingOffer[]>([]);
@@ -196,11 +185,11 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       }
       // Replace the optimistic offer with the real one from the contract.
       setOffers(prev => prev.map(o => o.id === offerId ? offer : o));
-      toast({ title: 'Offer submitted!', description: 'The invoice originator will be notified.' });
+      toast({ title: t('toast.submitted'), description: t('toast.submittedHint') });
     } catch (err: unknown) {
       // Rollback: remove the optimistic offer on failure.
       setOffers(prev => prev.filter(o => o.id !== offerId));
-      toast({ title: 'Failed to submit offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+      toast({ title: t('toast.submitFailed'), description: toErrorMessage(err, t('toast.submitFailed')), variant: 'destructive' });
     } finally {
       setPendingIds(prev => {
         const next = new Set(prev);
@@ -263,12 +252,12 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       const updatedInvoice = { ...invoice, status: 'Financed' as const };
       await supabase.from('invoices').update({ status: 'Financed' }).eq('id', invoiceId);
       onUpdate(updatedInvoice);
-      toast({ title: 'Offer accepted!', description: 'Invoice is now marked as Financed.' });
+      toast({ title: t('toast.accepted'), description: t('toast.acceptedHint') });
     } catch (err: unknown) {
       // Rollback: revert to the previous states on failure.
       setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: previousOfferStatus } : o));
       onUpdate({ ...invoice, status: previousInvoiceStatus });
-      toast({ title: 'Failed to accept offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+      toast({ title: t('toast.acceptFailed'), description: toErrorMessage(err, t('toast.acceptFailed')), variant: 'destructive' });
     } finally {
       setPendingIds(prev => {
         const next = new Set(prev);
@@ -287,26 +276,30 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       await supabase.from('financing_offers').update({ status: 'Rejected' }).eq('id', offer.id);
       toast({
-        title: 'Offer rejected.',
+        title: t('toast.rejected'),
         action: (
           <ToastAction
-            altText="Undo reject"
+            altText={t('toast.undoRejectAlt')}
             onClick={async () => {
               try {
                 await supabase.from('financing_offers').update({ status: 'Pending' }).eq('id', offer.id);
                 setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: 'Pending' as const } : o));
-                toast({ title: 'Rejection undone', description: 'Offer is now Pending again.' });
+                toast({ title: t('toast.rejectUndone'), description: t('toast.rejectUndoneHint') });
               } catch (undoErr: unknown) {
-                toast({ title: 'Failed to undo reject', description: toErrorMessage(undoErr, 'Error'), variant: 'destructive' });
+                toast({
+                  title: t('toast.undoRejectFailed'),
+                  description: toErrorMessage(undoErr, t('toast.undoRejectFailed')),
+                  variant: 'destructive',
+                });
               }
             }}
           >
-            Undo
+            {t('toast.undo')}
           </ToastAction>
         ),
       });
     } catch (err: unknown) {
-      toast({ title: 'Failed to reject offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+      toast({ title: t('toast.rejectFailed'), description: toErrorMessage(err, t('toast.rejectFailed')), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -318,14 +311,15 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
     try {
       const raw = (repayAmounts[offer.id] ?? '').trim();
       if (!/^\d+(\.\d{1,7})?$/.test(raw)) {
-        toast({ title: 'Enter a valid amount', variant: 'destructive' });
+        toast({ title: t('toast.invalidAmount'), variant: 'destructive' });
         return;
       }
       const amountStroops = amountToStroops(raw);
       if (amountStroops <= 0n) {
-        toast({ title: 'Amount must be greater than zero', variant: 'destructive' });
+        toast({ title: t('toast.amountTooSmall'), variant: 'destructive' });
         return;
       }
+
 
       // ── Optimistic (issue #178): apply the expected post-payment state
       //    immediately so the UI reflects the repayment while the wallet/RPC
@@ -355,16 +349,14 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         await supabase.from('invoices').update({ status: nextInvoiceStatus }).eq('id', invoiceId);
         onUpdate(updatedInvoice);
         toast({
-          title: fullyRepaid ? 'Invoice fully repaid' : 'Repayment sent',
-          description: fullyRepaid
-            ? 'Principal + yield transferred to the lender. The invoice is now Repaid.'
-            : 'Partial repayment recorded on-chain. Continue repaying until the balance clears.',
+          title: fullyRepaid ? t('toast.repaidFull') : t('toast.repaidPartial'),
+          description: fullyRepaid ? t('toast.repaidFullHint') : t('toast.repaidPartialHint'),
         });
       } catch (err: unknown) {
         // Rollback: revert the optimistic state on failure.
         setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: previousOfferStatus, amount_repaid: previousRepaid } : o));
         onUpdate({ ...invoice, status: previousInvoiceStatus });
-        toast({ title: 'Failed to repay', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+        toast({ title: t('toast.repayFailed'), description: toErrorMessage(err, t('toast.repayFailed')), variant: 'destructive' });
       } finally {
         setPendingIds(prev => {
           const next = new Set(prev);
@@ -384,9 +376,9 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       const updatedInvoice = await markOverdue(invoiceId, publicKey);
       await supabase.from('invoices').update({ status: 'Overdue' }).eq('id', invoiceId);
       onUpdate(updatedInvoice);
-      toast({ title: 'Invoice marked overdue.' });
+      toast({ title: t('toast.markedOverdue') });
     } catch (err: unknown) {
-      toast({ title: 'Failed to mark overdue', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+      toast({ title: t('toast.overdueFailed'), description: toErrorMessage(err, t('toast.overdueFailed')), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -399,9 +391,9 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       const updatedOffer = await reclaimInvoice(invoiceId, offer.id, publicKey);
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       await supabase.from('financing_offers').update({ status: 'Defaulted' }).eq('id', offer.id);
-      toast({ title: 'Offer marked defaulted.', description: 'This is an on-chain record — pursue recovery off-chain.' });
+      toast({ title: t('toast.reclaimed'), description: t('toast.reclaimedHint') });
     } catch (err: unknown) {
-      toast({ title: 'Failed to reclaim', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+      toast({ title: t('toast.reclaimFailed'), description: toErrorMessage(err, t('toast.reclaimFailed')), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -419,9 +411,15 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
     return handleReclaim(offer);
   };
 
-  // Copy for the open preview; `accept` is an inert placeholder while closed,
-  // since Radix unmounts the dialog body when `open` is false.
-  const simAction = SIM_ACTIONS[simTarget?.kind ?? 'accept'];
+  // `accept` is an inert placeholder while closed, since Radix unmounts the
+  // dialog body when `open` is false.
+  const simKind: SimKind = simTarget?.kind ?? 'accept';
+  const simAction = {
+    ...SIM_ACTIONS[simKind],
+    title: t(`preview.${simKind}.title`),
+    description: t(`preview.${simKind}.description`),
+    confirmLabel: t(`preview.${simKind}.confirm`),
+  };
 
   const canMakeOffer = invoice.status === 'Pending' && publicKey && !isOriginator;
   const nowSecs = Math.floor(Date.now() / 1000);
@@ -459,16 +457,16 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Financing Offers ({offers.length})</CardTitle>
+        <CardTitle className="text-base">{t('title', { count: offers.length })}</CardTitle>
         <div className="flex gap-2">
           <Button
             size="sm"
             variant="outline"
             onClick={exportOffersCsv}
             disabled={offers.length === 0}
-            title={offers.length === 0 ? 'No offers to export' : 'Export offers as CSV'}
+            title={offers.length === 0 ? t('exportEmpty') : t('exportHint')}
           >
-            <Download className="h-3 w-3 me-1" /> Export
+            <Download className="h-3 w-3 me-1" /> {tCommon('export')}
           </Button>
           {canMarkOverdue && (
             <Button
@@ -478,12 +476,12 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               disabled={actionId === '__overdue__'}
             >
               {actionId === '__overdue__' && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
-              Mark Overdue
+              {t('markOverdue')}
             </Button>
           )}
           {canMakeOffer && (
             <Button size="sm" onClick={() => setShowForm(v => !v)}>
-              <Plus className="h-4 w-4 me-1" /> Make Offer
+              <Plus className="h-4 w-4 me-1" /> {t('makeOffer')}
             </Button>
           )}
         </div>
@@ -493,28 +491,28 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         {/* Offer form */}
         {showForm && (
           <form onSubmit={handleSubmit(submitOffer)} className="border rounded-lg p-4 space-y-3 bg-gray-50">
-            <p className="text-sm font-medium text-gray-700">New Financing Offer</p>
+            <p className="text-sm font-medium text-gray-700">{t('form.title')}</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="o-amount">Amount</Label>
+                <Label htmlFor="o-amount">{t('form.amount')}</Label>
                 <Input id="o-amount" placeholder="10000.00" {...register('amount')} />
                 {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
               </div>
               <div className="space-y-1">
-                <Label htmlFor="o-currency">Currency</Label>
+                <Label htmlFor="o-currency">{t('form.currency')}</Label>
                 <select id="o-currency" {...register('currency')} className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm">
                   <option value="USDC">USDC</option>
                   <option value="XLM">XLM</option>
                 </select>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="o-rate">Interest (basis pts)</Label>
+                <Label htmlFor="o-rate">{t('form.interest')}</Label>
                 <Input id="o-rate" type="number" placeholder="500" {...register('interestRate')} />
-                <p className="text-xs text-gray-400">500 = 5.00%</p>
+                <p className="text-xs text-gray-400">{t('form.interestHint', { example: format.percent(500) })}</p>
                 {errors.interestRate && <p className="text-xs text-red-500">{errors.interestRate.message}</p>}
               </div>
               <div className="space-y-1">
-                <Label htmlFor="o-days">Duration (days)</Label>
+                <Label htmlFor="o-days">{t('form.duration')}</Label>
                 <Input id="o-days" type="number" placeholder="30" {...register('durationDays')} />
                 {errors.durationDays && <p className="text-xs text-red-500">{errors.durationDays.message}</p>}
               </div>
@@ -528,9 +526,11 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
             <div className="flex gap-2">
               <Button type="submit" size="sm" disabled={loading}>
                 {loading && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
-                Submit Offer
+                {t('form.submit')}
               </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>
+                {tCommon('cancel')}
+              </Button>
             </div>
           </form>
         )}
@@ -549,7 +549,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
             ))}
           </div>
         ) : offers.length === 0 && !showForm ? (
-          <p className="text-sm text-gray-400 text-center py-6">No offers yet.</p>
+          <p className="text-sm text-gray-400 text-center py-6">{t('empty')}</p>
         ) : null}
 
         {offers.map(offer => {
@@ -558,23 +558,29 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           return (
           <div key={offer.id} className={`flex items-center justify-between border rounded-lg p-3 ${pendingIds.has(offer.id) ? 'opacity-60' : ''}`}>
             <div>
-              <p className="text-sm font-mono text-gray-600">{formatAddress(offer.lender)}</p>
+              {/* Strkeys are ASCII identifiers — pinned LTR inside RTL text. */}
+              <p className="text-sm font-mono text-gray-600" dir="ltr">{formatAddress(offer.lender)}</p>
               <p className="text-xs text-gray-400 mt-0.5">
-                {formatAmount(offer.amount, offer.currency)} ·{' '}
-                {interestRateLabel(offer.interest_rate)} · {durationLabel(offer.duration)}
+                {format.currency(offer.amount, offer.currency)} ·{' '}
+                {format.percent(offer.interest_rate)} ·{' '}
+                {t('days', { count: Math.round(offer.duration / 86_400) })}
               </p>
               {(offer.status === 'Accepted' || offer.status === 'Financed') && repaid > 0n && (
                 <p className="text-xs mt-1">
-                  <span className="text-green-600">{formatAmount(repaid, offer.currency)} repaid</span>
+                  <span className="text-green-600">
+                    {t('repaid', { amount: format.currency(repaid, offer.currency) })}
+                  </span>
                   {' · '}
-                  <span className="text-gray-500">{formatAmount(remaining, offer.currency)} remaining</span>
+                  <span className="text-gray-500">
+                    {t('remaining', { amount: format.currency(remaining, offer.currency) })}
+                  </span>
                 </p>
               )}
             </div>
             <div className="flex items-center gap-2">
               <Badge className={pendingIds.has(offer.id) ? 'bg-amber-100 text-amber-800 border-amber-200 animate-pulse' : OFFER_STATUS_COLORS[offer.status]}>
-                {pendingIds.has(offer.id) && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                {offer.status}
+                {pendingIds.has(offer.id) && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
+                {tStatus(offer.status)}
               </Badge>
               {isOriginator && offer.status === 'Pending' && (
                 <>
@@ -584,7 +590,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                     disabled={actionId === offer.id}
                   >
                     {actionId === offer.id && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
-                    Accept
+                    {t('accept')}
                   </Button>
                   <Button
                     size="sm"
@@ -592,7 +598,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                     onClick={() => setSimTarget({ offer, kind: 'reject' })}
                     disabled={actionId === offer.id}
                   >
-                    Reject
+                    {t('reject')}
                   </Button>
                 </>
               )}
@@ -601,7 +607,13 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                   <Input
                     className="h-8 w-28 text-xs"
                     placeholder={formatUnits(remainingBalance(offer))}
-                    title={`Remaining balance: ${formatAmount(remainingBalance(offer), offer.currency)} (total due ${formatAmount(totalDue(offer), offer.currency)} minus ${formatAmount(repaid, offer.currency)})`}
+                    aria-label={t('repayAmount')}
+                    dir="ltr"
+                    title={t('remainingBalance', {
+                      remaining: format.currency(remainingBalance(offer), offer.currency),
+                      total: format.currency(totalDue(offer), offer.currency),
+                      repaid: format.currency(repaid, offer.currency),
+                    })}
                     value={repayAmounts[offer.id] ?? ''}
                     onChange={e => setRepayAmounts(prev => ({ ...prev, [offer.id]: e.target.value }))}
                   />
@@ -623,7 +635,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                     disabled={actionId === offer.id}
                   >
                     {actionId === offer.id && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
-                    Repay
+                    {t('repay')}
                   </Button>
                 </div>
               )}
@@ -635,7 +647,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                   disabled={actionId === offer.id}
                 >
                   {actionId === offer.id && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
-                  Reclaim
+                  {t('reclaim')}
                 </Button>
               )}
             </div>

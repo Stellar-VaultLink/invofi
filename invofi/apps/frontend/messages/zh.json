@@ -293,5 +293,86 @@
       "previewTitle": "预览：取消发票",
       "previewDescription": "在链上取消这张发票前，请先查看预期影响。"
     }
+  },
+  "Offers": {
+    "title": "融资报价（{count}）",
+    "empty": "还没有报价。",
+    "makeOffer": "提交报价",
+    "markOverdue": "标记为逾期",
+    "exportHint": "将报价导出为 CSV",
+    "exportEmpty": "没有可导出的报价",
+    "accept": "接受",
+    "reject": "拒绝",
+    "repay": "还款",
+    "reclaim": "追索",
+    "repayAmount": "还款金额",
+    "days": "{count, plural, other {# 天}}",
+    "repaid": "已还 {amount}",
+    "remaining": "剩余 {amount}",
+    "remainingBalance": "剩余余额：{remaining}（应还总额 {total} 减去 {repaid}）",
+    "form": {
+      "title": "新的融资报价",
+      "amount": "金额",
+      "currency": "币种",
+      "interest": "利率（基点）",
+      "interestHint": "500 = {example}",
+      "duration": "期限（天）",
+      "submit": "提交报价"
+    },
+    "confirm": {
+      "rejectTitle": "要拒绝这份报价吗？",
+      "rejectDescription": "出资方将收到报价被拒绝的通知。此操作无法撤销。",
+      "reclaimTitle": "要追索这份报价吗？",
+      "reclaimDescription": "此操作会在链上把该报价标记为违约。本金在接受时已支付给企业——这不会退还资金，且无法撤销。"
+    },
+    "toast": {
+      "submitted": "报价已提交！",
+      "submittedHint": "将通知发票的开票方。",
+      "submitFailed": "提交报价失败",
+      "accepted": "报价已接受！",
+      "acceptedHint": "发票现已标记为已融资。",
+      "acceptFailed": "接受报价失败",
+      "rejected": "报价已拒绝。",
+      "rejectFailed": "拒绝报价失败",
+      "invalidAmount": "请输入有效金额",
+      "amountTooSmall": "金额必须大于零",
+      "repaidFull": "发票已全额还款",
+      "repaidFullHint": "本金与收益已转给出资方。发票现已还款。",
+      "repaidPartial": "还款已发送",
+      "repaidPartialHint": "部分还款已记录到链上。请继续还款直至结清余额。",
+      "repayFailed": "还款失败",
+      "markedOverdue": "发票已标记为逾期。",
+      "overdueFailed": "标记逾期失败",
+      "reclaimed": "报价已标记为违约。",
+      "reclaimedHint": "这是一条链上记录——请在链下继续追偿。",
+      "reclaimFailed": "追索失败",
+      "undo": "撤销",
+      "undoRejectAlt": "撤销拒绝",
+      "rejectUndone": "已撤销拒绝",
+      "rejectUndoneHint": "该报价重新变为待处理。",
+      "undoRejectFailed": "撤销拒绝失败"
+    },
+    "preview": {
+      "accept": {
+        "title": "预览：接受报价",
+        "description": "接受这份融资报价前，请先查看预期影响。",
+        "confirm": "接受报价"
+      },
+      "reject": {
+        "title": "预览：拒绝报价",
+        "description": "拒绝这份报价前，请先查看预期影响。出资方将收到通知，且此操作无法撤销。",
+        "confirm": "拒绝报价"
+      },
+      "repay": {
+        "title": "预览：偿还发票",
+        "description": "提交还款前，请先查看预期的代币转账。",
+        "confirm": "提交还款"
+      },
+      "reclaim": {
+        "title": "预览：追索报价",
+        "description": "在链上把该报价标记为违约前，请先查看预期影响。本金在接受时已支付——这不会退还资金，且无法撤销。",
+        "confirm": "追索"
+      }
+    }
   }
 }

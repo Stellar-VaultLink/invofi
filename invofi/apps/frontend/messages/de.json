@@ -293,5 +293,86 @@
       "previewTitle": "Vorschau: Rechnung stornieren",
       "previewDescription": "Prüfe die erwarteten Auswirkungen, bevor du diese Rechnung on-chain stornierst."
     }
+  },
+  "Offers": {
+    "title": "Finanzierungsangebote ({count})",
+    "empty": "Noch keine Angebote.",
+    "makeOffer": "Angebot abgeben",
+    "markOverdue": "Als überfällig markieren",
+    "exportHint": "Angebote als CSV exportieren",
+    "exportEmpty": "Keine Angebote zum Exportieren",
+    "accept": "Annehmen",
+    "reject": "Ablehnen",
+    "repay": "Zurückzahlen",
+    "reclaim": "Einfordern",
+    "repayAmount": "Rückzahlungsbetrag",
+    "days": "{count, plural, one {# Tag} other {# Tage}}",
+    "repaid": "{amount} zurückgezahlt",
+    "remaining": "{amount} offen",
+    "remainingBalance": "Offener Betrag: {remaining} (Gesamtschuld {total} abzüglich {repaid})",
+    "form": {
+      "title": "Neues Finanzierungsangebot",
+      "amount": "Betrag",
+      "currency": "Währung",
+      "interest": "Zins (Basispunkte)",
+      "interestHint": "500 = {example}",
+      "duration": "Laufzeit (Tage)",
+      "submit": "Angebot absenden"
+    },
+    "confirm": {
+      "rejectTitle": "Dieses Angebot ablehnen?",
+      "rejectDescription": "Der Kapitalgeber wird über die Ablehnung informiert. Das lässt sich nicht rückgängig machen.",
+      "reclaimTitle": "Dieses Angebot einfordern?",
+      "reclaimDescription": "Damit wird das Angebot on-chain als ausgefallen markiert. Das Kapital wurde bei der Annahme bereits an das Unternehmen ausgezahlt — das gibt keine Mittel zurück und lässt sich nicht rückgängig machen."
+    },
+    "toast": {
+      "submitted": "Angebot abgegeben!",
+      "submittedHint": "Der Rechnungsaussteller wird benachrichtigt.",
+      "submitFailed": "Angebot konnte nicht abgegeben werden",
+      "accepted": "Angebot angenommen!",
+      "acceptedHint": "Die Rechnung ist jetzt als finanziert markiert.",
+      "acceptFailed": "Angebot konnte nicht angenommen werden",
+      "rejected": "Angebot abgelehnt.",
+      "rejectFailed": "Angebot konnte nicht abgelehnt werden",
+      "invalidAmount": "Gib einen gültigen Betrag ein",
+      "amountTooSmall": "Der Betrag muss größer als null sein",
+      "repaidFull": "Rechnung vollständig zurückgezahlt",
+      "repaidFullHint": "Kapital + Ertrag an den Kapitalgeber überwiesen. Die Rechnung ist zurückgezahlt.",
+      "repaidPartial": "Rückzahlung gesendet",
+      "repaidPartialHint": "Teilrückzahlung on-chain erfasst. Zahle weiter, bis der Saldo ausgeglichen ist.",
+      "repayFailed": "Rückzahlung fehlgeschlagen",
+      "markedOverdue": "Rechnung als überfällig markiert.",
+      "overdueFailed": "Markierung als überfällig fehlgeschlagen",
+      "reclaimed": "Angebot als ausgefallen markiert.",
+      "reclaimedHint": "Das ist ein On-Chain-Eintrag — die Beitreibung läuft off-chain.",
+      "reclaimFailed": "Einfordern fehlgeschlagen",
+      "undo": "Rückgängig",
+      "undoRejectAlt": "Ablehnung rückgängig machen",
+      "rejectUndone": "Ablehnung rückgängig gemacht",
+      "rejectUndoneHint": "Das Angebot ist wieder ausstehend.",
+      "undoRejectFailed": "Ablehnung konnte nicht rückgängig gemacht werden"
+    },
+    "preview": {
+      "accept": {
+        "title": "Vorschau: Angebot annehmen",
+        "description": "Prüfe die erwarteten Auswirkungen, bevor du dieses Finanzierungsangebot annimmst.",
+        "confirm": "Angebot annehmen"
+      },
+      "reject": {
+        "title": "Vorschau: Angebot ablehnen",
+        "description": "Prüfe die erwarteten Auswirkungen, bevor du dieses Angebot ablehnst. Der Kapitalgeber wird benachrichtigt, und das lässt sich nicht rückgängig machen.",
+        "confirm": "Angebot ablehnen"
+      },
+      "repay": {
+        "title": "Vorschau: Rechnung zurückzahlen",
+        "description": "Prüfe die erwartete Überweisung, bevor du die Rückzahlung absendest.",
+        "confirm": "Rückzahlung absenden"
+      },
+      "reclaim": {
+        "title": "Vorschau: Angebot einfordern",
+        "description": "Prüfe die erwarteten Auswirkungen, bevor du dieses Angebot on-chain als ausgefallen markierst. Das Kapital wurde bei der Annahme bereits ausgezahlt — das gibt keine Mittel zurück und lässt sich nicht rückgängig machen.",
+        "confirm": "Einfordern"
+      }
+    }
   }
 }

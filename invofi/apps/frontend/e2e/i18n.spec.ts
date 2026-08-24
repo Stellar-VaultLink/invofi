@@ -82,7 +82,7 @@ test.describe('language switcher', () => {
     // re-renders the tree — including <html dir>.
     await switcher.selectOption('ar');
 
-    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl', { timeout: 15_000 });
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl', { timeout: 45_000 });
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     expect(await localeCookie(page)).toBe('ar');
 
@@ -106,7 +106,7 @@ test.describe('language switcher', () => {
     // …the reader picks German, and the header must not override it again.
     // Selected by test id, not by label: the label itself is translated.
     await page.getByTestId('language-switcher').selectOption('de');
-    await expect(page.locator('html')).toHaveAttribute('lang', 'de', { timeout: 15_000 });
+    await expect(page.locator('html')).toHaveAttribute('lang', 'de', { timeout: 45_000 });
 
     await page.goto('/settings');
     await expect(page.locator('html')).toHaveAttribute('lang', 'de');

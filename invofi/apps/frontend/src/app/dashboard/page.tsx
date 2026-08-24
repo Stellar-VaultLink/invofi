@@ -259,6 +259,7 @@ export default function DashboardPage() {
         description={`Invoice ${cancelTarget?.id ?? ''} will be marked as Cancelled. This cannot be undone.`}
         confirmLabel="Yes, cancel"
         variant="destructive"
+        holdToConfirm
         onConfirm={handleCancelInvoice}
         loading={cancelling}
       />

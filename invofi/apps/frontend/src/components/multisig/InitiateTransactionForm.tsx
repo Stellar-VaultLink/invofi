@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import { useCreatePendingTransaction } from '@/hooks/useMultisig';
 import { buildPaymentTransaction, formatThreshold, requiresMultisig } from '@/lib/multisig';
 import { formatAddress, toStroopsBigInt } from '@/lib/utils';
@@ -112,7 +113,7 @@ export function InitiateTransactionForm({
       reset(DEFAULTS);
       onCreated(tx);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not queue the transaction';
+      const msg = toErrorMessage(err, 'Could not queue the transaction');
       toast({ title: 'Could not queue transaction', description: msg, variant: 'destructive' });
     } finally {
       setSubmitting(false);

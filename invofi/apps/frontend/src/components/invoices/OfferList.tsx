@@ -19,6 +19,7 @@ import { formatAmount, interestRateLabel, durationLabel, generateOfferId, amount
 import { toCsv, downloadCsv } from '@/lib/csv';
 import { GRACE_PERIOD_SECS, STROOPS_PER_XLM } from '@/lib/constants';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import type { Currency, FinancingOffer, Invoice } from '@/types';
 
 const offerSchema = z.object({
@@ -104,7 +105,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       setShowForm(false);
       toast({ title: 'Offer submitted!', description: 'The invoice originator will be notified.' });
     } catch (err: unknown) {
-      toast({ title: 'Failed to submit offer', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to submit offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -122,7 +123,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       onUpdate(updatedInvoice);
       toast({ title: 'Offer accepted!', description: 'Invoice is now marked as Financed.' });
     } catch (err: unknown) {
-      toast({ title: 'Failed to accept offer', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to accept offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -137,7 +138,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       await supabase.from('financing_offers').update({ status: 'Rejected' }).eq('id', offer.id);
       toast({ title: 'Offer rejected.' });
     } catch (err: unknown) {
-      toast({ title: 'Failed to reject offer', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to reject offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -176,7 +177,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           : 'Partial repayment recorded on-chain. Continue repaying until the balance clears.',
       });
     } catch (err: unknown) {
-      toast({ title: 'Failed to repay', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to repay', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -191,7 +192,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       onUpdate(updatedInvoice);
       toast({ title: 'Invoice marked overdue.' });
     } catch (err: unknown) {
-      toast({ title: 'Failed to mark overdue', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to mark overdue', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -206,7 +207,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       await supabase.from('financing_offers').update({ status: 'Defaulted' }).eq('id', offer.id);
       toast({ title: 'Offer marked defaulted.', description: 'This is an on-chain record — pursue recovery off-chain.' });
     } catch (err: unknown) {
-      toast({ title: 'Failed to reclaim', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to reclaim', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }

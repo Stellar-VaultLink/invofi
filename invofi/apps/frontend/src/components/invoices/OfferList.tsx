@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Plus, Download } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +40,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   const { publicKey } = useWallet();
   const { toast } = useToast();
   const [offers, setOffers] = useState<FinancingOffer[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -67,6 +69,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           amount: toStroopsBigInt(o.amount),
           amount_repaid: toStroopsBigInt(o.amount_repaid),
         })));
+        setLoadingOffers(false);
       });
   }, [invoiceId]);
 
@@ -314,9 +317,21 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         )}
 
         {/* Offers list */}
-        {offers.length === 0 && !showForm && (
+        {loadingOffers ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between border rounded-lg p-3">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : offers.length === 0 && !showForm ? (
           <p className="text-sm text-gray-400 text-center py-6">No offers yet.</p>
-        )}
+        ) : null}
 
         {offers.map(offer => {
           const repaid = toStroopsBigInt(offer.amount_repaid);

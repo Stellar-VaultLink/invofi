@@ -19,6 +19,7 @@ import { formatAmount, interestRateLabel, durationLabel, generateOfferId, amount
 import { toCsv, downloadCsv } from '@/lib/csv';
 import { GRACE_PERIOD_SECS, STROOPS_PER_XLM } from '@/lib/constants';
 import { useToast } from '@/components/ui/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { toErrorMessage } from '@/lib/errors';
 import type { Currency, FinancingOffer, Invoice } from '@/types';
 
@@ -136,7 +137,25 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       const updatedOffer = await rejectOffer(offer.id, publicKey);
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       await supabase.from('financing_offers').update({ status: 'Rejected' }).eq('id', offer.id);
-      toast({ title: 'Offer rejected.' });
+      toast({
+        title: 'Offer rejected.',
+        action: (
+          <ToastAction
+            altText="Undo reject"
+            onClick={async () => {
+              try {
+                await supabase.from('financing_offers').update({ status: 'Pending' }).eq('id', offer.id);
+                setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: 'Pending' as const } : o));
+                toast({ title: 'Rejection undone', description: 'Offer is now Pending again.' });
+              } catch (undoErr: unknown) {
+                toast({ title: 'Failed to undo reject', description: toErrorMessage(undoErr, 'Error'), variant: 'destructive' });
+              }
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
     } catch (err: unknown) {
       toast({ title: 'Failed to reject offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {

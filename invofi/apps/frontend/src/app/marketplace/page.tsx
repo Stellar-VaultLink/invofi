@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Search, LayoutGrid } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { Input } from '@/components/ui/input';
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { MarketplaceCard } from '@/components/marketplace/MarketplaceCard';
 import { MarketplaceTabs } from '@/components/marketplace/MarketplaceTabs';
 import { SuggestedMatches } from '@/components/marketplace/SuggestedMatches';
@@ -40,8 +41,8 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 function MarketplacePageInner() {
   const [search, setSearch]   = useState('');
-  const [filters, setFilters] = useState<Filters>({ currency: 'ALL', status: 'ALL' });
-  const [sort, setSort]       = useState<SortKey>('newest');
+  const [filters, setFilters] = useLocalStorage<Filters>('marketplace-filters', { currency: 'ALL', status: 'ALL' });
+  const [sort, setSort]       = useLocalStorage<SortKey>('marketplace-sort', 'newest');
 
   /**
    * View mode:

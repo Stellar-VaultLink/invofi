@@ -692,14 +692,21 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/waterWang">
+                    <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
+                    <br />
+                    <sub><b>water</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
                 <a href="https://github.com/MJ-RWA">
                     <img src="https://avatars.githubusercontent.com/u/240063069?v=4" width="100;" alt="MJ-RWA"/>
                     <br />
                     <sub><b>MJ | Dev 🏀</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/Unclebaffa">
                     <img src="https://avatars.githubusercontent.com/u/122823433?v=4" width="100;" alt="Unclebaffa"/>
@@ -733,13 +740,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <img src="https://avatars.githubusercontent.com/u/29020286?v=4" width="100;" alt="Babigdk"/>
                     <br />
                     <sub><b>Abdulrazaq Isa Babi</b></sub>
-                </a>
-            </td>
-            <td align="center">
-                <a href="https://github.com/waterWang">
-                    <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
-                    <br />
-                    <sub><b>water</b></sub>
                 </a>
             </td>
 		</tr>

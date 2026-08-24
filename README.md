@@ -752,10 +752,10 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/ganeshchandra111">
-                    <img src="https://avatars.githubusercontent.com/u/166985591?v=4" width="100;" alt="ganeshchandra111"/>
+                <a href="https://github.com/Agbasimere">
+                    <img src="https://avatars.githubusercontent.com/u/107962282?v=4" width="100;" alt="Agbasimere"/>
                     <br />
-                    <sub><b>Ganesh chandra</b></sub>
+                    <sub><b>Buik3m</b></sub>
                 </a>
             </td>
             <td align="center">
@@ -766,10 +766,10 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/Agbasimere">
-                    <img src="https://avatars.githubusercontent.com/u/107962282?v=4" width="100;" alt="Agbasimere"/>
+                <a href="https://github.com/ganeshchandra111">
+                    <img src="https://avatars.githubusercontent.com/u/166985591?v=4" width="100;" alt="ganeshchandra111"/>
                     <br />
-                    <sub><b>Buik3m</b></sub>
+                    <sub><b>Ganesh chandra</b></sub>
                 </a>
             </td>
             <td align="center">

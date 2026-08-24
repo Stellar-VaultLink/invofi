@@ -4,7 +4,15 @@ import * as React from 'react';
 import type { ToastActionElement, ToastProps } from './toast';
 
 const TOAST_LIMIT = 3;
-const TOAST_REMOVE_DELAY = 5000;
+// Per-variant dismiss durations (ms):
+//  - destructive/error: 8s (longer so users can read error details)
+//  - default: 3s (quick confirmation, no need to linger)
+//  - fallback: 5s (original default)
+const TOAST_DURATION = {
+  destructive: 8000,
+  default: 3000,
+} as const;
+const TOAST_REMOVE_DELAY_DEFAULT = 5000;
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -26,25 +34,47 @@ function genId() { return (++count).toString(); }
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
-function addToRemoveQueue(toastId: string, dispatch: React.Dispatch<Action>) {
+function addToRemoveQueue(toastId: string, variant: string | undefined, dispatch: React.Dispatch<Action>) {
   if (toastTimeouts.has(toastId)) return;
+  const duration =
+    variant === 'destructive' ? TOAST_DURATION.destructive
+    : variant === 'default' ? TOAST_DURATION.default
+    : TOAST_REMOVE_DELAY_DEFAULT;
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId);
     dispatch({ type: 'REMOVE_TOAST', toastId });
-  }, TOAST_REMOVE_DELAY);
+  }, duration);
   toastTimeouts.set(toastId, timeout);
 }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'ADD_TOAST':
-      return { ...state, toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT) };
+    case 'ADD_TOAST': {
+      const next = [action.toast, ...state.toasts];
+      // Cap concurrent visible toasts: when the stack would exceed the
+      // limit, keep the new toast, dismiss the oldest (open:false so the
+      // exit animation plays) and schedule removal instead of dropping it
+      // instantly — otherwise the viewport overflows on mobile.
+      if (next.length > TOAST_LIMIT) {
+        const oldest = next[next.length - 1];
+        addToRemoveQueue(oldest.id, oldest.variant, dispatch);
+        return {
+          ...state,
+          toasts: [action.toast, ...state.toasts.slice(0, TOAST_LIMIT - 1), { ...oldest, open: false }],
+        };
+      }
+      return { ...state, toasts: next };
+    }
     case 'UPDATE_TOAST':
       return { ...state, toasts: state.toasts.map(t => t.id === action.toast.id ? { ...t, ...action.toast } : t) };
     case 'DISMISS_TOAST': {
       const { toastId } = action;
-      if (toastId) addToRemoveQueue(toastId, dispatch);
-      else state.toasts.forEach(t => addToRemoveQueue(t.id, dispatch));
+      if (toastId) {
+        const toast = state.toasts.find(t => t.id === toastId);
+        addToRemoveQueue(toastId, toast?.variant, dispatch);
+      } else {
+        state.toasts.forEach(t => addToRemoveQueue(t.id, t.variant, dispatch));
+      }
       return { ...state, toasts: state.toasts.map(t => (!toastId || t.id === toastId) ? { ...t, open: false } : t) };
     }
     case 'REMOVE_TOAST':

@@ -13,6 +13,7 @@ import {
   Moon,
   Menu,
   X,
+  Keyboard,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -22,6 +23,7 @@ import { useWallet } from "@/components/auth/WalletProvider";
 import { supabase } from "@/lib/supabase";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { NavbarEventIndicator } from "@/components/NavbarEventIndicator";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 import { useTranslations } from 'next-intl';
 
@@ -35,6 +37,7 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { networkMismatch } = useWallet();
+  const { helpOpen, setHelpOpen, shortcuts } = useKeyboardShortcuts();
 
   const NAV_LINKS = [
     { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
@@ -122,6 +125,51 @@ export function Navbar() {
           {/* Right side */}
           <div className="flex items-center gap-3">
             <NavbarEventIndicator />
+
+            {/* Keyboard shortcuts help */}
+            <div className="relative">
+              <button
+                onClick={() => setHelpOpen(!helpOpen)}
+                className="p-2 rounded-md text-muted-foreground hover:bg-accent transition-colors"
+                title="Keyboard shortcuts (?)"
+                aria-label="Toggle keyboard shortcuts help"
+                aria-expanded={helpOpen}
+              >
+                <Keyboard className="h-5 w-5" />
+              </button>
+              {helpOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    aria-hidden
+                    onClick={() => setHelpOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 z-50 w-60 rounded-lg border border-border bg-background shadow-lg p-3 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Keyboard shortcuts
+                    </p>
+                    <div className="space-y-1.5">
+                      {shortcuts.map((s) => (
+                        <div
+                          key={s.label}
+                          className="flex items-center justify-between text-sm"
+                        >
+                          <kbd className="inline-flex items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-mono text-foreground">
+                            {s.label}
+                          </kbd>
+                          <span className="text-muted-foreground">
+                            {s.description}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground pt-1 border-t border-border">
+                      Press <kbd className="rounded border border-border bg-muted px-1 py-0.5 text-[10px] font-mono">?</kbd> to toggle
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
 
             <button
               onClick={toggleTheme}
@@ -247,3 +295,4 @@ export function Navbar() {
     </>
   );
 }
+

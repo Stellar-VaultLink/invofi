@@ -1,0 +1,60 @@
+frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'invofi/apps/frontend/**'
+      - '**/*.tsx'
+      - '**/*.css'
+
+sdk:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'invofi/apps/sdk/**'
+
+ci:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**'
+      - '**/commitlint.config.js'
+
+docs:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'docs/**'
+      - '**/*.md'
+      - '!invofi/apps/frontend/README.md'
+      - '!invofi/apps/sdk/README.md'
+
+testing:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.test.*'
+      - '**/*.spec.*'
+      - '**/e2e/**'
+
+security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/sentry.*'
+      - '**/security*'
+      - '**/encryption.*'
+      - '**/middleware.*'
+
+soroban:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/contract*.ts'
+      - '**/soroban*'
+      - '**/walletkit*'
+
+infra:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'scripts/**'
+      - '**/keeper*'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '**/Cargo.toml'

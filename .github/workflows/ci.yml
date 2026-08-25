@@ -23,9 +23,10 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: invofi/apps/frontend/package-lock.json
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run lint
       - run: npm run type-check
+      - run: node ../../../scripts/check-sdk-parity.js
 
   frontend-test:
     name: Frontend / Unit Tests
@@ -40,7 +41,7 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: invofi/apps/frontend/package-lock.json
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm test
 
   frontend-build:
@@ -69,7 +70,7 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: invofi/apps/frontend/package-lock.json
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run build
 
   commitlint:

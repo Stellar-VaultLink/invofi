@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { WalletButton } from '@/components/auth/WalletButton';
-import { signInWithEmail } from '@/lib/supabase';
+import { signInWithEmail, getSupabaseClient } from '@/lib/supabase';
+import { loginWithSep10 } from '@/lib/sep10';
 import { useToast } from '@/components/ui/use-toast';
 import { useWallet } from '@/components/auth/WalletProvider';
 
@@ -27,19 +28,59 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const { isConnected, isCheckingWallet } = useWallet();
+  const [verifyingWallet, setVerifyingWallet] = useState(false);
+  const { disconnect } = useWallet();
 
-  // If a wallet is already connected (e.g. Freighter session restored on page
-  // load), skip the login page entirely and go straight to the dashboard.
+  // Redirect once a real Supabase session exists. Keyed on the session
+  // rather than wallet connectivity (issue #237 review) — WalletButton's
+  // connect() flips `isConnected` before SEP-10 verification finishes, so a
+  // connectivity-based redirect would send an unverified wallet straight to
+  // the dashboard.
   useEffect(() => {
-    if (!isCheckingWallet && isConnected) {
-      router.replace('/dashboard');
-    }
-  }, [isCheckingWallet, isConnected, router]);
+    let cancelled = false;
+    getSupabaseClient()
+      .auth.getSession()
+      .then(({ data }) => {
+        if (!cancelled && data.session) router.replace('/dashboard');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
+
+  // Explicit wallet login (issue #103): connecting a wallet here is not
+  // enough on its own — WalletButton's connect flow links the address to a
+  // (possibly blind-trust) Supabase session for backward compatibility, but
+  // the login page only redirects to the dashboard after that address has
+  // been proven via a signed SEP-10 challenge. A rejected or failed
+  // signature keeps the user on this page with an error, even though the
+  // wallet itself may already show as "connected" for signing purposes.
+  const handleWalletConnected = async (publicKey: string) => {
+    setVerifyingWallet(true);
+    try {
+      await loginWithSep10(publicKey);
+      router.push('/dashboard');
+    } catch (err: unknown) {
+      // Drop the unverified connection — otherwise the wallet stays
+      // "connected" after a rejected/failed signature with nothing to
+      // distinguish it from a verified session.
+      disconnect();
+      toast({
+        title: 'Wallet sign-in failed',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Could not verify wallet ownership — please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setVerifyingWallet(false);
+    }
+  };
 
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
@@ -65,14 +106,25 @@ export default function LoginPage() {
           <p className="text-gray-500 dark:text-gray-400 mt-1">Sign in to your InvoFi account</p>
         </div>
 
-        {/* Wallet login — primary auth method */}
+        {/* Wallet login — primary auth method. Connecting prompts a SEP-10
+            challenge signature so the session is bound to a *verified*
+            wallet, not merely a claimed address (see docs/05-authentication.md). */}
         <Card className="border-2 border-blue-100 dark:border-blue-900">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Connect Wallet</CardTitle>
-            <CardDescription>Sign in instantly with Freighter or LOBSTR — no password needed</CardDescription>
+            <CardTitle className="text-base">Sign in with Wallet</CardTitle>
+            <CardDescription>
+              Connect Freighter or LOBSTR, then sign a one-time challenge to prove ownership —
+              no password needed
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <WalletButton onConnected={() => router.push('/dashboard')} />
+            <WalletButton onConnected={handleWalletConnected} />
+            {verifyingWallet && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Waiting for wallet signature…
+              </p>
+            )}
           </CardContent>
         </Card>
 

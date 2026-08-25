@@ -7,9 +7,64 @@
 // The frontend binds it once in `apps/frontend/src/lib/contract.ts` and
 // re-exports the typed methods — no contract-call code is duplicated there.
 
-export { createInvofiClient, type InvofiClient, SdkValidationError, ErrorCode } from './client';
+export {
+  createInvofiClient,
+  type InvofiClient,
+  type InvofiClientMethods,
+  type BatchCall,
+  SdkValidationError,
+  ErrorCode,
+} from './client';
 export type { InvofiClientConfig } from './config';
 export type { Currency, FinancingOffer, Invoice, InvoiceStatus, OfferStatus } from './types';
+
+// ── Offline mock client (#177) + contract-interaction testing (#226) ────────
+// `createMockClient` is a drop-in replacement for `createInvofiClient` backed
+// by in-memory state — no RPC, Horizon, wallet, or testnet required. It is for
+// UI development only (no crypto/signing simulation). Deterministic fixtures
+// cover every invoice status, offers, and position-token balances.
+//
+// Since #226 it doubles as a contract-interaction testing framework: every
+// successful state-changing call records the protocol event it would have
+// emitted on-chain (`client.events`, same `ProtocolEvent` shapes as
+// `listenToEvents`), domain failures throw typed `ContractError`s, failure
+// rules (`failures` option / `failNext`) simulate deterministic RPC/contract
+// failures, and `reset()`/`setBalance`/`seededInvoices`/`seededOffers` give
+// tests full control over in-memory state. Pair with `createTestInvoice` /
+// `createTestOffer` (below) to compose pre-seeded data.
+export {
+  createMockClient,
+  type MockClient,
+  type MockClientOptions,
+  // Testing framework (#226) types.
+  type MockTestingSurface,
+  type MockFailureRule,
+  type MockMethodName,
+  // Deterministic mock identities + fixtures (shared with the frontend mock).
+  MOCK_WALLET_ADDRESS,
+  MOCK_BUSINESS_A,
+  MOCK_BUSINESS_B,
+  MOCK_BUSINESS_C,
+  MOCK_LENDER_B,
+  MOCK_POSITION_TOKEN_ID,
+  MOCK_POSITION_BALANCE,
+  // Contract ids reported in mock-emitted events.
+  MOCK_REGISTRY_ID,
+  MOCK_FINANCING_ID,
+  MOCK_REPAYMENT_ID,
+} from './mock';
+
+// ── Test fixture builders (#226) ────────────────────────────────────────────
+// `createTestInvoice` / `createTestOffer` produce SDK-valid fixture objects
+// for composing custom pre-seeded data in contract-interaction tests.
+export {
+  createTestInvoice,
+  createTestOffer,
+  toStroops,
+  STROOP_BASE,
+  type TestInvoiceOverrides,
+  type TestOfferOverrides,
+} from './testing';
 
 // Validation helpers re-exported for consumers who want to pre-validate
 // before calling SDK methods (e.g. form-level validation in the frontend).
@@ -20,6 +75,27 @@ export {
   MAX_DURATION_SECS,
   VALID_CURRENCIES,
 } from './validation';
+
+// ── Typed error handling & Soroban error code mapping (#223) ────────────────
+// `SdkError` is the base class for all non-validation SDK errors;
+// `ContractError extends SdkError` wraps a failed contract call with a typed
+// `errorType`, an optional `recovery` suggestion, and the raw Soroban error
+// code. `parseContractError` is the mapping entry point client.ts funnels
+// every simulate/send/getTransaction failure through. `setErrorReporter` is
+// an optional, dependency-free analytics/observability hook.
+//
+// NOTE: `CONTRACT_ERROR_MAP`'s numeric codes are a placeholder/starter set —
+// see the banner comment at the top of `src/errors.ts` for details on why,
+// and what must be reconciled before relying on them against live contracts.
+export {
+  SdkError,
+  ContractError,
+  ContractErrorType,
+  CONTRACT_ERROR_MAP,
+  parseContractError,
+  setErrorReporter,
+  type RecoverySuggestion,
+} from './errors';
 
 // Stellar primitives the client surface needs — re-exported so consumers
 // don't need a direct @stellar/stellar-sdk dependency for common cases.
@@ -51,11 +127,12 @@ export { Contract, Networks, xdr, nativeToScVal, scValToNative } from '@stellar/
 // // Stop polling when done:
 // stop();
 // ```
-export { listenToEvents } from './events';
+export { listenToEvents, replayEvents } from './events';
 export type {
   ProtocolEventName,
   ProtocolEvent,
   ListenToEventsOptions,
+  ReplayEventsOptions,
   StopListening,
   // Per-event payload types
   InvoiceRegisteredData,
@@ -78,3 +155,74 @@ export type {
   PoolPayoutData,
   ReputationRecordedData,
 } from './events';
+
+// ── Offline cache (IndexedDB, stale-while-revalidate) ───────────────────────
+// Browser-only, gracefully no-ops under SSR/Node (see cache.ts). Caches
+// invoice/offer/position reads with configurable per-type TTLs and evicts
+// least-recently-used entries once total cached size exceeds 50 MB.
+//
+// Instance-scoped, not module-global (PR #236 review): `createCache(scope)`
+// returns a handle bound to one immutable network+account `CacheScope`, each
+// with its own private IndexedDB connection, so concurrent handles never
+// race over which database is "current" and switching wallets never serves
+// one identity's cached data to another. `createInvofiClient` builds one
+// automatically from `cfg.networkPassphrase`/`cfg.accountAddress` and
+// exposes it as `client.cache` — its state-changing methods
+// (register/accept/reject/repay/etc.) already call `cache.invalidate()`
+// internally on success. On an explicit wallet disconnect, call
+// `client.cache.clearCache()` to wipe the departing account's store.
+//
+// @example
+// ```ts
+// import { createCache, CACHE_TTL_MS } from '@invofi/sdk';
+//
+// // Usually just `client.cache` from createInvofiClient — shown standalone
+// // here for a caller that wants a cache without a full client.
+// const cache = createCache({ network: cfg.networkPassphrase, accountAddress });
+//
+// const { data, isStale, refresh } = await cache.staleWhileRevalidate(
+//   `invoices:${status}:${page}`,
+//   CACHE_TTL_MS.invoices,
+//   () => client.listInvoices(status, page),
+// );
+// // Render `data` immediately (may be null/stale); `refresh` resolves once
+// // the background re-fetch has silently updated the cache.
+// ```
+export { createCache, isIndexedDbAvailable, CACHE_TTL_MS, MAX_CACHE_SIZE_BYTES } from './cache';
+export type { CacheEntry, CacheHandle, CacheScope, StaleWhileRevalidateResult } from './cache';
+
+// ── Transaction simulation engine (#220) ───────────────────────────────────
+// Performs dry-run validation of transactions before submission, catching
+// errors early and providing detailed, user-friendly feedback. Simulation
+// results are cached for 30 seconds to avoid duplicate network calls.
+//
+// @example
+// ```ts
+// import { simulateTransaction, SimulationError } from '@invofi/sdk';
+//
+// const result = await simulateTransaction(rpcServer, tx, networkPassphrase);
+// if (!result.success) {
+//   console.error(result.error.message);     // human-readable
+//   console.log(result.error.suggestion);     // "suggested fix" hint
+//   console.log(result.error.simulationCategory); // INSUFFICIENT_BALANCE, etc.
+// }
+// ```
+export {
+  simulateTransaction,
+  simulateBatch,
+  simulateOrThrow,
+  simulateBatchOrThrow,
+  SimulationError,
+  SimulationFailureCategory,
+  clearSimulationCache,
+  setSimulationReporter,
+  SIMULATION_CACHE_TTL_MS,
+} from './simulation';
+export type {
+  SimulationResult,
+  SimulationSuccessResult,
+  SimulationFailureResult,
+  BatchSimulationResult,
+  BatchSimulationSuccessResult,
+  BatchSimulationFailureResult,
+} from './simulation';

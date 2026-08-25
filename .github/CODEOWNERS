@@ -1,16 +1,39 @@
-# InvoFi code owners
-# These users are automatically requested for review on PRs that touch their areas.
+# InvoFi Code Owners
+# Automatically requested for review on PRs that touch their areas.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Global fallback — repo maintainer reviews everything
-* @samjay8
+# ── Global fallback ───────────────────────────────────────────────────────────
+# Maintainer reviews everything not claimed by a more specific rule below.
+*                                   @samjay8
 
-# Smart contracts
-/invofi/apps/contracts/ @samjay8
+# ── Frontend (Next.js 14 + Supabase) ──────────────────────────────────────────
+/invofi/apps/frontend/              @samjay8
+/invofi/apps/frontend/src/app/      @samjay8
+/invofi/apps/frontend/src/components/ @samjay8
+/invofi/apps/frontend/src/hooks/    @samjay8
+/invofi/apps/frontend/src/lib/      @samjay8
 
-# Frontend
-/invofi/apps/frontend/ @samjay8
+# ── SDK (@invofi/sdk) ─────────────────────────────────────────────────────────
+/invofi/apps/sdk/                   @samjay8
 
-# Documentation and community files
-/docs/ @samjay8
-/README.md @samjay8
-/CONTRIBUTING.md @samjay8
+# ── Indexer (event poller) ────────────────────────────────────────────────────
+/invofi/apps/indexer/               @samjay8
+
+# ── CI / GitHub Actions ───────────────────────────────────────────────────────
+/.github/workflows/                 @samjay8
+/.github/labeler.yml                @samjay8
+/.github/ISSUE_TEMPLATE/            @samjay8
+/.github/PULL_REQUEST_TEMPLATE.md   @samjay8
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+/docs/                              @samjay8
+/README.md                          @samjay8
+/CONTRIBUTING.md                    @samjay8
+/docs/compliance.md                 @samjay8
+
+# ── Scripts (keeper, deploy, etc.) ────────────────────────────────────────────
+/scripts/                           @samjay8
+
+# ── Config files ──────────────────────────────────────────────────────────────
+/commitlint.config.js               @samjay8
+/.coderrabbit.yaml                  @samjay8

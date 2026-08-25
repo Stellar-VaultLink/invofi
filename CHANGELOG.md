@@ -14,6 +14,12 @@ mechanically from the git history.
 
 ### Added
 
+- **Invoice on-chain activity timeline** — the invoice detail page lists the
+  invoice's lifecycle events (registered, offers created/accepted, repayments,
+  marked overdue, disputes, defaults) newest-first, sourced from Soroban RPC
+  `getEvents` scoped to one invoice id. Each row shows a human-readable label,
+  raw event type, timestamp, ledger number, and a Stellar Expert tx link.
+  Data layer is shaped for a drop-in switch to the indexer events table (#95)
 - **Secondary-market position listings** — `/marketplace/positions`: lenders
   publish an ask (invoice reference, position size, asking price) and browse,
   filter, and sort everyone else's. Discovery only — no matching, custody, or

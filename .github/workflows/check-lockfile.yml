@@ -1,0 +1,32 @@
+name: Check Lockfile Sync
+
+on:
+  pull_request:
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+
+jobs:
+  check-sync:
+    name: Verify package-lock.json is in sync
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: invofi/apps/frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: invofi/apps/frontend/package-lock.json
+      - name: Check if lock file is in sync
+        run: |
+          # Install with package-lock only to detect drift
+          npm install --package-lock-only --ignore-scripts --legacy-peer-deps 2>&1
+          if ! git diff --quiet package-lock.json; then
+            echo "::error::package-lock.json is out of sync with package.json. Please run 'npm install' and commit the updated lock file."
+            git diff package-lock.json
+            exit 1
+          fi
+          echo "package-lock.json is in sync."

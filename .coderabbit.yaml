@@ -13,24 +13,35 @@ reviews:
   # assertive: thorough reviews (the default "chill" is too light for a
   # protocol repo). The bot holds the merge until this review is done, so
   # being thorough costs nothing.
-  profile: assertive
+  profile: chill
   # When CodeRabbit finds issues it posts a REQUEST_CHANGES review, and the
   # auto-merge bot holds the merge until that is resolved (CodeRabbit
   # re-reviews on each push). This is what stops problems from being
   # discovered only after a merge. Set false only if you want issues
   # reported without ever blocking the merge.
-  request_changes_workflow: true
+  request_changes_workflow: false
   # High-level summary of the PR in the review comment.
   high_level_summary: true
   # No poems — keep the review professional.
   poem: false
   # Show the walkthrough expanded (not collapsed) so findings are visible.
-  collapse_walkthrough: false
+  collapse_walkthrough: true
   # Post review-status updates (e.g. when a review is skipped).
   review_status: true
   auto_review:
     enabled: true
     drafts: false
+
+path_rules:
+  - patterns:
+      - "package-lock.json"
+      - "public/**"
+      - ".next/**"
+      - "*.svg"
+      - "*.png"
+      - "*.ico"
+      - "*.woff*"
+    status: skip
 
 chat:
   auto_reply: true

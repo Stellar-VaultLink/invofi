@@ -173,6 +173,7 @@ invofi/
 │           │   ├── invoices/         Create and view invoices
 │           │   ├── marketplace/      Lender invoice browser
 │           │   │   └── positions/    Secondary-market position listings
+│           │   ├── api/documents/    Invoice document upload + content routes (issue #222)
 │           │   ├── portfolio/        Lender investment tracker
 │           │   ├── profile/          User profile + display name
 │           │   └── settings/         Account settings
@@ -182,20 +183,28 @@ invofi/
 │           │   ├── common/           ConfirmDialog, StatsCard, StatsGrid,
 │           │   │                     StatusBadge, PageHeader, EmptyState
 │           │   ├── invoices/         InvoiceCard, InvoiceForm, InvoiceTable,
-│           │   │                     OfferList
+│           │   │                     OfferList, EventTimeline (on-chain audit trail)
 │           │   ├── layout/           Navbar (dark mode + a11y), Footer
+│           │   ├── marketplace/      MarketplaceCard, PositionListingCard, etc.
+│           │   ├── portfolio/        LivePortfolioProvider, ConnectionStatus,
+│           │   │                     RepaymentProgress (live dashboard, issue #221)
 │           │   └── ui/               shadcn/ui — button, dialog, table,
 │           │                         badge, card, input, tabs, toast...
 │           ├── hooks/                useInvoices, useOffers, useMarketplace,
 │           │                         useLocalStorage, useDebounce, useMediaQuery
 │           └── lib/
 │               ├── contract.ts       Soroban contract call helpers (3 contracts)
+│               ├── live/             Live portfolio engine (issue #221): WebSocket
+│               │                     + Soroban-event polling transports, per-position
+│               │                     throttle, yield/APY math, USD pricing, reducer
 │               ├── approved-wallets.ts  Approved-wallet allowlist (extension point)
 │               ├── walletkit.ts      stellar-wallets-kit init + active-wallet signing
 │               ├── horizon.ts        Stellar Horizon API helpers
 │               ├── supabase.ts       Auth + database helpers
 │               ├── formatters.ts     Amount, date, address formatters
 │               ├── csv.ts            CSV export helpers
+│               ├── documents/        Invoice document validation, SHA-256 hash,
+│               │                     IPFS/Pinata server helpers
 │               └── constants.ts      Network config, risk tiers, enums
 ├── scripts/
 │   └── close-issues.sh              Bulk GitHub issue close
@@ -440,9 +449,45 @@ create table financing_offers (
   created_at timestamptz default now()
 );
 
+-- Multi-signature approval queue for high-value operations (issue #219).
+-- One row per pending transaction; the base envelope is stored as XDR and each
+-- co-signer's signature lands in transaction_approvals. Signatures authorize
+-- this one envelope only, so storing them here is safe (never in localStorage).
+create table pending_transactions (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  operation text not null,
+  initiator text not null,
+  initiator_id uuid references auth.users(id),
+  xdr text not null,
+  network_passphrase text not null,
+  amount text not null,
+  currency text not null,
+  required_signatures integer not null default 3,
+  status text not null default 'Pending'
+    check (status in ('Pending', 'Executed', 'Rejected', 'Expired')),
+  tx_hash text,
+  expires_at timestamptz not null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table transaction_approvals (
+  id uuid primary key default gen_random_uuid(),
+  pending_tx_id uuid not null references pending_transactions(id) on delete cascade,
+  approver_address text not null,
+  approver_id uuid references auth.users(id),
+  signature text not null,
+  created_at timestamptz default now(),
+  -- One approval per co-signer per transaction (enforces distinct-approver count).
+  unique (pending_tx_id, approver_address)
+);
+
 alter table user_profiles enable row level security;
 alter table invoices enable row level security;
 alter table financing_offers enable row level security;
+alter table pending_transactions enable row level security;
+alter table transaction_approvals enable row level security;
 
 create policy "Anyone can read invoices" on invoices for select using (true);
 create policy "Owner can insert invoices" on invoices for insert with check (originator_id = auth.uid());
@@ -455,7 +500,42 @@ create policy "Parties can update offers" on financing_offers for update
     exists (select 1 from invoices where id = invoice_id and originator_id = auth.uid()));
 
 create policy "Own profile" on user_profiles for all using (id = auth.uid());
+
+-- The approval queue is coordination state, not the source of truth (the account
+-- submit enforces the real threshold on-chain — txBAD_AUTH_EXTRA). RLS still adds
+-- defense-in-depth: only authenticated users can read it, an approval is bound to
+-- its author, and only a request's participants (initiator or an approver) can
+-- change its status. Tighten reads to an allow-list of signer addresses per
+-- deployment if you don't want the whole org to see the queue.
+create policy "Read pending transactions" on pending_transactions for select using (auth.uid() is not null);
+create policy "Create pending transactions" on pending_transactions for insert with check (initiator_id = auth.uid());
+create policy "Participants update pending transactions" on pending_transactions for update using (
+  initiator_id = auth.uid()
+  or exists (
+    select 1 from transaction_approvals ta
+    where ta.pending_tx_id = pending_transactions.id and ta.approver_id = auth.uid()
+  )
+);
+
+create policy "Read approvals" on transaction_approvals for select using (auth.uid() is not null);
+-- Bind each approval to the authenticated author. The stored signature must also
+-- verify under approver_address (checked client-side in signatureForAddress before
+-- insert); a Postgres RPC that re-checks it server-side is a follow-up.
+create policy "Insert own approval" on transaction_approvals for insert with check (approver_id = auth.uid());
 ```
+
+The `pending_transactions` and `transaction_approvals` tables above ship as a
+runnable, idempotent migration at
+`invofi/apps/frontend/src/lib/migrations/002_multisig_transactions.sql` (with the
+supporting indexes and triggers), mirroring `001_lender_preferences.sql` — apply it
+in the Supabase SQL Editor.
+
+> **Co-signer notification is server-side.** The frontend never sends
+> notifications (a `NEXT_PUBLIC_*` webhook would be world-readable and callable
+> with forged bodies). Wire a **Supabase Database Webhook / Edge Function on
+> `insert` into `pending_transactions`** that runs under the service role and
+> emails/Slacks the configured co-signers. The queue polls regardless, so a
+> co-signer still sees a request even without a push. See ADR-0006 §5.
 
 ---
 
@@ -475,6 +555,8 @@ create policy "Own profile" on user_profiles for all using (id = auth.uid());
 | `NEXT_PUBLIC_STELLAR_NETWORK` | `testnet` |
 | `NEXT_PUBLIC_RPC_URL` | `https://soroban-testnet.stellar.org` |
 | `NEXT_PUBLIC_HORIZON_URL` | `https://horizon-testnet.stellar.org` |
+| `NEXT_PUBLIC_WS_URL` | *(optional)* WebSocket relay for the live portfolio dashboard — omit to use the polling fallback |
+| `NEXT_PUBLIC_XLM_USD_PRICE` | *(optional)* Fallback XLM/USD price for live USD position values |
 
 ---
 
@@ -539,6 +621,7 @@ Both identities are auto-funded via Friendbot on testnet. See
 - [x] Architecture Decision Records — ADR index in both repos
 - [x] Deployer-bound initialization — `__constructor` on all contracts, no front-runnable `initialize()` (issue #75)
 - [x] Compliance posture documented — KYC/SEP-12 roadmap, jurisdictions, securities-by-design
+- [x] Live portfolio dashboard — WebSocket streaming (position/yield/repayment) with reconnection + polling fallback (issue #221)
 - [ ] Mainnet deployment
 - [ ] Oracle-based invoice verification and risk scoring
 - [ ] Multi-signature treasury and escrow
@@ -581,6 +664,43 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/Ajibose">
+                    <img src="https://avatars.githubusercontent.com/u/99620327?v=4" width="100;" alt="Ajibose"/>
+                    <br />
+                    <sub><b>Ajibose Ibrahim</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/waterWang">
+                    <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
+                    <br />
+                    <sub><b>water</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/fadesany">
+                    <img src="https://avatars.githubusercontent.com/u/285033142?v=4" width="100;" alt="fadesany"/>
+                    <br />
+                    <sub><b>fadesany</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/JinadJay">
+                    <img src="https://avatars.githubusercontent.com/u/103272555?v=4" width="100;" alt="JinadJay"/>
+                    <br />
+                    <sub><b>JinadJay</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Abdulrasaq1515">
+                    <img src="https://avatars.githubusercontent.com/u/209874744?v=4" width="100;" alt="Abdulrasaq1515"/>
+                    <br />
+                    <sub><b>Abdulrasaq1515</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
                 <a href="https://github.com/MJ-RWA">
                     <img src="https://avatars.githubusercontent.com/u/240063069?v=4" width="100;" alt="MJ-RWA"/>
                     <br />
@@ -602,10 +722,47 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/KarenZita01">
+                    <img src="https://avatars.githubusercontent.com/u/261386615?v=4" width="100;" alt="KarenZita01"/>
+                    <br />
+                    <sub><b>Karen Agbo</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Aycode01">
+                    <img src="https://avatars.githubusercontent.com/u/145759024?v=4" width="100;" alt="Aycode01"/>
+                    <br />
+                    <sub><b>Omitogun Ayobami</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Babigdk">
+                    <img src="https://avatars.githubusercontent.com/u/29020286?v=4" width="100;" alt="Babigdk"/>
+                    <br />
+                    <sub><b>Abdulrazaq Isa Babi</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
                 <a href="https://github.com/Damieee">
                     <img src="https://avatars.githubusercontent.com/u/115638760?v=4" width="100;" alt="Damieee"/>
                     <br />
                     <sub><b>Oluwadamilare E</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Agbasimere">
+                    <img src="https://avatars.githubusercontent.com/u/107962282?v=4" width="100;" alt="Agbasimere"/>
+                    <br />
+                    <sub><b>Buik3m</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/EneGab">
+                    <img src="https://avatars.githubusercontent.com/u/157655503?v=4" width="100;" alt="EneGab"/>
+                    <br />
+                    <sub><b>EneGab</b></sub>
                 </a>
             </td>
             <td align="center">
@@ -615,13 +772,11 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Ganesh chandra</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
-                <a href="https://github.com/Aycode01">
-                    <img src="https://avatars.githubusercontent.com/u/145759024?v=4" width="100;" alt="Aycode01"/>
+                <a href="https://github.com/AbuJulaybeeb">
+                    <img src="https://avatars.githubusercontent.com/u/178188157?v=4" width="100;" alt="AbuJulaybeeb"/>
                     <br />
-                    <sub><b>Omitogun Ayobami</b></sub>
+                    <sub><b>Jibril Raji Qasim </b></sub>
                 </a>
             </td>
             <td align="center">
@@ -631,6 +786,8 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Damilola Ogunrotimi</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/Jayking40">
                     <img src="https://avatars.githubusercontent.com/u/101714779?v=4" width="100;" alt="Jayking40"/>
@@ -659,13 +816,34 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Raw_Nuke</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/Jah-yee">
                     <img src="https://avatars.githubusercontent.com/u/166608075?v=4" width="100;" alt="Jah-yee"/>
                     <br />
                     <sub><b>RoomWithOutRoof</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/wagmiiii">
+                    <img src="https://avatars.githubusercontent.com/u/130152505?v=4" width="100;" alt="wagmiiii"/>
+                    <br />
+                    <sub><b>WAGMI</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/mansur-codes">
+                    <img src="https://avatars.githubusercontent.com/u/114710463?v=4" width="100;" alt="mansur-codes"/>
+                    <br />
+                    <sub><b>levi</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/xeladev4">
+                    <img src="https://avatars.githubusercontent.com/u/171882586?v=4" width="100;" alt="xeladev4"/>
+                    <br />
+                    <sub><b>xeladev4</b></sub>
                 </a>
             </td>
 		</tr>

@@ -38,8 +38,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach, type MockedFunction } from 'vitest';
 import { nativeToScVal, rpc as SorobanRpc } from '@stellar/stellar-sdk';
-import { listenToEvents } from '../src/events';
-import type { ProtocolEvent, ListenToEventsOptions } from '../src/events';
+import { listenToEvents, replayEvents } from '../src/events';
+import type { ProtocolEvent, ListenToEventsOptions, ReplayEventsOptions } from '../src/events';
 
 // ── Mock SorobanRpc.Server ────────────────────────────────────────────────────
 // vi.mock hoists to the top so the import in events.ts picks up the mock.
@@ -74,13 +74,14 @@ function makeRawEvent(
   subjectId: string,
   dataFields: unknown[],
   ledger = 100,
+  contractId: string = CONTRACT_ID,
 ): SorobanRpc.Api.EventResponse {
   return {
     id: `${ledger}-0`,
     type: 'contract' as const,
     ledger,
     ledgerClosedAt: new Date().toISOString(),
-    contractId: CONTRACT_ID,
+    contractId,
     txHash: TX_HASH,
     topic: [
       nativeToScVal(eventName, { type: 'symbol' }),
@@ -721,3 +722,209 @@ describe('listenToEvents — cursor advance', () => {
     expect(mockGetEvents.mock.calls[1][0]).toMatchObject({ startLedger: 101 });
   });
 });
+
+// ── 10. replayEvents ───────────────────────────────────────────────────────────
+
+describe('replayEvents — argument validation', () => {
+  it('throws when from is missing, negative, or not an integer', async () => {
+    await expect(replayEvents({ from: undefined } as unknown as ReplayEventsOptions)).rejects.toThrow('valid starting ledger');
+    await expect(replayEvents({ from: -1 })).rejects.toThrow('non-negative integer');
+    await expect(replayEvents({ from: 10.5 })).rejects.toThrow('non-negative integer');
+  });
+
+  it('throws when to is less than from', async () => {
+    await expect(replayEvents({ from: 2000, to: 1000 })).rejects.toThrow('greater than or equal to');
+  });
+
+  it('throws when rpcUrl is explicitly empty', async () => {
+    await expect(replayEvents({ rpcUrl: '', from: 1000, to: 2000 })).rejects.toThrow('rpcUrl must not be empty');
+  });
+});
+
+describe('replayEvents — basic range replay', () => {
+  it('fetches events in range and delivers them in chronological order', async () => {
+    const raw1 = makeRawEvent(
+      'inv_reg', 'inv_1001',
+      ['GBUSINESS1234567890123456789012345678901234567890123456', 50_000n, 1_700_000_000n],
+      1050,
+    );
+    const raw2 = makeRawEvent(
+      'off_acc', 'off_2002',
+      ['inv_1001', 'GLENDER123456789012345678901234567890123456789012345678', 50_000n],
+      1100,
+    );
+
+    mockGetEvents.mockResolvedValueOnce({
+      events: [raw1, raw2],
+      latestLedger: 1200,
+    });
+
+    const received: ProtocolEvent[] = [];
+    const result = await replayEvents({
+      rpcUrl: RPC_URL,
+      contractIds: [CONTRACT_ID],
+      from: 1000,
+      to: 1200,
+      onEvent: (e) => received.push(e),
+    });
+
+    expect(result).toHaveLength(2);
+    expect(received).toHaveLength(2);
+    expect(result[0].type).toBe('inv_reg');
+    expect(result[0].ledger).toBe(1050);
+    expect(result[1].type).toBe('off_acc');
+    expect(result[1].ledger).toBe(1100);
+
+    expect(mockGetEvents).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startLedger: 1000,
+        filters: [{ type: 'contract', contractIds: [CONTRACT_ID] }],
+      }),
+    );
+  });
+
+  it('supports positional calling style replayEvents(from, to, callback, options)', async () => {
+    const raw = makeRawEvent('inv_cxl', 'inv_cxl_1', ['GBUSINESS123'], 1050);
+    mockGetEvents.mockResolvedValueOnce({
+      events: [raw],
+      latestLedger: 1100,
+    });
+
+    const callbackEvents: ProtocolEvent[] = [];
+    const events = await replayEvents(1000, 1100, (e) => callbackEvents.push(e), {
+      rpcUrl: RPC_URL,
+      contractIds: [CONTRACT_ID],
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe('inv_cxl');
+    expect(callbackEvents).toHaveLength(1);
+  });
+
+  it('defaults to current latest ledger when to is omitted', async () => {
+    mockGetLatestLedger.mockResolvedValueOnce({ sequence: 500 });
+    mockGetEvents.mockResolvedValueOnce({
+      events: [],
+      latestLedger: 500,
+    });
+
+    const events = await replayEvents({
+      rpcUrl: RPC_URL,
+      contractIds: [CONTRACT_ID],
+      from: 400,
+    });
+
+    expect(mockGetLatestLedger).toHaveBeenCalled();
+    expect(events).toEqual([]);
+    expect(mockGetEvents).toHaveBeenCalledWith(expect.objectContaining({ startLedger: 400 }));
+  });
+});
+
+describe('replayEvents — pagination across large ranges (>1000 ledgers)', () => {
+  it('automatically splits ranges larger than 1000 ledgers into sequential window batches', async () => {
+    const rawWindow1 = makeRawEvent('inv_reg', 'inv_w1', ['G1', 1000n, 12345n], 1500);
+    const rawWindow2 = makeRawEvent('off_new', 'off_w2', ['inv_w1', 'G2', 1000n, 500], 2500);
+    const rawWindow3 = makeRawEvent('inv_rep', 'inv_w3', ['off_w2', 1000n, true], 3200);
+
+    // Range 1000..3500 (2501 ledgers) -> 3 windows: [1000..1999], [2000..2999], [3000..3500]
+    mockGetEvents
+      .mockResolvedValueOnce({ events: [rawWindow1], latestLedger: 3500 })
+      .mockResolvedValueOnce({ events: [rawWindow2], latestLedger: 3500 })
+      .mockResolvedValueOnce({ events: [rawWindow3], latestLedger: 3500 });
+
+    const result = await replayEvents({
+      rpcUrl: RPC_URL,
+      contractIds: [CONTRACT_ID],
+      from: 1000,
+      to: 3500,
+    });
+
+    expect(result).toHaveLength(3);
+    expect(result[0].subjectId).toBe('inv_w1');
+    expect(result[1].subjectId).toBe('off_w2');
+    expect(result[2].subjectId).toBe('inv_w3');
+
+    expect(mockGetEvents).toHaveBeenCalledTimes(3);
+    expect(mockGetEvents.mock.calls[0][0]).toMatchObject({ startLedger: 1000 });
+    expect(mockGetEvents.mock.calls[1][0]).toMatchObject({ startLedger: 2000 });
+    expect(mockGetEvents.mock.calls[2][0]).toMatchObject({ startLedger: 3000 });
+  });
+
+  it('paginates multiple pages within a single window using cursor', async () => {
+    const rawPage1_1 = makeRawEvent('inv_reg', 'inv_p1_1', ['G1', 1000n, 12345n], 1020);
+    const rawPage1_2 = makeRawEvent('inv_reg', 'inv_p1_2', ['G2', 2000n, 12345n], 1050);
+    const rawPage2_1 = makeRawEvent('off_acc', 'off_p2_1', ['inv_p1_1', 'GL', 1000n], 1080);
+
+    // Window 1000..1100 with limitPerPage=2
+    mockGetEvents
+      .mockResolvedValueOnce({
+        events: [rawPage1_1, rawPage1_2],
+        latestLedger: 1100,
+        cursor: 'cursor-page-2',
+      } as unknown as GetEventsResult)
+      .mockResolvedValueOnce({
+        events: [rawPage2_1],
+        latestLedger: 1100,
+      });
+
+    const result = await replayEvents({
+      rpcUrl: RPC_URL,
+      contractIds: [CONTRACT_ID],
+      from: 1000,
+      to: 1100,
+      limitPerPage: 2,
+    });
+
+    expect(result).toHaveLength(3);
+    expect(result.map((e) => e.subjectId)).toEqual(['inv_p1_1', 'inv_p1_2', 'off_p2_1']);
+    expect(mockGetEvents).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('replayEvents — filtering & type safety', () => {
+  it('filters events by contractId and eventTypes', async () => {
+    const otherContractId = 'CBOTHERCONTRACT123456789012345678901234567890123456789012';
+    const matching1 = makeRawEvent('inv_reg', 'inv_match', ['G1', 100n, 200n], 1010);
+    const matching2 = makeRawEvent('off_acc', 'off_match', ['inv_match', 'G2', 100n], 1020);
+    const wrongType = makeRawEvent('pool_stk', 'pool_1', ['G3', 500n], 1030);
+    const wrongContract = makeRawEvent('inv_reg', 'inv_wrong_contract', ['G4', 100n, 200n], 1040, otherContractId);
+
+    mockGetEvents.mockResolvedValueOnce({
+      events: [matching1, matching2, wrongType, wrongContract],
+      latestLedger: 1100,
+    });
+
+    const result = await replayEvents({
+      rpcUrl: RPC_URL,
+      contractIds: [CONTRACT_ID],
+      eventTypes: ['inv_reg', 'off_acc'],
+      from: 1000,
+      to: 1100,
+    });
+
+    expect(result).toHaveLength(2);
+    expect(result.map((e) => e.type)).toEqual(['inv_reg', 'off_acc']);
+    expect(result.map((e) => e.subjectId)).toEqual(['inv_match', 'off_match']);
+  });
+
+  it('correctly handles chronological sorting across replayed events', async () => {
+    const rawLater = makeRawEvent('inv_rep', 'rep_2', ['off_1', 1000n, true], 1500);
+    const rawEarlier = makeRawEvent('inv_reg', 'reg_1', ['G1', 1000n, 12345n], 1200);
+
+    mockGetEvents.mockResolvedValueOnce({
+      events: [rawLater, rawEarlier], // RPC returned unsorted
+      latestLedger: 1600,
+    });
+
+    const result = await replayEvents({
+      rpcUrl: RPC_URL,
+      from: 1000,
+      to: 1600,
+    });
+
+    expect(result).toHaveLength(2);
+    expect(result[0].ledger).toBe(1200);
+    expect(result[1].ledger).toBe(1500);
+  });
+});
+

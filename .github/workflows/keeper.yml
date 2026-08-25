@@ -42,7 +42,7 @@ jobs:
           cache-dependency-path: invofi/scripts/package-lock.json
       - run: npm ci
       - run: npm test
-      - run: npm run type-check
+      - run: npx tsc --noEmit --project tsconfig.keeper.json
       - name: Download checkpoint artifact
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
         with:
@@ -50,9 +50,6 @@ jobs:
           path: invofi/scripts
         continue-on-error: true
       - name: Run keeper
-        # Note: continuous long-running daemon (KEEPER_MODE=event-driven) is intended
-        # for persistent container/VPS hosting. In scheduled GitHub Actions runs, we
-        # execute KEEPER_MODE=event-catchup to process recent contract events before the sweep.
         env:
           KEEPER_MODE: event-catchup
           RPC_URL: https://soroban-testnet.stellar.org

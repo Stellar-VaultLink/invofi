@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { LivePortfolioProvider } from '@/components/portfolio/LivePortfolioProvider';
 
 export const metadata: Metadata = {
   title: 'Portfolio',
@@ -6,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function PortfolioLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <LivePortfolioProvider>
+      {children}
+    </LivePortfolioProvider>
+  );
 }

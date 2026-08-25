@@ -20,6 +20,25 @@ share one implementation instead of each holding a private copy.
   client once (contract IDs + the active wallet signer) and re-exports the
   typed methods. No duplicate contract-call code remains in the frontend.
 
+## Contract–SDK Method Mapping
+
+| Contract Method | SDK Export |
+|---|---|
+| `register_invoice` | `registerInvoice` |
+| `get_invoice` | `getInvoice` |
+| `cancel_invoice` | `cancelInvoice` |
+| `create_offer` | `createOffer` |
+| `get_offer` | `getOffer` |
+| `accept_offer` | `acceptOffer` |
+| `reject_offer` | `rejectOffer` |
+| `repay_invoice` | `repayInvoice` |
+| `mark_overdue` | `markOverdue` |
+| `reclaim_invoice` | `reclaimInvoice` |
+| `get_position_token` | `getPositionTokenId` |
+| `balance` | `getTokenBalance` |
+| `decimals` | `getTokenDecimals` |
+| `transfer` | `transferPositionToken`
+
 ## Usage
 
 ```ts
@@ -59,6 +78,48 @@ await invofi.acceptOffer('off_001', originatorAddress);
 Read-only calls accept an optional `sourceAccount` (the connected wallet);
 when omitted they fall back to a fixed read account that is funded on testnet,
 so reads never fail because a throw-away account doesn't exist in the ledger.
+
+## Typed contract call builder — `client.contracts`
+
+Every method above is also reachable through a namespaced, typed builder
+(#215). It wraps the exact same methods — no duplicate contract-call logic —
+so the two forms are interchangeable:
+
+```ts
+// Flat method (positional args):
+await invofi.acceptOffer('off_001', originatorAddress);
+
+// Typed builder (single params object, matching the on-chain ABI):
+await invofi.contracts.financing.acceptOffer({
+  offer_id: 'off_001',
+  originator: originatorAddress,
+});
+```
+
+What the typed builder adds:
+
+- **Compile-time checking** — the function name (`registerInvoice`, not
+  `registerInvoic`) and every parameter's presence/type are checked by
+  TypeScript against the ABI in `src/types/contract-abi.ts`; a wrong name or
+  wrong parameter type is a build error, and your editor autocompletes both.
+- **Runtime validation** — before a call reaches the network, its `params`
+  object is checked against that same ABI (every required field present, the
+  right JS type for its declared Soroban scalar), independent of whatever
+  field-specific checks (range, address format, …) the underlying flat
+  method already performs. A bad call throws `SdkValidationError` with a
+  `code` you can match on (see `src/validation.ts`).
+
+| Namespace | Methods |
+|---|---|
+| `contracts.registry` | `registerInvoice`, `getInvoice`, `cancelInvoice` |
+| `contracts.financing` | `createOffer`, `getOffer`, `acceptOffer`, `rejectOffer`, `getPositionTokenId` |
+| `contracts.repayment` | `repayInvoice`, `markOverdue`, `reclaimInvoice` |
+| `contracts.positionToken` | `getBalance`, `getDecimals`, `transfer` (takes `token_id` since the SEP-41 token's contract ID is dynamic) |
+
+Available on both `createInvofiClient(...)` and `createMockClient(...)` — a
+component built against `client.contracts.*` works unchanged in offline demo
+mode. See the header comment in `src/types/contract-abi.ts` for how to
+regenerate the ABI after a contract build.
 
 ## Event stream — `listenToEvents`
 
@@ -146,6 +207,110 @@ changes.
 | `pollIntervalMs`  | `number`                    | `5000`     | Poll interval in ms |
 | `startLedger`     | `number`                    | latest     | Starting ledger (omit for live-only) |
 | `maxRetries`      | `number`                    | `3`        | Max consecutive failures before back-off |
+
+## Contract-interaction testing framework (issue #226)
+
+The mock client is a full contract-interaction testing framework. Tests run
+entirely in memory — no testnet, no RPC, no wallet — and can assert on the
+same typed surfaces the real client exposes, including the `ProtocolEvent`
+shapes that `listenToEvents` delivers.
+
+### What you get
+
+- **In-memory state** — `createMockClient()` starts from deterministic
+  pre-seeded fixtures (invoices in every status, offers, position-token
+  balances). Each instance gets a fresh copy, so tests never leak state.
+- **Event emission tracking** — every successful state-changing call records
+  the protocol event it would have emitted on-chain in `client.events`
+  (`inv_reg`, `inv_cxl`, `off_new`, `off_acc`, `off_rej`, `inv_rep`,
+  `inv_ovd`, `off_def`), each with a deterministic fake `ledger`/`txHash`.
+- **Typed failure scenarios** — domain failures throw typed `ContractError`s:
+  `NOT_FOUND` (missing id), `UNAUTHORIZED` (wrong originator/lender),
+  `ALREADY_EXISTS` (duplicate id), `INSUFFICIENT_BALANCE` (overdraft).
+- **Configurable failure injection** — simulate arbitrary RPC/contract
+  failures deterministically with the `failures` option, `failNext(...)`, or
+  `addFailure(...)`.
+- **State control** — `reset()` restores the seed between tests,
+  `setBalance`/`getBalance` set up balance scenarios, and
+  `seededInvoices()`/`seededOffers()` expose seeded fixtures.
+- **Fixture builders** — `createTestInvoice()` / `createTestOffer()` compose
+  SDK-valid pre-seeded data with sensible defaults and full overrides.
+
+### Example — happy path with event assertions
+
+```ts
+import { createMockClient, createTestInvoice, toStroops, MOCK_BUSINESS_A, ContractErrorType } from '@invofi/sdk';
+
+const client = createMockClient();
+
+// Compose a custom fixture and register it like a real call.
+const invoice = createTestInvoice({ id: 'inv_42', amount: toStroops(500) });
+await client.registerInvoice(
+  { id: invoice.id, amount: invoice.amount, currency: invoice.currency, dueDate: invoice.due_date },
+  invoice.originator,
+);
+
+// The mock emitted the same event the registry contract would publish:
+expect(client.events).toHaveLength(1);
+const emitted = client.events[0];
+expect(emitted.type).toBe('inv_reg');
+if (emitted.type === 'inv_reg') {
+  expect(emitted.subjectId).toBe('inv_42');
+  expect(emitted.data.amount).toBe(toStroops(500));
+}
+```
+
+### Example — failure scenarios
+
+```ts
+// Typed domain failures need no setup:
+await expect(client.getInvoice('inv_nope')).rejects.toMatchObject({
+  errorType: ContractErrorType.NOT_FOUND,
+});
+await expect(client.cancelInvoice('inv_mock_p001', MOCK_BUSINESS_A)).rejects.toMatchObject({
+  errorType: ContractErrorType.UNAUTHORIZED, // only the originator may cancel
+});
+
+// Inject an arbitrary failure for the next call only:
+client.failNext('acceptOffer', undefined, 'simulated outage');
+const offerId = 'off_mock_006';
+const originator = MOCK_BUSINESS_B;
+await expect(client.acceptOffer(offerId, originator)).rejects.toThrow(/simulated outage/);
+
+// Or configure a sticky rule up front:
+const flaky = createMockClient({
+  failures: [{ on: 'transferPositionToken', message: 'token contract paused' }],
+});
+```
+
+### Example — reset between test cases
+
+```ts
+const client = createMockClient();
+
+await client.acceptOffer('off_mock_006', MOCK_BUSINESS_B);   // mutates state + emits off_acc
+await client.reset();                                        // back to the seed
+
+expect((await client.getInvoice('inv_mock_p002')).status).toBe('Pending');
+expect(client.events).toHaveLength(0);
+```
+
+### Fixture builders
+
+| Helper             | Defaults                                                              |
+|--------------------|-----------------------------------------------------------------------|
+| `createTestInvoice`| `inv_test_001`, `MOCK_BUSINESS_A`, 100 XLM, due in 30 days, `Pending` |
+| `createTestOffer`  | `off_test_001`, `inv_test_001`, `MOCK_LENDER_B`, 5 %, 30 days, `Pending` |
+
+Both accept full overrides (`id`, `amount`, `currency`, `status`, …) plus
+readable aliases (`dueDate` for `due_date`, `invoiceId` for `invoice_id`). Use
+`toStroops(n)` to convert whole XLM/USDC units to stroops.
+
+> **Design note:** the mock implements the complete `InvofiClient` method
+> surface, so it is a drop-in for real contract interactions in tests and
+> demo mode alike. It deliberately does not simulate Soroban transaction
+> assembly/signing — validation, typed errors, events, and state transitions
+> are what test suites exercise against it.
 
 ## Local dev
 

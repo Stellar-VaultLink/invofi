@@ -1,4 +1,6 @@
 import { Horizon } from '@stellar/stellar-sdk';
+import { isMockMode } from './mock-mode';
+import { mockXlmBalance } from './mock';
 
 const HORIZON_URL =
   process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon-testnet.stellar.org';
@@ -15,17 +17,22 @@ export interface AccountBalance {
 }
 
 export async function getAccountBalances(publicKey: string): Promise<AccountBalance[]> {
+  if (isMockMode()) {
+    return [{ asset_type: 'native', balance: mockXlmBalance() }];
+  }
   const account = await horizon().loadAccount(publicKey);
   return account.balances as AccountBalance[];
 }
 
 export async function getXlmBalance(publicKey: string): Promise<string> {
+  if (isMockMode()) return mockXlmBalance();
   const balances = await getAccountBalances(publicKey);
   const native = balances.find(b => b.asset_type === 'native');
   return native?.balance ?? '0';
 }
 
 export async function getUsdcBalance(publicKey: string): Promise<string> {
+  if (isMockMode()) return '0';
   const USDC_ISSUER = process.env.NEXT_PUBLIC_USDC_ISSUER ?? '';
   const balances = await getAccountBalances(publicKey);
   const usdc = balances.find(
@@ -46,6 +53,7 @@ export async function getRecentTransactions(
   publicKey: string,
   limit = 10,
 ): Promise<TxRecord[]> {
+  if (isMockMode()) return [];
   const response = await horizon()
     .transactions()
     .forAccount(publicKey)
@@ -69,6 +77,7 @@ export function explorerUrl(hash: string): string {
 
 /** Returns true if the account exists on the network (i.e. has been funded). */
 export async function accountExists(publicKey: string): Promise<boolean> {
+  if (isMockMode()) return true;
   try {
     await horizon().loadAccount(publicKey);
     return true;
@@ -82,6 +91,7 @@ export async function accountExists(publicKey: string): Promise<boolean> {
  * Only works on testnet — safe to call; does nothing on mainnet.
  */
 export async function fundAccountViaFriendbot(publicKey: string): Promise<void> {
+  if (isMockMode()) return;
   const network = process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet';
   if (network === 'mainnet' || network === 'public') {
     throw new Error('Friendbot is only available on testnet.');

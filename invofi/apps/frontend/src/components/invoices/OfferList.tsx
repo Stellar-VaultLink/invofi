@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Download } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,8 +16,11 @@ import { useWallet } from '@/components/auth/WalletProvider';
 import { createOffer, acceptOffer, rejectOffer, repayInvoice, markOverdue, reclaimInvoice } from '@/lib/contract';
 import { supabase } from '@/lib/supabase';
 import { formatAmount, interestRateLabel, durationLabel, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
-import { GRACE_PERIOD_SECS } from '@/lib/constants';
+import { toCsv, downloadCsv } from '@/lib/csv';
+import { GRACE_PERIOD_SECS, STROOPS_PER_XLM } from '@/lib/constants';
 import { useToast } from '@/components/ui/use-toast';
+import { ToastAction } from '@/components/ui/toast';
+import { toErrorMessage } from '@/lib/errors';
 import type { Currency, FinancingOffer, Invoice } from '@/types';
 
 const offerSchema = z.object({
@@ -38,6 +42,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   const { publicKey } = useWallet();
   const { toast } = useToast();
   const [offers, setOffers] = useState<FinancingOffer[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -66,6 +71,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           amount: toStroopsBigInt(o.amount),
           amount_repaid: toStroopsBigInt(o.amount_repaid),
         })));
+        setLoadingOffers(false);
       });
   }, [invoiceId]);
 
@@ -100,7 +106,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       setShowForm(false);
       toast({ title: 'Offer submitted!', description: 'The invoice originator will be notified.' });
     } catch (err: unknown) {
-      toast({ title: 'Failed to submit offer', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to submit offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -118,7 +124,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       onUpdate(updatedInvoice);
       toast({ title: 'Offer accepted!', description: 'Invoice is now marked as Financed.' });
     } catch (err: unknown) {
-      toast({ title: 'Failed to accept offer', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to accept offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -131,9 +137,27 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       const updatedOffer = await rejectOffer(offer.id, publicKey);
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       await supabase.from('financing_offers').update({ status: 'Rejected' }).eq('id', offer.id);
-      toast({ title: 'Offer rejected.' });
+      toast({
+        title: 'Offer rejected.',
+        action: (
+          <ToastAction
+            altText="Undo reject"
+            onClick={async () => {
+              try {
+                await supabase.from('financing_offers').update({ status: 'Pending' }).eq('id', offer.id);
+                setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: 'Pending' as const } : o));
+                toast({ title: 'Rejection undone', description: 'Offer is now Pending again.' });
+              } catch (undoErr: unknown) {
+                toast({ title: 'Failed to undo reject', description: toErrorMessage(undoErr, 'Error'), variant: 'destructive' });
+              }
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
     } catch (err: unknown) {
-      toast({ title: 'Failed to reject offer', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to reject offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -172,7 +196,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           : 'Partial repayment recorded on-chain. Continue repaying until the balance clears.',
       });
     } catch (err: unknown) {
-      toast({ title: 'Failed to repay', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to repay', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -187,7 +211,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       onUpdate(updatedInvoice);
       toast({ title: 'Invoice marked overdue.' });
     } catch (err: unknown) {
-      toast({ title: 'Failed to mark overdue', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to mark overdue', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -202,7 +226,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       await supabase.from('financing_offers').update({ status: 'Defaulted' }).eq('id', offer.id);
       toast({ title: 'Offer marked defaulted.', description: 'This is an on-chain record — pursue recovery off-chain.' });
     } catch (err: unknown) {
-      toast({ title: 'Failed to reclaim', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: 'Failed to reclaim', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
       setActionId(null);
     }
@@ -216,11 +240,43 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
     invoice.status === 'Overdue' && (offer.status === 'Accepted' || offer.status === 'Financed') && publicKey === offer.lender &&
     nowSecs >= invoice.due_date + GRACE_PERIOD_SECS;
 
+  const exportOffersCsv = () => {
+    if (offers.length === 0) return;
+    const rows = offers.map(o => ({
+      id: o.id,
+      lender: o.lender,
+      amount: `${Number(o.amount) / STROOPS_PER_XLM} ${o.currency}`,
+      interest_rate: o.interest_rate,
+      term_days: Math.round(o.duration / 86_400),
+      status: o.status,
+      created_at: (o as unknown as { created_at?: string }).created_at ?? '',
+    }));
+    const csv = toCsv(rows, [
+      { key: 'id', header: 'Offer ID' },
+      { key: 'lender', header: 'Lender' },
+      { key: 'amount', header: 'Amount' },
+      { key: 'interest_rate', header: 'Interest (bps)' },
+      { key: 'term_days', header: 'Term (days)' },
+      { key: 'status', header: 'Status' },
+      { key: 'created_at', header: 'Created Date' },
+    ]);
+    downloadCsv(`invofi-offers-${invoiceId}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Financing Offers ({offers.length})</CardTitle>
         <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={exportOffersCsv}
+            disabled={offers.length === 0}
+            title={offers.length === 0 ? 'No offers to export' : 'Export offers as CSV'}
+          >
+            <Download className="h-3 w-3 mr-1" /> Export
+          </Button>
           {canMarkOverdue && (
             <Button
               size="sm"
@@ -281,9 +337,21 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         )}
 
         {/* Offers list */}
-        {offers.length === 0 && !showForm && (
+        {loadingOffers ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between border rounded-lg p-3">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : offers.length === 0 && !showForm ? (
           <p className="text-sm text-gray-400 text-center py-6">No offers yet.</p>
-        )}
+        ) : null}
 
         {offers.map(offer => {
           const repaid = toStroopsBigInt(offer.amount_repaid);
@@ -373,6 +441,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         }
         confirmLabel={confirmTarget?.kind === 'reclaim' ? 'Reclaim' : 'Reject'}
         variant={confirmTarget?.kind === 'reclaim' ? 'destructive' : 'default'}
+        holdToConfirm={confirmTarget?.kind === 'reclaim'}
         onConfirm={() => {
           if (!confirmTarget) return;
           const { offer, kind } = confirmTarget;

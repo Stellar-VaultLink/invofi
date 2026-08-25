@@ -229,13 +229,17 @@ export async function mockSupabaseAuth(page: Page): Promise<void> {
 /** Stubs the invoice / offer mirror reads the marketplace and detail pages use. */
 export async function mockSupabaseMirror(
   page: Page,
-  data: { invoices?: MirrorInvoice[]; offers?: object[] } = {},
+  data: { invoices?: MirrorInvoice[]; offers?: object[]; documents?: object[] } = {},
 ): Promise<void> {
   await page.route('**/rest/v1/invoices**', (route) =>
     route.fulfill({ json: data.invoices ?? SMOKE_INVOICES }),
   );
   await page.route('**/rest/v1/financing_offers**', (route) =>
     route.fulfill({ json: data.offers ?? [] }),
+  );
+  // Invoice proof documents (issue #222) — default to none attached.
+  await page.route('**/rest/v1/invoice_documents**', (route) =>
+    route.fulfill({ json: data.documents ?? [] }),
   );
 }
 
@@ -298,6 +302,17 @@ export async function mockUserProfile(page: Page, walletAddress: string | null):
 
 // ── Soroban RPC mock (on-chain invoice read) ────────────────────────────────
 
+/** Fixture lifecycle events for SMOKE_INVOICE (event timeline, issue: on-chain activity). */
+export const SMOKE_EVENTS = [
+  { name: 'inv_reg', ledger: 4_999_000 },
+  { name: 'off_new', ledger: 4_999_100 },
+  { name: 'inv_rep', ledger: 4_999_200 },
+] as const;
+
+function smokeTxHash(index: number): string {
+  return `${'f0'.repeat(30)}${String(index).padStart(4, '0')}`;
+}
+
 /**
  * Builds the ScVal for an invoice exactly as the live contract returns it
  * (verified against testnet): a map of symbol-keyed fields with amount=i128,
@@ -359,6 +374,47 @@ export async function mockInvoiceRead(page: Page, invoice: OnChainInvoice): Prom
 }
 
 /**
+ * Stubs the RPC `getEvents` call the invoice-detail event timeline makes, so
+ * the timeline renders deterministic fixture entries instead of scanning live
+ * testnet. Non-getEvents requests fall through (to `mockInvoiceRead` or real
+ * testnet).
+ */
+export async function mockInvoiceEvents(page: Page): Promise<void> {
+  await page.route(`**${RPC_URL}/**`, async (route) => {
+    let method: unknown;
+    try {
+      method = (route.request().postDataJSON() as { method?: unknown } | null)?.method;
+    } catch {
+      return route.fallback();
+    }
+    if (method !== 'getEvents') return route.fallback();
+
+    const events = SMOKE_EVENTS.map((evt, i) => ({
+      id: `evt-smoke-${i}`,
+      type: 'contract',
+      ledger: evt.ledger,
+      ledgerClosedAt: `2026-08-1${i + 1}T12:00:00Z`,
+      contractId: 'CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7',
+      topic: [
+        nativeToScVal(evt.name, { type: 'symbol' }).toXDR('base64'),
+        nativeToScVal(SMOKE_INVOICE.id, { type: 'symbol' }).toXDR('base64'),
+      ],
+      value: nativeToScVal('').toXDR('base64'),
+      inSuccessfulContractCall: true,
+      txHash: smokeTxHash(i),
+    }));
+
+    return route.fulfill({
+      json: {
+        jsonrpc: '2.0',
+        id: 1,
+        result: { events, latestLedger: 5_000_000, cursor: '' },
+      },
+    });
+  });
+}
+
+/**
  * One-call setup for the authenticated smoke flows: a signed-in Supabase
  * session plus the mirror and (optionally) on-chain mocks.
  */
@@ -370,5 +426,6 @@ export async function authenticate(
   await mockSupabaseMirror(page, options);
   if (options.invoice) {
     await mockInvoiceRead(page, options.invoice);
+    await mockInvoiceEvents(page);
   }
 }

@@ -2,7 +2,7 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install",
+  "installCommand": "npm ci --legacy-peer-deps",
   "devCommand": "npm run dev",
   "env": {
     "NEXT_PUBLIC_STELLAR_NETWORK": "testnet",

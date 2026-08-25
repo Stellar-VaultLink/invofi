@@ -3,7 +3,8 @@
 // single binding point: it wires the SDK to this app's env vars (contract IDs,
 // RPC/Horizon endpoints) and to the connected wallet's signer, then re-exports
 // the typed methods so components keep importing from '@/lib/contract'.
-import { Contract, Networks, createInvofiClient } from '@invofi/sdk';
+import { Contract, Networks, createInvofiClient, createMockClient } from '@invofi/sdk';
+import { isMockMode } from './mock-mode';
 import { signTransactionWithActiveWallet } from './walletkit';
 import { POSITION_TOKEN_ASSET } from './constants';
 
@@ -26,6 +27,9 @@ const NETWORK_PASSPHRASE = NETWORK === 'mainnet' ? Networks.PUBLIC : Networks.TE
 
 /** Returns true when all three contracts are configured and StrKey-valid. */
 export function isContractConfigured(): boolean {
+  // Offline demo mode (#177): the mock client is always "configured" — there
+  // are no contract ids to validate.
+  if (isMockMode()) return true;
   return [REGISTRY_ID, FINANCING_ID, REPAYMENT_ID].every(id => {
     if (!id) return false;
     try {
@@ -37,16 +41,18 @@ export function isContractConfigured(): boolean {
   });
 }
 
-const client = createInvofiClient({
-  rpcUrl: RPC_URL,
-  horizonUrl: HORIZON_URL,
-  networkPassphrase: NETWORK_PASSPHRASE,
-  registryId: REGISTRY_ID,
-  financingId: FINANCING_ID,
-  repaymentId: REPAYMENT_ID,
-  positionTokenAsset: POSITION_TOKEN_ASSET,
-  signTransaction: signTransactionWithActiveWallet,
-});
+const client = isMockMode()
+  ? createMockClient({ positionTokenAsset: POSITION_TOKEN_ASSET })
+  : createInvofiClient({
+      rpcUrl: RPC_URL,
+      horizonUrl: HORIZON_URL,
+      networkPassphrase: NETWORK_PASSPHRASE,
+      registryId: REGISTRY_ID,
+      financingId: FINANCING_ID,
+      repaymentId: REPAYMENT_ID,
+      positionTokenAsset: POSITION_TOKEN_ASSET,
+      signTransaction: signTransactionWithActiveWallet,
+    });
 
 export const {
   // Registry

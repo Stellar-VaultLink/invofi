@@ -6,6 +6,12 @@ type CookieToSet = Parameters<NonNullable<CookieMethodsServer['setAll']>>[0][num
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  // Offline demo mode (#177): no Supabase project configured — skip the
+  // session refresh entirely so `npm run dev` works with no env vars.
+  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
+    return supabaseResponse;
+  }
+
   // Lazy initialization of Supabase client to avoid build-time errors during static generation
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)!;

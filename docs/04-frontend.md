@@ -75,6 +75,17 @@ Shows the full state of one invoice.
 - **Offer list** (the `OfferList` component):
   - If the viewer is the invoice originator: shows Accept and Reject buttons on pending offers
   - If the viewer is a lender: shows a "Make Offer" form (only when invoice is Pending and viewer is not the originator)
+- **On-chain activity timeline** (the `EventTimeline` component):
+  - Lists this invoice's lifecycle events newest-first — registered, offers
+    created/accepted/rejected, repayments, marked overdue, disputes, defaults
+  - Sourced live from the Soroban RPC `getEvents`, scoped to this invoice id;
+    each row shows a human-readable label plus the raw event type, timestamp,
+    ledger number, and tx hash deep-linked to Stellar Expert
+  - Empty state explains that the RPC keeps only ~5 days of event history;
+    hidden entirely in offline demo mode or when no contracts are configured
+  - Data layer (`lib/invoiceEvents.ts`) returns an `InvoiceTimelineEntry[]`
+    shape designed to be re-sourced from the indexer events table later (#95)
+    without touching the hook or component
 
 ### Marketplace — `/marketplace`
 
@@ -162,6 +173,10 @@ Displays offers on an invoice. Handles:
 - Accept/reject buttons (for originators)
 - Calling the Soroban contract and updating Supabase on each action
 
+### `components/invoices/EventTimeline.tsx`
+
+The invoice's on-chain audit trail as a simple vertical timeline, newest first. Fetches this invoice's contract events from the Soroban RPC (`getEvents` via `lib/invoiceEvents.ts` + `hooks/useInvoiceEvents.ts`) and renders one row per lifecycle event: colored dot + icon by category, human-readable label with the raw event type chip, timestamp, ledger number, and a truncated tx hash linked to Stellar Expert. Fails soft (loading skeletons / quiet empty + error states) and returns null when no contracts are configured.
+
 ### `app/invoices/[id]/print/InvoicePrintView.tsx`
 
 Client-only print view for an individual invoice. Fetches the invoice and financing offers, renders a clean print-optimised layout, and automatically opens the browser print dialog once the data is ready.
@@ -180,7 +195,7 @@ Print route wrapper for the invoice. Uses a client-only dynamic import with SSR 
 
 ### `app/invoices/[id]/page.tsx`
 
-The invoice detail page. Adds a **Print / Export PDF** action that opens the dedicated print view in a new browser tab.
+The invoice detail page. Adds a **Print / Export PDF** action that opens the dedicated print view in a new browser tab, and renders the on-chain activity timeline (see `components/invoices/EventTimeline.tsx`) below the financing offers.
 
 ### `globals.css`
 

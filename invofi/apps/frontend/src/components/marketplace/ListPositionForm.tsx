@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import {
   LISTING_NOTE_MAX,
   checkListingSize,
@@ -98,7 +99,7 @@ export function ListPositionForm({ sellerAddress, sellerId, onCreated }: ListPos
       reset({ offerId: '', tokenAmount: '', askingPrice: '', priceCurrency: 'USDC', note: '' });
       onCreated(listing);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not publish the listing';
+      const msg = toErrorMessage(err, 'Could not publish the listing');
       toast({ title: 'Listing failed', description: msg, variant: 'destructive' });
     } finally {
       setSubmitting(false);

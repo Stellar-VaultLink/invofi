@@ -99,21 +99,50 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
 
+      {/* JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'InvoFi',
+            url: 'https://invofi-five.vercel.app',
+            applicationCategory: 'FinanceApplication',
+            operatingSystem: 'Web',
+            description:
+              'Tokenize invoices as on-chain assets and get immediate financing from investors — powered by Stellar Soroban.',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'USD',
+            },
+            author: {
+              '@type': 'Organization',
+              name: 'InvoFi',
+            },
+          }),
+        }}
+      />
+
       {/* ── Hero ── */}
-      <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-24 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm mb-8">
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-28 px-4">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, white 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
+
+        <div className="relative max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm mb-8 backdrop-blur-sm">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             {t('hero.liveOnTestnet')}
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
             {t('hero.titlePart1')}
             <br />
             <span className="text-blue-200">{t('hero.titlePart2')}</span>
           </h1>
 
-          <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
             {t('hero.description')}
           </p>
 
@@ -121,7 +150,7 @@ export default async function LandingPage() {
             <Button
               asChild
               size="lg"
-              className="bg-white text-blue-700 hover:bg-blue-50 font-semibold"
+              className="bg-white text-blue-700 hover:bg-blue-50 font-semibold shadow-lg shadow-blue-900/30"
             >
               <Link href="/auth/register">
                 {t('hero.getStarted')} <ArrowRight className="ml-2 h-4 w-4" />
@@ -132,7 +161,7 @@ export default async function LandingPage() {
               asChild
               variant="outline"
               size="lg"
-              className="border-white text-white bg-white/10 hover:bg-white/20"
+              className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm"
             >
               <Link href="/marketplace">{t('hero.browseMarketplace')}</Link>
             </Button>
@@ -141,11 +170,11 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Stats ── */}
-      <section className="bg-background border-b border-border py-12 px-4">
+      <section className="bg-background border-b border-border py-14 px-4">
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {STATS.map((stat) => (
-            <div key={stat.label}>
-              <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+            <div key={stat.label} className="group">
+              <p className="text-3xl md:text-4xl font-bold text-foreground group-hover:text-blue-600 transition-colors">{stat.value}</p>
               <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
             </div>
           ))}
@@ -185,12 +214,15 @@ export default async function LandingPage() {
       {/* ── For Businesses / For Lenders ── */}
       <section className="py-24 px-4 bg-background">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-foreground mb-16">
+          <h2 className="text-3xl font-bold text-center text-foreground mb-4">
             {t('features.title')}
           </h2>
+          <p className="text-center text-muted-foreground mb-16 max-w-lg mx-auto">
+            Whether you need working capital or want to earn yield on real-world assets, InvoFi has you covered.
+          </p>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="rounded-2xl border border-border bg-card p-8 flex flex-col">
+            <div className="rounded-2xl border border-border bg-card p-8 flex flex-col hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center mb-6 shrink-0">
                 <Building2 className="h-6 w-6 text-blue-600" />
               </div>
@@ -213,7 +245,7 @@ export default async function LandingPage() {
               </Button>
             </div>
 
-            <div className="rounded-2xl border border-border bg-card p-8 flex flex-col">
+            <div className="rounded-2xl border border-border bg-card p-8 flex flex-col hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mb-6 shrink-0">
                 <Wallet className="h-6 w-6 text-indigo-600" />
               </div>
@@ -270,9 +302,9 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Built on Stellar ── */}
-      <section className="py-24 px-4 bg-gradient-to-br from-indigo-900 to-blue-900 text-white">
+      <section className="py-24 px-4 bg-gradient-to-br from-indigo-900 via-blue-900 to-blue-800 text-white">
         <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-block bg-white/10 border border-white/20 rounded-full px-4 py-1 text-sm mb-6">
+          <div className="inline-block bg-white/10 border border-white/20 rounded-full px-4 py-1 text-sm mb-6 backdrop-blur-sm">
             {t('stellar.poweredBy')}
           </div>
           <h2 className="text-3xl font-bold mb-4">{t('stellar.title')}</h2>
@@ -284,7 +316,7 @@ export default async function LandingPage() {
             {STELLAR_PROPS.map((prop) => (
               <div
                 key={prop.title}
-                className="bg-white/10 border border-white/10 rounded-xl p-6 text-left"
+                className="bg-white/10 border border-white/10 rounded-xl p-6 text-left hover:bg-white/15 transition-colors"
               >
                 <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center mb-4">
                   <prop.icon className="h-5 w-5 text-white" />
@@ -298,20 +330,23 @@ export default async function LandingPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section className="py-24 px-4 bg-background">
+      <section className="py-24 px-4 bg-muted">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-foreground mb-12">
+          <h2 className="text-3xl font-bold text-center text-foreground mb-4">
             {t('faq.title')}
           </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-md mx-auto">
+            Everything you need to know about using InvoFi.
+          </p>
 
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border bg-background rounded-2xl border border-border overflow-hidden">
             {FAQS.map((faq) => (
-              <details key={faq.q} className="group py-5">
-                <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-medium text-foreground">
+              <details key={faq.q} className="group">
+                <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-medium text-foreground px-6 py-5 hover:bg-muted/50 transition-colors">
                   {faq.q}
                   <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 group-open:rotate-180" />
                 </summary>
-                <p className="mt-3 text-muted-foreground text-sm leading-relaxed">{faq.a}</p>
+                <p className="px-6 pb-5 text-muted-foreground text-sm leading-relaxed">{faq.a}</p>
               </details>
             ))}
           </div>
@@ -319,36 +354,21 @@ export default async function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-20 px-4 bg-muted text-center">
-        <h2 className="text-3xl font-bold text-foreground mb-4">{t('cta.title')}</h2>
-        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+      <section className="py-20 px-4 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white text-center">
+        <h2 className="text-3xl font-bold mb-4">{t('cta.title')}</h2>
+        <p className="text-blue-200 mb-8 max-w-md mx-auto">
           {t('cta.subtitle')}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild size="lg">
+          <Button asChild size="lg" className="bg-white text-blue-700 hover:bg-blue-50 font-semibold">
             <Link href="/auth/register?role=business">{t('cta.imBusinessBtn')}</Link>
           </Button>
-          <Button asChild variant="outline" size="lg">
+          <Button asChild variant="outline" size="lg" className="border-white text-white bg-white/10 hover:bg-white/20">
             <Link href="/auth/register?role=lender">{t('cta.imLenderBtn')}</Link>
           </Button>
         </div>
       </section>
-
-      {/* ── Footer ── */}
-      <footer className="border-t border-border py-8 px-4 text-center text-sm text-muted-foreground">
-        <p>
-          InvoFi — Decentralized Invoice Financing on Stellar Soroban.{' '}
-          <a
-            href="https://github.com/Stellar-VaultLink/invofi"
-            target="_blank"
-            rel="noreferrer"
-            className="underline hover:text-foreground"
-          >
-            Open Source
-          </a>
-        </p>
-      </footer>
     </div>
   );
 }

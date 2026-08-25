@@ -14,12 +14,27 @@ export function getSupabaseClient(): SupabaseClient {
 
 export const supabase: SupabaseClient = getSupabaseClient(); // For backward compatibility
 
+/**
+ * `{address}@stellar.wallet` is the deterministic identity SEP-10 verify
+ * (`/api/auth/sep10/verify`) mints for a *proven* wallet address. Refusing it
+ * here closes off registering that email/password ahead of the real owner,
+ * which would otherwise let the registrant hold a password on an account
+ * later marked `wallet_verified` for someone else's address.
+ */
+function isReservedWalletEmail(email: string): boolean {
+  return email.toLowerCase().endsWith('@stellar.wallet');
+}
+
 export async function signUpWithEmail(
   email: string,
   password: string,
   role: UserRole,
   displayName: string,
 ) {
+  if (isReservedWalletEmail(email)) {
+    throw new Error('This email domain is reserved for wallet sign-in.');
+  }
+
   // Store role + displayName in user_metadata so we can create the profile
   // after email confirmation when no session exists yet.
   const { data: authData, error: authError } = await supabase.auth.signUp({

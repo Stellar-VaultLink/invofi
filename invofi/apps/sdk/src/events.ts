@@ -327,6 +327,111 @@ export interface ListenToEventsOptions {
  */
 export type StopListening = () => void;
 
+// ── replayEvents options ───────────────────────────────────────────────────
+
+/**
+ * Options for {@link replayEvents}.
+ *
+ * @example
+ * ```ts
+ * import { replayEvents, Networks } from '@invofi/sdk';
+ *
+ * const events = await replayEvents({
+ *   rpcUrl:      'https://soroban-testnet.stellar.org',
+ *   contractIds: [registryId, financingId],
+ *   from:        1000,
+ *   to:          2000,
+ *   eventTypes:  ['inv_reg', 'off_acc'],
+ *   onEvent(event) {
+ *     console.log('Replayed event:', event.type, event.subjectId);
+ *   },
+ * });
+ * ```
+ */
+export interface ReplayEventsOptions {
+  /**
+   * Soroban RPC URL, e.g. `'https://soroban-testnet.stellar.org'`.
+   * Defaults to `'https://soroban-testnet.stellar.org'` if omitted.
+   */
+  rpcUrl?: string;
+
+  /**
+   * Stellar network passphrase. Use `Networks.TESTNET` or `Networks.PUBLIC`.
+   */
+  networkPassphrase?: string;
+
+  /**
+   * Starting ledger sequence (inclusive).
+   */
+  from?: number;
+
+  /**
+   * Alias for `from`. Starting ledger sequence (inclusive).
+   */
+  fromLedger?: number;
+
+  /**
+   * Alias for `from`. Starting ledger sequence (inclusive).
+   */
+  startLedger?: number;
+
+  /**
+   * Ending ledger sequence (inclusive). When omitted, queries up to the current
+   * latest ledger on the network.
+   */
+  to?: number;
+
+  /**
+   * Alias for `to`. Ending ledger sequence (inclusive).
+   */
+  toLedger?: number;
+
+  /**
+   * Alias for `to`. Ending ledger sequence (inclusive).
+   */
+  endLedger?: number;
+
+  /**
+   * One or more contract IDs to filter on.
+   */
+  contractIds?: string[];
+
+  /**
+   * Convenience single contract ID filter.
+   */
+  contractId?: string;
+
+  /**
+   * Subset of event types to receive. When omitted, all protocol events are returned.
+   */
+  eventTypes?: ProtocolEventName[];
+
+  /**
+   * Convenience single event type filter.
+   */
+  eventType?: ProtocolEventName;
+
+  /**
+   * Maximum ledger window size per batch RPC request. Defaults to `1000` (Soroban RPC window limit).
+   */
+  batchSizeLedgers?: number;
+
+  /**
+   * Maximum number of raw events per RPC page request. Defaults to `200`.
+   */
+  limitPerPage?: number;
+
+  /**
+   * Optional callback called for every decoded matching event in chronological order.
+   */
+  onEvent?: (event: ProtocolEvent) => void;
+
+  /**
+   * Optional callback on RPC error during replay.
+   */
+  onError?: (error: Error, context: { from: number; to: number; attempt: number }) => void;
+}
+
 // ── Internal helpers ─────────────────────────────────────────────────────────
 
 /** Extract a string value from a decoded ScVal. */
@@ -723,3 +828,230 @@ export function listenToEvents(options: ListenToEventsOptions): StopListening {
     }
   };
 }
+
+// ── replayEvents ───────────────────────────────────────────────────────────
+
+/**
+ * Replay and catch up historical InvoFi protocol events across a specified ledger range.
+ *
+ * Paginates through Soroban RPC event pages and handles ledger ranges larger than
+ * the 1000-ledger RPC window limit by dividing into sequential ledger batches.
+ * Returns fully decoded, strongly-typed {@link ProtocolEvent} objects in strict
+ * chronological order.
+ *
+ * @example
+ * ```ts
+ * import { replayEvents, Networks } from '@invofi/sdk';
+ *
+ * // Object-style:
+ * const events = await replayEvents({
+ *   rpcUrl:      'https://soroban-testnet.stellar.org',
+ *   contractIds: [registryId, financingId],
+ *   from:        1000,
+ *   to:          2500,
+ *   eventTypes:  ['inv_reg', 'off_acc'],
+ *   onEvent(event) {
+ *     console.log('Replayed event:', event.type, event.subjectId);
+ *   },
+ * });
+ *
+ * // Positional-style:
+ * const events = await replayEvents(1000, 2000, (event) => {
+ *   console.log('Got event:', event.type);
+ * });
+ * ```
+ *
+ * @see {@link ReplayEventsOptions} for options.
+ */
+export async function replayEvents(options: ReplayEventsOptions): Promise<ProtocolEvent[]>;
+export async function replayEvents(
+  fromLedger: number,
+  toLedger?: number,
+  callback?: (event: ProtocolEvent) => void,
+  options?: Partial<ReplayEventsOptions>,
+): Promise<ProtocolEvent[]>;
+export async function replayEvents(
+  optionsOrFrom: ReplayEventsOptions | number,
+  toLedgerParam?: number,
+  callbackParam?: (event: ProtocolEvent) => void,
+  extraOptions?: Partial<ReplayEventsOptions>,
+): Promise<ProtocolEvent[]> {
+  let opts: ReplayEventsOptions;
+
+  if (typeof optionsOrFrom === 'number') {
+    opts = {
+      ...extraOptions,
+      from: optionsOrFrom,
+      to: toLedgerParam ?? extraOptions?.to ?? extraOptions?.toLedger ?? extraOptions?.endLedger,
+      onEvent: callbackParam ?? extraOptions?.onEvent,
+    };
+  } else {
+    opts = optionsOrFrom ?? {};
+  }
+
+  const rpcUrl = opts.rpcUrl ?? 'https://soroban-testnet.stellar.org';
+  if (opts.rpcUrl !== undefined && !opts.rpcUrl) {
+    throw new Error('replayEvents: rpcUrl must not be empty');
+  }
+
+  const from = opts.from ?? opts.fromLedger ?? opts.startLedger;
+  if (from === undefined) {
+    throw new Error('replayEvents: valid starting ledger (from) is required');
+  }
+  if (typeof from !== 'number' || isNaN(from) || from < 0 || !Number.isInteger(from)) {
+    throw new Error('replayEvents: from must be a non-negative integer');
+  }
+
+  const to = opts.to ?? opts.toLedger ?? opts.endLedger;
+  if (to !== undefined) {
+    if (typeof to !== 'number' || isNaN(to) || to < 0 || !Number.isInteger(to)) {
+      throw new Error('replayEvents: to must be a non-negative integer');
+    }
+    if (to < from) {
+      throw new Error('replayEvents: to must be greater than or equal to from');
+    }
+  }
+
+  const contractIds = opts.contractIds ?? (opts.contractId ? [opts.contractId] : undefined);
+  const eventTypes = opts.eventTypes ?? (opts.eventType ? [opts.eventType] : undefined);
+  const allowedTypes = eventTypes ? new Set<string>(eventTypes) : null;
+  const onEvent = opts.onEvent;
+  const batchSizeLedgers = Math.max(1, opts.batchSizeLedgers ?? 1000);
+  const limitPerPage = opts.limitPerPage ?? 200;
+
+  const rpcServer = new SorobanRpc.Server(rpcUrl, { allowHttp: rpcUrl.startsWith('http://') });
+
+  let targetTo = to;
+  if (targetTo === undefined) {
+    const latestLedgerRes = await rpcServer.getLatestLedger();
+    targetTo = latestLedgerRes.sequence;
+    if (targetTo < from) {
+      return [];
+    }
+  }
+
+  let currentWindowStart = from;
+  const allEvents: ProtocolEvent[] = [];
+  const seenPagingTokens = new Set<string>();
+
+  while (currentWindowStart <= targetTo) {
+    const currentWindowEnd = Math.min(currentWindowStart + batchSizeLedgers - 1, targetTo);
+    let cursor: string | undefined = undefined;
+    let hasMorePagesInWindow = true;
+    const pageStartLedger = currentWindowStart;
+
+    while (hasMorePagesInWindow) {
+      const filters: SorobanRpc.Api.EventFilter[] = [];
+      if (contractIds && contractIds.length > 0) {
+        filters.push({ type: 'contract', contractIds });
+      } else {
+        filters.push({ type: 'contract' });
+      }
+
+      const requestParams: Record<string, unknown> = {
+        startLedger: pageStartLedger,
+        filters,
+        limit: limitPerPage,
+      };
+      if (cursor) {
+        requestParams.cursor = cursor;
+        requestParams.pagination = { cursor, limit: limitPerPage };
+      }
+
+      let res: SorobanRpc.Api.GetEventsResponse;
+      try {
+        res = await rpcServer.getEvents(requestParams as unknown as SorobanRpc.Server.GetEventsRequest);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        if (opts.onError) {
+          try {
+            opts.onError(error, { from: currentWindowStart, to: currentWindowEnd, attempt: 1 });
+          } catch {
+            // suppress onError exception
+          }
+        }
+        throw error;
+      }
+
+      const rawEvents = res?.events ?? [];
+      if (rawEvents.length === 0) {
+        break;
+      }
+
+      let newEventsInBatch = 0;
+      for (const rawEvent of rawEvents) {
+        const rawLedger = typeof rawEvent.ledger === 'number'
+          ? rawEvent.ledger
+          : parseInt(String(rawEvent.ledger ?? '0'), 10);
+
+        if (rawLedger > targetTo) {
+          hasMorePagesInWindow = false;
+          break;
+        }
+        if (rawLedger > currentWindowEnd) {
+          hasMorePagesInWindow = false;
+          break;
+        }
+        if (rawLedger < from) {
+          continue;
+        }
+
+        const eventKey = rawEvent.id || (rawEvent as { pagingToken?: string }).pagingToken || `${rawLedger}-${rawEvent.txHash}-${rawEvent.contractId}`;
+        if (seenPagingTokens.has(eventKey)) {
+          continue;
+        }
+        seenPagingTokens.add(eventKey);
+        newEventsInBatch++;
+
+        const decoded = decodeEvent(rawEvent);
+        if (decoded === null) continue;
+
+        if (contractIds && contractIds.length > 0 && !contractIds.includes(decoded.contractId)) {
+          continue;
+        }
+
+        if (allowedTypes && !allowedTypes.has(decoded.type)) {
+          continue;
+        }
+
+        if (!KNOWN_EVENT_NAMES.has(decoded.type as ProtocolEventName)) {
+          continue;
+        }
+
+        allEvents.push(decoded);
+        if (onEvent) {
+          try {
+            onEvent(decoded);
+          } catch {
+            // onEvent errors must not abort replay iteration
+          }
+        }
+      }
+
+      const lastRawEvent = rawEvents[rawEvents.length - 1];
+      const lastRawLedger = typeof lastRawEvent.ledger === 'number'
+        ? lastRawEvent.ledger
+        : parseInt(String(lastRawEvent.ledger ?? '0'), 10);
+
+      const nextCursor = (res as { cursor?: string }).cursor || (lastRawEvent as { pagingToken?: string }).pagingToken;
+
+      if (
+        lastRawLedger <= currentWindowEnd &&
+        nextCursor &&
+        nextCursor !== cursor &&
+        newEventsInBatch > 0 &&
+        rawEvents.length >= limitPerPage
+      ) {
+        cursor = nextCursor;
+      } else {
+        hasMorePagesInWindow = false;
+      }
+    }
+
+    currentWindowStart = currentWindowEnd + 1;
+  }
+
+  allEvents.sort((a, b) => a.ledger - b.ledger);
+  return allEvents;
+}
+

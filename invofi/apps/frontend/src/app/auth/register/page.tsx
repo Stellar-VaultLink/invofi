@@ -20,7 +20,12 @@ import type { UserRole } from '@/types';
 
 const schema = z.object({
   displayName: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Enter a valid email'),
+  email: z
+    .string()
+    .email('Enter a valid email')
+    .refine((email) => !email.toLowerCase().endsWith('@stellar.wallet'), {
+      message: 'This email domain is reserved for wallet sign-in.',
+    }),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
 }).refine(d => d.password === d.confirmPassword, {

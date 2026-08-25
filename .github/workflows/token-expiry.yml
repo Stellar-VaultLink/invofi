@@ -1,0 +1,152 @@
+name: Token Expiry Watchdog
+
+# Warns when the CONTRIBUTORS_TOKEN secret (classic PAT backing the
+# contributors bot) is close to expiring or has already expired.
+# Runs weekly + manually. The PAT's expiry is decoded from the token itself
+# (GitHub PATs are JWTs carrying an `exp` claim), so no dates need to be
+# maintained by hand. Opens a labelled reminder issue within 30 days of
+# expiry, escalates when expired, and auto-closes once renewed.
+
+on:
+  schedule:
+    - cron: '0 10 * * 1' # every Monday 10:00 UTC (offset from contracts 09:00)
+  workflow_dispatch:
+    inputs:
+      simulate_days:
+        description: 'Override remaining days for testing (10, 0, 40). Empty = use the real token.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-expiry:
+    runs-on: ubuntu-latest
+    name: Check CONTRIBUTORS_TOKEN expiry
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compute days until expiry
+        id: expiry
+        env:
+          BOT_TOKEN: ${{ secrets.CONTRIBUTORS_TOKEN }}
+          SIMULATE_DAYS: ${{ inputs.simulate_days || '' }}
+        run: |
+          set -euo pipefail
+
+          SIM="${SIMULATE_DAYS:-}"
+          if [ -n "$SIM" ]; then
+            NOW=$(date +%s)
+            EXP=$(( NOW + SIM * 86400 ))
+            echo "days=$SIM" >> "$GITHUB_OUTPUT"
+            echo "exp_unix=$EXP" >> "$GITHUB_OUTPUT"
+            echo "Simulated $SIM day(s) until expiry."
+            exit 0
+          fi
+
+          TOKEN="${BOT_TOKEN:-}"
+          if [ -z "$TOKEN" ]; then
+            echo "days=unknown" >> "$GITHUB_OUTPUT"
+            echo "Secret CONTRIBUTORS_TOKEN is not set."
+            exit 0
+          fi
+
+          # Primary: the REST API returns a GitHub-Authentication-Token-Expiration
+          # header on any PAT-backed call (classic or fine-grained).
+          EXP_STR=$(curl -s -D - -o /dev/null -H "Authorization: Bearer ${TOKEN}" https://api.github.com/user 2>/dev/null | tr -d '\r' | grep -i '^github-authentication-token-expiration:' | awk '{print $2, $3, $4}')
+
+          EXP=0
+          if [ -n "$EXP_STR" ]; then
+            EXP=$(date -u -d "$EXP_STR" +%s 2>/dev/null || echo 0)
+          fi
+
+          # Fallback: decode the JWT exp claim embedded in classic/fine-grained PATs.
+          if [ -z "$EXP" ] || [ "$EXP" -le 0 ]; then
+            EXP=$(python3 - <<'PY'
+          import base64, json, os
+
+          tok = os.environ.get("BOT_TOKEN", "")
+          try:
+              payload = tok.split(".")[1]
+              payload += "=" * (-len(payload) % 4)
+              data = json.loads(base64.urlsafe_b64decode(payload))
+              print(int(data.get("exp", 0)))
+          except Exception:
+              print(0)
+          PY
+          )
+          fi
+
+          if [ -z "$EXP" ] || [ "$EXP" -le 0 ]; then
+            echo "days=unknown" >> "$GITHUB_OUTPUT"
+            echo "Could not determine PAT expiry (no API header, no JWT exp)."
+            exit 0
+          fi
+
+          NOW=$(date +%s)
+          DAYS=$(( (EXP - NOW + 86399) / 86400 ))
+          echo "days=$DAYS" >> "$GITHUB_OUTPUT"
+          echo "exp_unix=$EXP" >> "$GITHUB_OUTPUT"
+          echo "Expires $(date -u -d "@$EXP" +%Y-%m-%d) UTC, $DAYS day(s) remaining."
+
+
+      - name: Manage reminder issue
+        env:
+          DAYS: ${{ steps.expiry.outputs.days }}
+          EXP_UNIX: ${{ steps.expiry.outputs.exp_unix }}
+        run: |
+          set -euo pipefail
+          LABEL="token-expiry"
+          gh label create "$LABEL" --repo "$GITHUB_REPOSITORY" \
+            --color d73a4a --description "CONTRIBUTORS_TOKEN renewal needed" \
+            --force >/dev/null 2>&1 || true
+
+          EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --label "$LABEL" \
+            --state open --limit 1 --json number -q '.[0].number' 2>/dev/null || true)
+
+          DAYS="${DAYS:-unknown}"
+          if [ "$DAYS" = "unknown" ]; then
+            if [ -z "$EXISTING" ]; then
+              gh issue create --repo "$GITHUB_REPOSITORY" --label "$LABEL" \
+                --title "WARN CONTRIBUTORS_TOKEN expiry could not be detected" \
+                --body "The CONTRIBUTORS_TOKEN secret could not be decoded to check its expiry. Verify and renew it at Settings > Secrets and variables > Actions." >/dev/null
+            fi
+            echo "Expiry undetectable - please verify CONTRIBUTORS_TOKEN manually."
+            exit 0
+          fi
+
+          if [ "$DAYS" -gt 30 ]; then
+            if [ -n "$EXISTING" ]; then
+              gh issue close "$EXISTING" --repo "$GITHUB_REPOSITORY" \
+                --comment "CONTRIBUTORS_TOKEN renewed - $DAYS day(s) until expiry. Closing reminder." >/dev/null
+              echo "Closed stale reminder #$EXISTING ($DAYS days left)."
+            else
+              echo "Token healthy: $DAYS day(s) remaining. Nothing to do."
+            fi
+            exit 0
+          fi
+
+          if [ "$DAYS" -le 0 ]; then
+            if [ -z "$EXISTING" ]; then
+              gh issue create --repo "$GITHUB_REPOSITORY" --label "$LABEL" \
+                --title "EXPIRED CONTRIBUTORS_TOKEN - contributors bot is down" \
+                --body "The contributors bot is currently broken: the PAT backing .github/workflows/contributors.yml has expired, so the README contributors table will no longer auto-update. Renew it now: create a new classic PAT at github.com/settings/tokens/new (scope: repo) and update the CONTRIBUTORS_TOKEN secret under Settings > Secrets and variables > Actions." >/dev/null
+              echo "Opened expiry issue."
+            else
+              echo "Expired; reminder already open (#$EXISTING)."
+            fi
+            exit 0
+          fi
+
+          if [ -z "$EXISTING" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --label "$LABEL" \
+              --title "WARN CONTRIBUTORS_TOKEN expires in $DAYS days" \
+              --body "CONTRIBUTORS_TOKEN expires around $(date -u -d "@$EXP_UNIX" +%Y-%m-%d) UTC (~$DAYS days). When it lapses, the README contributors table stops auto-updating. To renew: create a new classic PAT at github.com/settings/tokens/new (scope: repo) and update the CONTRIBUTORS_TOKEN secret under Settings > Secrets and variables > Actions." >/dev/null
+            echo "Opened reminder: $DAYS day(s) left."
+          else
+            echo "Reminder already open (#$EXISTING): $DAYS day(s) left."
+          fi

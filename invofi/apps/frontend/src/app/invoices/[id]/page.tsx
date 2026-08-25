@@ -10,12 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { OfferList } from '@/components/invoices/OfferList';
+import { InvoiceDocuments } from '@/components/invoices/documents/InvoiceDocuments';
+import { MessagingPanel } from '@/components/invoices/MessagingPanel';
+import { EventTimeline } from '@/components/invoices/EventTimeline';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { getInvoice, cancelInvoice } from '@/lib/contract';
+import { getInvoice, cancelInvoice, registerInvoice } from '@/lib/contract';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
-import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
-import type { Invoice } from '@/types';
+import { ToastAction } from '@/components/ui/toast';
+import { toErrorMessage } from '@/lib/errors';
+import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS, generateInvoiceId } from '@/lib/utils';
+import type { Invoice, FinancingOffer } from '@/types';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,19 +32,64 @@ export default function InvoiceDetailPage() {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
+  // Counterparty address for the messaging panel.  Derived from the accepted
+  // offer once offers are loaded: originator ↔ accepted lender.
+  const [counterpartyAddress, setCounterpartyAddress] = useState<string>('');
 
   const handleCancel = async () => {
     if (!invoice || !publicKey) return;
     setCancelling(true);
+    // Capture the invoice data before cancelling so we can re-register on undo.
+    const cancelledInvoice = invoice;
     try {
       const updated = await cancelInvoice(invoice.id, publicKey);
       await supabase.from('invoices').update({ status: 'Cancelled' }).eq('id', invoice.id);
       setInvoice(updated);
-      toast({ title: 'Invoice cancelled', description: 'The invoice is now cancelled on-chain.' });
+      toast({
+        title: 'Invoice cancelled',
+        description: 'The invoice is now cancelled on-chain.',
+        action: (
+          <ToastAction
+            altText="Undo cancel"
+            onClick={async () => {
+              try {
+                const newId = generateInvoiceId();
+                const restored = await registerInvoice(
+                  {
+                    id: newId,
+                    amount: cancelledInvoice.amount,
+                    currency: cancelledInvoice.currency,
+                    dueDate: Number(cancelledInvoice.due_date),
+                  },
+                  publicKey,
+                );
+                await supabase.from('invoices').insert({
+                  id: newId,
+                  originator: publicKey,
+                  amount: cancelledInvoice.amount,
+                  currency: cancelledInvoice.currency,
+                  due_date: new Date(Number(cancelledInvoice.due_date) * 1000).toISOString(),
+                  status: 'Pending',
+                });
+                setInvoice(restored);
+                toast({ title: 'Invoice restored', description: 'A new invoice with the same terms has been created.' });
+              } catch (undoErr: unknown) {
+                toast({
+                  title: 'Failed to restore invoice',
+                  description: toErrorMessage(undoErr, 'Error'),
+                  variant: 'destructive',
+                });
+              }
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
     } catch (err: unknown) {
       toast({
         title: 'Failed to cancel invoice',
-        description: err instanceof Error ? err.message : 'Error',
+        description: toErrorMessage(err, 'Error'),
         variant: 'destructive',
       });
     } finally {
@@ -62,6 +112,46 @@ export default function InvoiceDetailPage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Derive the counterparty address for messaging.
+  // - If current user is the originator → counterparty is the lender from the accepted/financed offer.
+  // - If current user is a lender → counterparty is the invoice originator.
+  useEffect(() => {
+    if (!id || !publicKey || !invoice) return;
+
+    const isOriginator = publicKey === invoice.originator;
+
+    if (!isOriginator) {
+      // Current user is a lender; counterparty is always the originator.
+      setCounterpartyAddress(invoice.originator);
+      return;
+    }
+
+    // Current user is the originator; find the accepted/financed offer to get
+    // the lender address.  Only invoices in Financed/Repaid/Overdue/Defaulted
+    // states have an accepted offer.
+    const financedStatuses = ['Financed', 'Repaid', 'Overdue', 'Defaulted', 'Disputed'];
+    if (!financedStatuses.includes(invoice.status)) {
+      setCounterpartyAddress('');
+      return;
+    }
+
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('financing_offers')
+          .select('lender, status')
+          .eq('invoice_id', id)
+          .in('status', ['Accepted', 'Financed', 'Repaid', 'Defaulted'])
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const offer = (data as Pick<FinancingOffer, 'lender' | 'status'>[] | null)?.[0];
+        setCounterpartyAddress(offer?.lender ?? '');
+      } catch {
+        setCounterpartyAddress('');
+      }
+    })();
+  }, [id, publicKey, invoice]);
 
   return (
     <AuthGuard isUnauthorized={isUnauthorized}>
@@ -140,8 +230,26 @@ export default function InvoiceDetailPage() {
               </CardContent>
             </Card>
 
+            {/* Invoice proof documents */}
+            <InvoiceDocuments invoice={invoice} />
+
             {/* Financing offers */}
             <OfferList invoiceId={id} invoice={invoice} onUpdate={setInvoice} />
+
+            {/* On-chain lifecycle events (audit trail, reverse-chronological) */}
+            <EventTimeline invoiceId={id} />
+
+            {/* Private messaging — only shown when both parties are known */}
+            {publicKey && counterpartyAddress && (
+              <MessagingPanel
+                invoiceId={id}
+                currentAddress={publicKey}
+                counterpartyAddress={counterpartyAddress}
+                counterpartyLabel={
+                  publicKey === invoice.originator ? 'Lender' : 'Business'
+                }
+              />
+            )}
           </div>
         )}
 
@@ -152,6 +260,7 @@ export default function InvoiceDetailPage() {
           description="The invoice will be cancelled on-chain and can no longer receive financing offers. This cannot be undone."
           confirmLabel="Cancel Invoice"
           variant="destructive"
+          holdToConfirm
           onConfirm={() => {
             setConfirmCancel(false);
             handleCancel();

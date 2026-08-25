@@ -74,12 +74,10 @@ jobs:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       INPUT_PR: ${{ inputs.pr }}
       # Job names (check-run names) that must pass before auto-merge.
-      # NOTE: "Frontend / Unit Tests" (added by PR #209) is intentionally
-      # NOT listed here yet — the job only exists once that PR lands on
-      # main. Add it here after #209 merges.
       REQUIRED_CHECKS: |-
         Frontend / Lint & Type Check
         Frontend / Build
+        Frontend / Unit Tests
         Conventional Commits
       # Top-level path prefixes PRs normally touch. Files outside these
       # are flagged by the diff-review gate (never auto-merged).
@@ -149,13 +147,12 @@ jobs:
             2>/dev/null || true)
           for RUN in "${GATED[@]:-}"; do
             [ -n "${RUN}" ] || continue
-            if gh api -X POST \
-              "repos/${REPO}/actions/runs/${RUN}/approve" >/dev/null 2>&1; then
-              echo "  ✅ approved gated run ${RUN}"
-            else
+            gh api -X POST \
+              "repos/${REPO}/actions/runs/${RUN}/approve" >/dev/null 2>&1 && \
+              echo "  ✅ approved gated run ${RUN}" || \
               echo "  could not approve run ${RUN} (may already be approved)"
-            fi
           done
+          # Continue regardless of approval success
 
           # Build a per-check failure summary: annotations first (what the
           # checks UI shows), then error lines from the failed job's log.
@@ -375,6 +372,92 @@ jobs:
             SELF=false
             [ "${AUTHOR}" = "${BOT_LOGIN}" ] && SELF=true
 
+            # ── PR body validation: reject empty / template-only bodies ──
+            # Prevents merging PRs like #244 where the contributor left the
+            # template placeholder untouched — the reviewer needs a real
+            # description of what changed and why.
+            if [ "${SELF}" != "true" ]; then
+              BODY_LOWER="$(printf '%s' "${PR_BODY}" | tr '[:upper:]' '[:lower:]')"
+              # Strip common markdown noise (headings, bullet markers, blank
+              # lines, HTML comments) and check if anything meaningful
+              # remains.
+              BODY_MEANINGFUL="$(printf '%s' "${PR_BODY}" \
+                | sed -E 's/^#{1,6} //; s/^- //; s/^[*] //; s/<!--[^>]*-->//g' \
+                | sed '/^[[:space:]]*$/d' \
+                | sed '/^\[.*/d' \
+                | sed '/^##[[:space:]]*$/d' \
+                | sed '/^Type of change$/d' \
+                | sed '/^- \[ \]/d' \
+                | sed '/^Changes made$/d' \
+                | sed '/^Testing$/d' \
+                | sed '/^Summary$/d' \
+                | sed '/^Related issue$/d' \
+                | sed '/^Closes/d' \
+                | sed '/^Fixes/d' \
+                | sed '/^close[s]* #/d' \
+                | sed '/^See also$/d' \
+                | sed '/^\*$/d' \
+                | wc -l | tr -d ' ')"
+              if [ "${BODY_MEANINGFUL}" -lt 2 ]; then
+                echo "  PR body is empty or template-only — holding for maintainer"
+                MARKER_BODY="<!-- BOT-BODY-CHECK sha=${SHA} -->"
+                ALREADY_BODY="$(gh pr view "${PR}" --repo "${REPO}" \
+                  --json reviews \
+                  --jq "[.reviews[] | select(.author.login == \"${BOT_LOGIN}\")
+                    | select(.body | contains(\"${MARKER_BODY}\"))] | length" \
+                  2>/dev/null || echo 0)"
+                if [ "${ALREADY_BODY}" -eq 0 ]; then
+                  BODY_MSG="🤖 **Auto-merge bot** — ⚠️ The PR description is empty or"
+                  BODY_MSG+=" still contains the template placeholder."
+                  BODY_MSG+=$'\n\n'
+                  BODY_MSG+="**What we need:** a brief summary of what changed and"
+                  BODY_MSG+=" why, plus the related issue number."
+                  BODY_MSG+=$'\n\n'
+                  BODY_MSG+="Please edit the PR description and push — I will"
+                  BODY_MSG+=" re-check automatically."
+                  BODY_MSG+=$'\n\n'
+                  BODY_MSG+="${MARKER_BODY}"
+                  gh pr review "${PR}" --repo "${REPO}" --comment \
+                    --body "${BODY_MSG}" 2>/dev/null || true
+                fi
+                continue
+              fi
+            fi
+
+            # ── soft size limit: flag very large PRs for human review ──
+            # PRs adding more than 1 000 lines are too large for automated
+            # merge — they need at least one human review to verify nothing
+            # unrelated crept in. This threshold is generous enough for
+            # legitimate large features (which typically stay under 1 500)
+            # while catching the 2 000–6 000 line mega-PRs that slipped
+            # through before this guard existed.
+            NADD_SIZE="$(gh pr view "${PR}" --repo "${REPO}" \
+              --json additions --jq .additions 2>/dev/null || echo 0)"
+            if [ "${NADD_SIZE}" -gt 1000 ] && [ "${SELF}" != "true" ]; then
+              echo "  PR adds +${NADD_SIZE} lines (> 1 000) — holding for human review"
+              MARKER_SIZE="<!-- BOT-SIZE-CHECK sha=${SHA} -->"
+              ALREADY_SIZE="$(gh pr view "${PR}" --repo "${REPO}" \
+                --json reviews \
+                --jq "[.reviews[] | select(.author.login == \"${BOT_LOGIN}\")
+                  | select(.body | contains(\"${MARKER_SIZE}\"))] | length" \
+                2>/dev/null || echo 0)"
+              if [ "${ALREADY_SIZE}" -eq 0 ]; then
+                SIZE_MSG="🤖 **Auto-merge bot** — ⚠️ This PR adds **+${NADD_SIZE}"
+                SIZE_MSG+=" lines**, which exceeds the 1 000-line auto-merge"
+                SIZE_MSG+=" threshold."
+                SIZE_MSG+=$'\n\n'
+                SIZE_MSG+="Large PRs are harder to review and more likely to"
+                SIZE_MSG+=" carry unrelated changes. Please split into smaller"
+                SIZE_MSG+=" PRs if possible, or a maintainer will review"
+                SIZE_MSG+=" manually."
+                SIZE_MSG+=$'\n\n'
+                SIZE_MSG+="${MARKER_SIZE}"
+                gh pr review "${PR}" --repo "${REPO}" --comment \
+                  --body "${SIZE_MSG}" 2>/dev/null || true
+              fi
+              continue
+            fi
+
             # (No bot code-review posts — CodeRabbit handles code review.
             #  The bot below only reports CI failures, gates scope, and
             #  merges.)
@@ -401,7 +484,9 @@ jobs:
                   SUCCESS|NEUTRAL|SKIPPED) ;;
                   FAILURE|CANCELLED|TIMED_OUT|ACTION_REQUIRED|STARTUP_FAILURE)
                     FAILED="${FAILED} ${R} (${C})" ;;
-                  *) PENDING=true ;;
+                  "") # Check doesn't exist on this PR (e.g. PR opened
+                    ;; # before the check was added to ci.yml). Treat as
+                  *) PENDING=true ;; # n/a — don't block on it.
                 esac
               done
 
@@ -599,7 +684,7 @@ jobs:
             # the branch is behind the base and a clean merge is not
             # possible, rebase instead. Never squash — it rewrites history.
             if MERGE_OUT="$(gh pr merge "${PR}" --repo "${REPO}" \
-              --merge 2>&1)"; then
+              --merge --admin 2>&1)"; then
               echo "  ✅ merged #${PR}"
               if [ "${SELF}" != "true" ]; then
                 gh pr comment "${PR}" --repo "${REPO}" \
@@ -607,7 +692,7 @@ jobs:
                   2>/dev/null || true
               fi
             elif MERGE_OUT="$(gh pr merge "${PR}" --repo "${REPO}" \
-              --rebase 2>&1)"; then
+              --rebase --admin 2>&1)"; then
               echo "  ✅ rebased and merged #${PR}"
               if [ "${SELF}" != "true" ]; then
                 gh pr comment "${PR}" --repo "${REPO}" \

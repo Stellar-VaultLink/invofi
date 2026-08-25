@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -39,12 +39,27 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   const { toast } = useToast();
   const [offers, setOffers] = useState<FinancingOffer[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<
     { offer: FinancingOffer; kind: 'reject' | 'reclaim' } | null
   >(null);
   const [repayAmounts, setRepayAmounts] = useState<Record<string, string>>({});
+  // Issue #191 — optimistic UI. Tracks per-offer in-flight contract operations
+  // so the UI can apply the state change immediately, show a pending indicator,
+  // and roll back on failure.
+  const [pendingActions, setPendingActions] = useState<Record<string, 'creating' | 'accepting'>>({});
+
+  const markPending = useCallback((id: string, kind: 'creating' | 'accepting') => {
+    setPendingActions(prev => ({ ...prev, [id]: kind }));
+  }, []);
+
+  const clearPending = useCallback((id: string) => {
+    setPendingActions(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<OfferFormValues>({
     resolver: zodResolver(offerSchema),
@@ -71,16 +86,37 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
 
   const submitOffer = async (values: OfferFormValues) => {
     if (!publicKey) return;
-    setLoading(true);
     const offerId = generateOfferId();
+    const durationSecs = values.durationDays * 86_400;
+    const amountStroops = amountToStroops(values.amount);
+    const currency = values.currency as Currency;
+
+    // Issue #191 — optimistic UI: insert a pending offer card immediately so the
+    // lender sees instant feedback instead of waiting 3–10s for the Soroban tx.
+    // Replaced by the authoritative contract result on success, removed on error.
+    const optimisticOffer: FinancingOffer = {
+      id: offerId,
+      invoice_id: invoiceId,
+      lender: publicKey,
+      amount: amountStroops,
+      currency,
+      interest_rate: values.interestRate,
+      duration: durationSecs,
+      amount_repaid: 0n,
+      status: 'Pending',
+      funded_at: 0,
+    };
+    markPending(offerId, 'creating');
+    setOffers(prev => [optimisticOffer, ...prev]);
+    setShowForm(false);
+
     try {
-      const durationSecs = values.durationDays * 86_400;
       const offer = await createOffer(
         {
           offerId,
           invoiceId,
-          amount: amountToStroops(values.amount),
-          currency: values.currency as Currency,
+          amount: amountStroops,
+          currency,
           interestRate: values.interestRate,
           duration: durationSecs,
         },
@@ -95,22 +131,35 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           status: 'Pending', funded_at: 0,
         });
       }
-      setOffers(prev => [offer, ...prev]);
+      // Reconcile: swap the optimistic card for the authoritative contract result.
+      setOffers(prev => prev.map(o => o.id === offerId ? offer : o));
       reset();
-      setShowForm(false);
       toast({ title: 'Offer submitted!', description: 'The invoice originator will be notified.' });
     } catch (err: unknown) {
+      // Roll back the optimistic card on failure.
+      setOffers(prev => prev.filter(o => o.id !== offerId));
+      // Re-open the form so the lender can retry with their values intact.
+      setShowForm(true);
       toast({ title: 'Failed to submit offer', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
     } finally {
-      setLoading(false);
+      clearPending(offerId);
     }
   };
 
   const handleAccept = async (offer: FinancingOffer) => {
     if (!publicKey) return;
     setActionId(offer.id);
+    // Issue #191 — optimistic UI: snapshot the pre-action states so we can roll
+    // back cleanly if the on-chain call fails (required by the issue scope).
+    const prevOfferStatus = offer.status;
+    const prevInvoiceStatus = invoice.status;
+    // Apply the state change immediately: offer → Accepted, invoice → Financed.
+    setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: 'Accepted' as FinancingOffer['status'] } : o));
+    onUpdate({ ...invoice, status: 'Financed' as const });
+    markPending(offer.id, 'accepting');
     try {
       const updatedOffer = await acceptOffer(offer.id, publicKey);
+      // Reconcile with the authoritative event once it arrives.
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       await supabase.from('financing_offers').update({ status: 'Accepted', funded_at: Math.floor(Date.now() / 1000) }).eq('id', offer.id);
       const updatedInvoice = { ...invoice, status: 'Financed' as const };
@@ -118,9 +167,13 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       onUpdate(updatedInvoice);
       toast({ title: 'Offer accepted!', description: 'Invoice is now marked as Financed.' });
     } catch (err: unknown) {
+      // Roll back both the offer and invoice states on failure.
+      setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: prevOfferStatus } : o));
+      onUpdate({ ...invoice, status: prevInvoiceStatus });
       toast({ title: 'Failed to accept offer', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
     } finally {
       setActionId(null);
+      clearPending(offer.id);
     }
   };
 
@@ -271,8 +324,8 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button type="submit" size="sm" disabled={loading}>
-                {loading && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              <Button type="submit" size="sm" disabled={Object.values(pendingActions).some(k => k === 'creating')}>
+                {Object.values(pendingActions).some(k => k === 'creating') && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
                 Submit Offer
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -289,7 +342,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           const repaid = toStroopsBigInt(offer.amount_repaid);
           const remaining = totalDue(offer) - repaid;
           return (
-          <div key={offer.id} className="flex items-center justify-between border rounded-lg p-3">
+          <div key={offer.id} className={`flex items-center justify-between border rounded-lg p-3 ${pendingActions[offer.id] ? 'animate-pulse bg-gray-50' : ''}`}>
             <div>
               <p className="text-sm font-mono text-gray-600">{formatAddress(offer.lender)}</p>
               <p className="text-xs text-gray-400 mt-0.5">
@@ -305,7 +358,14 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Badge className={OFFER_STATUS_COLORS[offer.status]}>{offer.status}</Badge>
+              {pendingActions[offer.id] ? (
+                <Badge className="bg-blue-50 text-blue-700 border-blue-300 animate-pulse">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  {pendingActions[offer.id] === 'creating' ? 'Submitting…' : 'Accepting…'}
+                </Badge>
+              ) : (
+                <Badge className={OFFER_STATUS_COLORS[offer.status]}>{offer.status}</Badge>
+              )}
               {isOriginator && offer.status === 'Pending' && (
                 <>
                   <Button

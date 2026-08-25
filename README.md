@@ -722,13 +722,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/waterWang">
-                    <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
-                    <br />
-                    <sub><b>water</b></sub>
-                </a>
-            </td>
-            <td align="center">
                 <a href="https://github.com/KarenZita01">
                     <img src="https://avatars.githubusercontent.com/u/261386615?v=4" width="100;" alt="KarenZita01"/>
                     <br />

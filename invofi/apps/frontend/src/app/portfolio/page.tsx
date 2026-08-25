@@ -14,7 +14,8 @@ import { TableSkeleton } from '@/components/common/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { toErrorMessage } from '@/lib/errors';
 import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken } from '@/lib/contract';
-import { formatAmount, formatDate, interestRateLabel, durationLabel, OFFER_STATUS_COLORS } from '@/lib/utils';
+import { formatAmount, formatDate } from '@/lib/utils';
+import { formatAmount as formatAmountDisplay } from '@/lib/formatters';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import { stroopsToUsd } from '@/lib/live/prices';
@@ -318,7 +319,7 @@ function PositionCard({ offer }: { offer: LivePosition }) {
           <div className="text-right flex items-center gap-3 shrink-0">
             <div>
               <p className="text-sm font-semibold font-mono text-foreground">
-                {formatAmount(offer.amount)} {offer.currency}
+                {formatAmountDisplay(offer.amount, offer.currency)}
               </p>
               <p className="text-xs text-muted-foreground font-mono">
                 ≈ ${offer.liveValueUsd.toFixed(2)} USD
@@ -338,7 +339,7 @@ function PositionCard({ offer }: { offer: LivePosition }) {
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Earned to date</p>
                 <p className="text-sm font-semibold font-mono text-foreground">
-                  {formatAmount(offer.earnedToDate)} {offer.currency}
+                  {formatAmountDisplay(offer.earnedToDate, offer.currency)}
                   <span className="text-xs text-muted-foreground font-normal">
                     {' '}≈ ${stroopsToUsd(offer.earnedToDate, offer.currency).toFixed(2)}
                   </span>
@@ -352,7 +353,7 @@ function PositionCard({ offer }: { offer: LivePosition }) {
             <div className="mt-3">
               <RepaymentProgress value={offer.repaymentProgress} label={`${pct}% of total due repaid`} />
               <p className="text-xs mt-1 text-muted-foreground">
-                {formatAmount(offer.amount_repaid)} {offer.currency} repaid · {formatAmount(offer.remaining)} {offer.currency} remaining ·{' '}
+                {formatAmountDisplay(offer.amount_repaid, offer.currency)} repaid · {formatAmountDisplay(offer.remaining, offer.currency)} remaining ·{' '}
                 <span className="text-muted-foreground/70">updated {relativeUpdate(offer.updatedAt)}</span>
               </p>
             </div>

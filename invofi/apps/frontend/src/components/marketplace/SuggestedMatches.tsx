@@ -31,7 +31,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import { MatchQualityBadge } from '@/components/marketplace/MatchQualityBadge';
 import type { MatchResult, ScoreBreakdown } from '@/types/matching';
 import type { Invoice } from '@/types';
@@ -180,7 +181,7 @@ function MatchedInvoiceCard({ result }: MatchedInvoiceCardProps) {
             <div className="flex items-center gap-1.5 text-foreground">
               <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="font-semibold text-lg">
-                {formatAmount(invoice.amount)} {invoice.currency}
+                {formatAmount(invoice.amount, invoice.currency)}
               </span>
             </div>
             <Badge className={INVOICE_STATUS_COLORS[invoice.status]}>{invoice.status}</Badge>

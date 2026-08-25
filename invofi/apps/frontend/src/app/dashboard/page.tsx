@@ -18,6 +18,7 @@ import { getXlmBalance } from '@/lib/horizon';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STROOPS_PER_XLM } from '@/lib/constants';
+import { formatUnits } from '@/lib/formatters';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import type { UserProfile, Invoice } from '@/types';
 import { SupabaseUser } from '@/lib/types/supabase-auth';
@@ -137,7 +138,7 @@ export default function DashboardPage() {
             <WalletButton />
             {xlmBalance !== null && (
               <span className="text-sm text-muted-foreground font-mono">
-                {parseFloat(xlmBalance).toFixed(2)} XLM
+                {formatUnits(xlmBalance)}
               </span>
             )}
           </CardContent>

@@ -3,9 +3,11 @@ import {
   formatAmount,
   formatBasisPoints,
   formatCurrencyAmount,
+  formatCurrencyPair,
   formatDate,
   formatDuration,
   formatRelativeDate,
+  formatUnits,
   formatWalletAddress,
 } from './formatters';
 
@@ -65,6 +67,36 @@ describe('formatters', () => {
       expect(formatAmount('10000000')).toBe('1.00 XLM');
       expect(formatAmount('0')).toBe('0.00 XLM');
       expect(formatAmount('12345678')).toBe('1.23 XLM');
+    });
+
+    it('handles negative inputs', () => {
+      expect(formatAmount(-10_000_000, 'XLM')).toBe('-1.00 XLM');
+      expect(formatAmount(-1_234_567_800, 'USDC')).toBe('-123.46 USDC');
+      expect(formatAmount(BigInt(-10_000_000), 'XLM')).toBe('-1.00 XLM');
+      expect(formatAmount('-5000000', 'XLM')).toBe('-0.50 XLM');
+    });
+  });
+
+  describe('formatUnits', () => {
+    it('formats values already in human units', () => {
+      expect(formatUnits('12.3456789')).toBe('12.35 XLM');
+      expect(formatUnits(2.5, 'USDC')).toBe('2.50 USDC');
+    });
+
+    it('handles zero and negative units', () => {
+      expect(formatUnits('0')).toBe('0.00 XLM');
+      expect(formatUnits(0, 'USDC')).toBe('0.00 USDC');
+      expect(formatUnits('-1.2345')).toBe('-1.23 XLM');
+      expect(formatUnits(-5, 'USDC')).toBe('-5.00 USDC');
+    });
+  });
+
+  describe('formatCurrencyPair', () => {
+    it('formats a units + currency pair like formatUnits', () => {
+      expect(formatCurrencyPair('12.3456789', 'XLM')).toBe('12.35 XLM');
+      expect(formatCurrencyPair('0', 'USDC')).toBe('0.00 USDC');
+      expect(formatCurrencyPair('-3.5', 'XLM')).toBe('-3.50 XLM');
+      expect(formatCurrencyPair(2.5)).toBe('2.50 XLM');
     });
   });
 

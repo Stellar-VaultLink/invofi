@@ -19,7 +19,8 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { toErrorMessage } from '@/lib/errors';
-import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS, generateInvoiceId } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatDate, formatAddress, INVOICE_STATUS_COLORS, generateInvoiceId } from '@/lib/utils';
 import type { Invoice, FinancingOffer } from '@/types';
 
 export default function InvoiceDetailPage() {
@@ -218,7 +219,7 @@ export default function InvoiceDetailPage() {
                 </div>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-4 text-sm">
-                <Field label="Amount" value={`${formatAmount(invoice.amount)} ${invoice.currency}`} mono />
+                <Field label="Amount" value={formatAmount(invoice.amount, invoice.currency)} mono />
                 <Field label="Currency" value={invoice.currency} />
                 <Field label="Due Date" value={formatDate(invoice.due_date)} />
                 <Field

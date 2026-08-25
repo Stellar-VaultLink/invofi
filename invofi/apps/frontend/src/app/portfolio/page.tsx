@@ -14,10 +14,11 @@ import { TableSkeleton } from '@/components/common/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { toErrorMessage } from '@/lib/errors';
 import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken } from '@/lib/contract';
-import { formatAmount, formatDate, interestRateLabel, durationLabel, OFFER_STATUS_COLORS } from '@/lib/utils';
+import { formatDate, interestRateLabel, durationLabel, OFFER_STATUS_COLORS } from '@/lib/utils';
+import { formatAmount as formatAmountDisplay } from '@/lib/formatters';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
-import { stroopsToUsd } from '@/lib/live/prices';
+import { getXlmUsdInfo, stroopsToUsd } from '@/lib/live/prices';
 import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
 import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
@@ -318,7 +319,7 @@ function PositionCard({ offer }: { offer: LivePosition }) {
           <div className="text-right flex items-center gap-3 shrink-0">
             <div>
               <p className="text-sm font-semibold font-mono text-foreground">
-                {formatAmount(offer.amount)} {offer.currency}
+                {formatAmountDisplay(offer.amount, offer.currency)}
               </p>
               <p className="text-xs text-muted-foreground font-mono">
                 ≈ ${offer.liveValueUsd.toFixed(2)} USD
@@ -338,7 +339,7 @@ function PositionCard({ offer }: { offer: LivePosition }) {
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Earned to date</p>
                 <p className="text-sm font-semibold font-mono text-foreground">
-                  {formatAmount(offer.earnedToDate)} {offer.currency}
+                  {formatAmountDisplay(offer.earnedToDate, offer.currency)}
                   <span className="text-xs text-muted-foreground font-normal">
                     {' '}≈ ${stroopsToUsd(offer.earnedToDate, offer.currency).toFixed(2)}
                   </span>
@@ -352,7 +353,7 @@ function PositionCard({ offer }: { offer: LivePosition }) {
             <div className="mt-3">
               <RepaymentProgress value={offer.repaymentProgress} label={`${pct}% of total due repaid`} />
               <p className="text-xs mt-1 text-muted-foreground">
-                {formatAmount(offer.amount_repaid)} {offer.currency} repaid · {formatAmount(offer.remaining)} {offer.currency} remaining ·{' '}
+                {formatAmountDisplay(offer.amount_repaid, offer.currency)} repaid · {formatAmountDisplay(offer.remaining, offer.currency)} remaining ·{' '}
                 <span className="text-muted-foreground/70">updated {relativeUpdate(offer.updatedAt)}</span>
               </p>
             </div>
@@ -410,6 +411,19 @@ export default function PortfolioPage() {
   const pending = positions.filter(o => o.status === 'Pending');
 
   const totalValueUsd = active.reduce((sum, o) => sum + o.liveValueUsd, 0);
+
+  // Per-currency subtotals (issue #182): portfolios mix XLM and USDC, so show
+  // each currency's own total plus the USD-equivalent grand total above. All
+  // conversions use the cached reference rate — never a live oracle — so the
+  // card is labeled approximate with the rate source and as-of time.
+  const currencyTotalsUsd = useMemo(() => {
+    const buckets = new Map<string, number>();
+    for (const o of active) {
+      buckets.set(o.currency, (buckets.get(o.currency) ?? 0) + o.liveValueUsd);
+    }
+    return Array.from(buckets.entries()).sort((a, b) => b[1] - a[1]);
+  }, [active]);
+  const xlmUsdInfo = getXlmUsdInfo();
   const totalEarnedToDateUsd = active.reduce(
     (sum, o) => sum + stroopsToUsd(o.earnedToDate, o.currency),
     0,
@@ -501,7 +515,29 @@ export default function PortfolioPage() {
             <CardContent className="pt-5">
               <DollarSign className="h-4 w-4 text-muted-foreground mb-2" />
               <p className="text-lg font-bold text-foreground font-mono">${totalValueUsd.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">Portfolio Value (USD)</p>
+              <p className="text-xs text-muted-foreground">≈ Portfolio Value (USD)</p>
+              {currencyTotalsUsd.length > 0 && (
+                <ul className="mt-2 space-y-1 text-xs text-muted-foreground font-mono">
+                  {currencyTotalsUsd.map(([currency, usd]) => (
+                    <li key={currency} className="flex items-center justify-between gap-3">
+                      <span>{currency}</span>
+                      <span>≈ ${usd.toFixed(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-[11px] text-muted-foreground/70 mt-2 leading-relaxed">
+                XLM/USD {xlmUsdInfo.price.toFixed(4)}{' '}
+                {xlmUsdInfo.source === 'coingecko'
+                  ? '(CoinGecko)'
+                  : xlmUsdInfo.source === 'env'
+                    ? '(env override)'
+                    : '(default)'}
+                {xlmUsdInfo.updatedAt > 0
+                  ? ` · as of ${new Date(xlmUsdInfo.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : ''}{' '}
+                — approximate
+              </p>
             </CardContent>
           </Card>
         </div>

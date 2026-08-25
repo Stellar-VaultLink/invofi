@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { getInvoice } from '@/lib/contract';
-import { formatAmount, formatDate, interestRateLabel, durationLabel } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatDate, interestRateLabel, durationLabel } from '@/lib/utils';
 import { toStroopsBigInt } from '@/lib/utils';
 import {
   REGISTRY_CONTRACT_ID,
@@ -315,7 +316,7 @@ export default function InvoicePrintView() {
               <div className="meta-field">
                 <label>Amount</label>
                 <p className="mono">
-                  {formatAmount(invoice.amount)} {invoice.currency}
+                  {formatAmount(invoice.amount, invoice.currency)}
                 </p>
               </div>
               <div className="meta-field">
@@ -389,20 +390,20 @@ export default function InvoicePrintView() {
                           {offer.lender.slice(0, 6)}…{offer.lender.slice(-6)}
                         </td>
                         <td className="mono">
-                          {formatAmount(offer.amount)} {offer.currency}
+                          {formatAmount(offer.amount, offer.currency)}
                         </td>
                         <td>{interestRateLabel(offer.interest_rate)}</td>
                         <td>{durationLabel(offer.duration)}</td>
-                        <td className="mono">{formatAmount(due)} {offer.currency}</td>
+                        <td className="mono">{formatAmount(due, offer.currency)}</td>
                         <td className="mono">
                           {repaid > 0n ? (
                             <>
                               <span style={{ color: '#16a34a' }}>
-                                {formatAmount(repaid)} {offer.currency}
+                                {formatAmount(repaid, offer.currency)}
                               </span>
                               {remaining > 0n && (
                                 <span style={{ color: '#9ca3af', fontSize: 10 }}>
-                                  {' '}/ {formatAmount(remaining)} {offer.currency} rem.
+                                  {' '}/ {formatAmount(remaining, offer.currency)} rem.
                                 </span>
                               )}
                             </>

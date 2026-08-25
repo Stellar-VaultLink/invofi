@@ -4,7 +4,8 @@ import { Calendar, DollarSign, ArrowRight, ExternalLink, Clock, AlertTriangle } 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import type { Invoice } from '@/types';
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
@@ -66,7 +67,7 @@ export const MarketplaceCard = memo(function MarketplaceCard({ invoice }: Market
           <div className="flex items-center gap-1.5 text-foreground">
             <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="font-semibold text-lg">
-              {formatAmount(invoice.amount)} {invoice.currency}
+              {formatAmount(invoice.amount, invoice.currency)}
             </span>
           </div>
 

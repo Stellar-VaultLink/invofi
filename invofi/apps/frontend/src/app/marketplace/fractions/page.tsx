@@ -153,7 +153,9 @@ function FracCard({ record, history, userId, userAddress, onPurchased }: FracCar
             />
           ) : userId && !userAddress ? (
             // Authenticated but no wallet linked — prompt wallet connection
-            <WalletButton size="sm" className="w-full" />
+            <div className="w-full">
+              <WalletButton />
+            </div>
           ) : (
             // Not authenticated
             <Button asChild size="sm" variant="outline" className="w-full">

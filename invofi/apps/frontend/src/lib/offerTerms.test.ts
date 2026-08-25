@@ -34,10 +34,11 @@ describe('computeOfferTerms', () => {
   });
 
   it('uses simple (non-compounded) contract math for repayment', () => {
-    // 2,000 XLM at 400 bps over 90 days -> 8% simple interest
+    // 2,000 XLM at 400 bps over 90 days -> 4% simple interest
+    // (400 bps = 4%; interest = principal * rateBps / 10_000 = 2000 * 0.04 = 80)
     const terms = computeOfferTerms('2000', 400, 90);
-    expect(terms!.interest).toBeCloseTo(160, 8);
-    expect(terms!.totalRepayment).toBeCloseTo(2160, 8);
+    expect(terms!.interest).toBeCloseTo(80, 8);
+    expect(terms!.totalRepayment).toBeCloseTo(2080, 8);
     // Contract math never compounds within the term
     expect(terms!.totalRepayment).toBeLessThan(2000 * Math.pow(1.08, 1));
   });

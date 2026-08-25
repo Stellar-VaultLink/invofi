@@ -188,7 +188,6 @@ export default function FractionsPortfolioPage() {
               <div key={view.position.id} className="space-y-3">
                 <FractionalPositionCard
                   view={view}
-                  fractionalizationId={view.position.fractionalization_id}
                 />
 
                 {/* Price chart for this fractionalization */}

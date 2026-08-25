@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parse, TYPE, type MessageFormatElement } from '@formatjs/icu-messageformat-parser';
+import { assertIcuValid, icuArguments } from './icu';
 import { locales, defaultLocale, type Locale } from './config';
 import { loadMessages } from './messages';
 
@@ -32,34 +32,13 @@ function flatten(tree: Tree, prefix = ''): Record<string, string> {
   return out;
 }
 
-/**
- * Argument names a message expects, from the parsed ICU AST.
- *
- * A regex is not good enough here: `{count, plural, =0 {no positions} ...}`
- * contains braces that are *literal text*, not arguments, so a naive scan
- * reports a phantom `{no}` placeholder.
- */
-function placeholders(message: string): Set<string> {
-  const names = new Set<string>();
-
-  const walk = (elements: MessageFormatElement[]): void => {
-    for (const element of elements) {
-      if ('value' in element && typeof element.value === 'string' && element.type !== TYPE.literal) {
-        names.add(element.value);
-      }
-      if (element.type === TYPE.plural || element.type === TYPE.select) {
-        for (const option of Object.values(element.options)) walk(option.value);
-      }
-      if (element.type === TYPE.tag) walk(element.children);
-    }
-  };
-
+/** Arguments a message expects; unparseable messages are the ICU test's job. */
+function safeArguments(message: string): Set<string> {
   try {
-    walk(parse(message));
+    return icuArguments(message);
   } catch {
-    // Unparseable messages are reported by the ICU-validity test instead.
+    return new Set();
   }
-  return names;
 }
 
 const english = flatten(readCatalogue(defaultLocale));
@@ -84,8 +63,8 @@ describe('message catalogues', () => {
     const broken: string[] = [];
 
     for (const [key, message] of Object.entries(catalogue)) {
-      const expected = placeholders(english[key] ?? '');
-      const actual = placeholders(message);
+      const expected = safeArguments(english[key] ?? '');
+      const actual = safeArguments(message);
       for (const name of expected) {
         // A dropped `{amount}` renders a sentence with a hole in it; a renamed
         // one throws at render time.
@@ -96,15 +75,16 @@ describe('message catalogues', () => {
     expect(broken).toEqual([]);
   });
 
-  it.each(translated)('%s parses as valid ICU for its own plural rules', locale => {
+  it.each(translated)('%s is structurally valid ICU', locale => {
     const catalogue = flatten(readCatalogue(locale));
     const invalid: string[] = [];
 
     for (const [key, message] of Object.entries(catalogue)) {
       try {
-        // Parsing is what catches an unbalanced brace or a malformed plural
-        // block before it reaches a reader's screen.
-        parse(message);
+        // Catches an unbalanced brace, a branch with no body, or a plural
+        // that enumerates some categories but has no catch-all — all of which
+        // render as nothing on a reader's screen.
+        assertIcuValid(message);
       } catch (error) {
         invalid.push(`${key}: ${(error as Error).message}`);
       }

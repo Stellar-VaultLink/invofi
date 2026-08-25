@@ -2,7 +2,8 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { Search, LayoutGrid } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
+import { Search, LayoutGrid, X } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { Input } from '@/components/ui/input';
@@ -78,15 +79,26 @@ function MarketplacePageInner() {
   );
 
   // ── All-invoices query (for override / "browse all" view) ─────────────────
+  const debouncedSearch = useDebounce(search, 300);
   const allInvoicesQuery = useMarketplace({
     currency: filters.currency !== 'ALL' ? filters.currency : undefined,
-    search: search || undefined,
   });
 
   const allInvoices = allInvoicesQuery.data ?? [];
 
+  const filteredBySearch = useMemo(() => {
+    if (!debouncedSearch) return allInvoices;
+    const q = debouncedSearch.toLowerCase();
+    return allInvoices.filter(inv =>
+      inv.id.toLowerCase().includes(q) ||
+      inv.originator.toLowerCase().includes(q) ||
+      // @ts-expect-error — debtor_name may exist in the DB row even if not in the TS type
+      (inv as Record<string, unknown>).debtor_name?.toString().toLowerCase().includes(q)
+    );
+  }, [allInvoices, debouncedSearch]);
+
   const sortedAll = useMemo(() => {
-    let list = allInvoices.filter(inv => {
+    let list = filteredBySearch.filter(inv => {
       if (filters.status !== 'ALL' && inv.status !== filters.status) return false;
       return true;
     });
@@ -101,7 +113,7 @@ function MarketplacePageInner() {
         default:            return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
       }
     });
-  }, [allInvoices, filters.status, sort]);
+  }, [filteredBySearch, filters.status, sort]);
 
   const visibleInvoices = useMemo(() => sortedAll.slice(0, visibleCount), [sortedAll, visibleCount]);
 
@@ -196,11 +208,21 @@ function MarketplacePageInner() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by invoice ID or originator…"
-                  className="pl-9"
+                  placeholder="Search by invoice ID, debtor name, or originator…"
+                  className="pl-9 pr-9"
                   value={search}
                   onChange={handleSearchChange}
                 />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
               <select
                 className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
@@ -242,7 +264,7 @@ function MarketplacePageInner() {
             {!allInvoicesQuery.isLoading && sortedAll.length === 0 && (
               <div className="text-center py-20 text-muted-foreground">
                 <p className="text-lg font-medium">No invoices match your filters</p>
-                <p className="text-sm mt-1">Try adjusting the search or filters.</p>
+                <p className="text-sm mt-1">Try adjusting the search query or filters.</p>
               </div>
             )}
 

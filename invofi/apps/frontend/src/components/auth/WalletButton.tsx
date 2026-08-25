@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useWallet } from './WalletProvider';
 import { WalletSelectDialog } from './WalletSelectDialog';
 import { formatAddress } from '@/lib/utils';
+import { formatUnits } from '@/lib/formatters';
 import { useToast } from '@/components/ui/use-toast';
 import { getXlmBalance } from '@/lib/horizon';
 import { explorerAccountUrl } from '@/lib/constants';
@@ -29,7 +30,7 @@ export function WalletButton({ onConnected }: WalletButtonProps) {
   useEffect(() => {
     if (!isConnected || !publicKey) { setXlmBalance(null); return; }
     getXlmBalance(publicKey)
-      .then(b => setXlmBalance(parseFloat(b).toFixed(2)))
+      .then(b => setXlmBalance(formatUnits(b, 'XLM')))
       .catch(() => setXlmBalance(null));
   }, [isConnected, publicKey]);
 
@@ -93,7 +94,7 @@ export function WalletButton({ onConnected }: WalletButtonProps) {
             </a>
             {xlmBalance !== null && (
               <span className="text-xs text-green-700 dark:text-green-300 font-medium border-l border-green-200 dark:border-green-800 px-2 py-1.5">
-                {xlmBalance} XLM
+                {xlmBalance}
               </span>
             )}
             <button

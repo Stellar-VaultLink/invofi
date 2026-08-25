@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { Calendar, DollarSign } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatAmount, formatDate, INVOICE_STATUS_COLORS } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatDate, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import type { Invoice } from '@/types';
 
 interface InvoiceCardProps {
@@ -24,7 +25,7 @@ export function InvoiceCard({ invoice, href }: InvoiceCardProps) {
             <div className="flex items-center gap-1.5 text-gray-700">
               <DollarSign className="h-3.5 w-3.5 text-gray-400" />
               <span className="font-semibold">
-                {formatAmount(invoice.amount)} {invoice.currency}
+                {formatAmount(invoice.amount, invoice.currency)}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-gray-500">

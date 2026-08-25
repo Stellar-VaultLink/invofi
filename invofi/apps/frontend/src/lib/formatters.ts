@@ -1,11 +1,34 @@
 import { STROOPS_PER_XLM } from './constants';
 
+/**
+ * Format a stroops-denominated amount for display.
+ *
+ * Converts stroops (1 XLM = 10^7 stroops) to human units and renders them with
+ * a two-decimal Intl representation plus a trailing currency code suffix,
+ * e.g. `formatAmount(12_345_678, 'XLM')` → `"1.23 XLM"`.
+ *
+ * @remarks
+ * Rounding rules (identical on every page, per issue #123):
+ * - always exactly 2 fraction digits, en-US locale with thousands separators
+ * - negative inputs format with a leading minus sign (`-1.23 XLM`)
+ * - the currency code is appended as `" 1.23 XLM"` (not `$`/`€` symbols)
+ * This helper does NOT perform currency conversion.
+ */
 export function formatAmount(stroops: string | number | bigint, currency: string = 'XLM'): string {
   const units = Number(stroops) / STROOPS_PER_XLM;
+  return formatUnits(units, currency);
+}
+
+/**
+ * Format an amount that is already in human units (not stroops) for display.
+ * e.g. a Horizon `getXlmBalance` string `"12.3456789"` → `"12.35 XLM"`.
+ * See {@link formatAmount} for the shared rounding rules.
+ */
+export function formatUnits(units: string | number, currency: string = 'XLM'): string {
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(units) + ` ${currency}`;
+  }).format(Number(units)) + ` ${currency}`;
 }
 
 /**
@@ -19,6 +42,18 @@ export function formatCurrencyAmount(
   currency: string = 'XLM',
 ): string {
   return formatAmount(stroops, currency);
+}
+
+/**
+ * Format a (amount, currency) pair for display — same output as
+ * {@link formatAmount} but accepts inputs already in human units.
+ * Produces e.g. "1.23 XLM".
+ */
+export function formatCurrencyPair(
+  units: string | number,
+  currency: string = 'XLM',
+): string {
+  return formatUnits(units, currency);
 }
 
 export function formatBasisPoints(bps: number | bigint | string): string {

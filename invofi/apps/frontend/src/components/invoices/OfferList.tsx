@@ -15,12 +15,14 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { createOffer, acceptOffer, rejectOffer, repayInvoice, markOverdue, reclaimInvoice } from '@/lib/contract';
 import { supabase } from '@/lib/supabase';
-import { formatAmount, interestRateLabel, durationLabel, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatAmount as formatUnits, interestRateLabel, durationLabel, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import { GRACE_PERIOD_SECS, STROOPS_PER_XLM } from '@/lib/constants';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { toErrorMessage } from '@/lib/errors';
+import { OfferTermsPreview } from './OfferTermsPreview';
 import type { Currency, FinancingOffer, Invoice } from '@/types';
 
 const offerSchema = z.object({
@@ -51,7 +53,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   >(null);
   const [repayAmounts, setRepayAmounts] = useState<Record<string, string>>({});
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<OfferFormValues>({
+  const { register, watch, handleSubmit, formState: { errors }, reset } = useForm<OfferFormValues>({
     resolver: zodResolver(offerSchema),
     defaultValues: { currency: 'USDC', interestRate: 500, durationDays: 30 },
   });
@@ -186,7 +188,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       const newRepaid = toStroopsBigInt(offer.amount_repaid) + amountStroops;
       setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: nextOfferStatus, amount_repaid: newRepaid } : o));
       // Mirror stores human-decimal strings (same format as its amount column).
-      await supabase.from('financing_offers').update({ status: nextOfferStatus, amount_repaid: formatAmount(newRepaid) }).eq('id', offer.id);
+      await supabase.from('financing_offers').update({ status: nextOfferStatus, amount_repaid: formatUnits(newRepaid) }).eq('id', offer.id);
       await supabase.from('invoices').update({ status: nextInvoiceStatus }).eq('id', invoiceId);
       onUpdate(updatedInvoice);
       toast({
@@ -263,6 +265,9 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
     downloadCsv(`invofi-offers-${invoiceId}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
+  // Live form values for the repayment preview — re-renders on every keystroke.
+  const liveValues = watch();
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -326,6 +331,12 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                 {errors.durationDays && <p className="text-xs text-red-500">{errors.durationDays.message}</p>}
               </div>
             </div>
+            <OfferTermsPreview
+              amount={liveValues.amount ?? ''}
+              rateBps={Number(liveValues.interestRate)}
+              durationDays={Number(liveValues.durationDays)}
+              currency={liveValues.currency ?? 'USDC'}
+            />
             <div className="flex gap-2">
               <Button type="submit" size="sm" disabled={loading}>
                 {loading && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
@@ -361,14 +372,14 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
             <div>
               <p className="text-sm font-mono text-gray-600">{formatAddress(offer.lender)}</p>
               <p className="text-xs text-gray-400 mt-0.5">
-                {formatAmount(offer.amount)} {offer.currency} ·{' '}
+                {formatAmount(offer.amount, offer.currency)} ·{' '}
                 {interestRateLabel(offer.interest_rate)} · {durationLabel(offer.duration)}
               </p>
               {(offer.status === 'Accepted' || offer.status === 'Financed') && repaid > 0n && (
                 <p className="text-xs mt-1">
-                  <span className="text-green-600">{formatAmount(repaid)} repaid</span>
+                  <span className="text-green-600">{formatAmount(repaid, offer.currency)} repaid</span>
                   {' · '}
-                  <span className="text-gray-500">{formatAmount(remaining)} remaining</span>
+                  <span className="text-gray-500">{formatAmount(remaining, offer.currency)} remaining</span>
                 </p>
               )}
             </div>
@@ -398,8 +409,8 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                 <div className="flex items-center gap-1.5">
                   <Input
                     className="h-8 w-28 text-xs"
-                    placeholder={formatAmount(remainingBalance(offer))}
-                    title={`Remaining balance: ${formatAmount(remainingBalance(offer))} ${offer.currency} (total due ${formatAmount(totalDue(offer))} minus ${formatAmount(repaid)})`}
+                    placeholder={formatUnits(remainingBalance(offer))}
+                    title={`Remaining balance: ${formatAmount(remainingBalance(offer), offer.currency)} (total due ${formatAmount(totalDue(offer), offer.currency)} minus ${formatAmount(repaid, offer.currency)})`}
                     value={repayAmounts[offer.id] ?? ''}
                     onChange={e => setRepayAmounts(prev => ({ ...prev, [offer.id]: e.target.value }))}
                   />

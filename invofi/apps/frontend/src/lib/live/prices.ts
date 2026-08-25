@@ -15,6 +15,9 @@ const DEFAULT_XLM_USD_PRICE = 1;
 let cachedXlmUsd: number | null = null;
 let cachedXlmUsdAt = 0;
 
+/** Which source produced the currently-cached XLM price (issue #182). */
+let lastXlmUsdSource: 'coingecko' | 'env' | 'default' = 'default';
+
 /** Best known XLM price, or the fallback when nothing is cached yet. */
 function xlmUsdPrice(): number {
   if (cachedXlmUsd !== null) return cachedXlmUsd;
@@ -54,6 +57,7 @@ export async function refreshXlmUsdPrice(): Promise<number> {
       if (Number.isFinite(price) && price > 0) {
         cachedXlmUsd = price;
         cachedXlmUsdAt = Date.now();
+        lastXlmUsdSource = 'coingecko';
         return price;
       }
     }
@@ -62,6 +66,8 @@ export async function refreshXlmUsdPrice(): Promise<number> {
   }
   cachedXlmUsd = xlmUsdPrice();
   cachedXlmUsdAt = Date.now();
+  lastXlmUsdSource =
+    Number.isFinite(ENV_XLM_USD_PRICE) && ENV_XLM_USD_PRICE > 0 ? 'env' : 'default';
   return cachedXlmUsd;
 }
 
@@ -69,4 +75,23 @@ export async function refreshXlmUsdPrice(): Promise<number> {
 export function __setXlmUsdPriceForTests(price: number | null): void {
   cachedXlmUsd = price;
   cachedXlmUsdAt = price === null ? 0 : Date.now();
+  lastXlmUsdSource =
+    price === null ? 'default' : 'coingecko';
+}
+
+/**
+ * Snapshot of the reference-rate state for UI labeling (issue #182): the
+ * XLM/USD price actually in use, which source produced it, and when it was
+ * resolved. Portfolio totals derived from it are marked approximate.
+ */
+export function getXlmUsdInfo(): {
+  price: number;
+  source: 'coingecko' | 'env' | 'default';
+  updatedAt: number;
+} {
+  return {
+    price: xlmUsdPrice(),
+    source: lastXlmUsdSource,
+    updatedAt: cachedXlmUsdAt,
+  };
 }

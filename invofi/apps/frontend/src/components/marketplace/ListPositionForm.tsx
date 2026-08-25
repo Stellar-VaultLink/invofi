@@ -18,7 +18,8 @@ import {
   listingDraftSchema,
   type ListingDraft,
 } from '@/lib/listings';
-import { formatAmount, formatAddress, toStroopsBigInt } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatAmount as formatUnits, formatAddress, toStroopsBigInt } from '@/lib/utils';
 import type { FinancingOffer, PositionListing } from '@/types';
 
 interface ListPositionFormProps {
@@ -30,7 +31,7 @@ interface ListPositionFormProps {
 
 /** Position tokens are minted 1:1 with principal (ADR-0002). */
 function positionSize(offer: FinancingOffer): string {
-  return formatAmount(toStroopsBigInt(offer.amount));
+  return formatUnits(toStroopsBigInt(offer.amount));
 }
 
 export function ListPositionForm({ sellerAddress, sellerId, onCreated }: ListPositionFormProps) {
@@ -144,7 +145,7 @@ export function ListPositionForm({ sellerAddress, sellerId, onCreated }: ListPos
               <option value="">Select a position…</option>
               {positions.map(p => (
                 <option key={p.id} value={p.id}>
-                  Invoice {p.invoice_id} — {positionSize(p)} {p.currency} principal
+                  Invoice {p.invoice_id} — {formatAmount(toStroopsBigInt(p.amount), p.currency)} principal
                 </option>
               ))}
             </select>

@@ -4,7 +4,8 @@ import { Calendar, DollarSign, ArrowRight, ExternalLink, Clock, AlertTriangle } 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import type { Invoice } from '@/types';
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
@@ -63,10 +64,10 @@ export const MarketplaceCard = memo(function MarketplaceCard({ invoice }: Market
         </div>
 
         <div className="space-y-2 flex-1 mb-4">
-          <div className="flex items-center gap-1.5 text-foreground">
+          <div className="flex items-center gap-1.5 text-foreground min-w-0">
             <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="font-semibold text-lg">
-              {formatAmount(invoice.amount)} {invoice.currency}
+            <span className="font-semibold text-lg truncate">
+              {formatAmount(invoice.amount, invoice.currency)}
             </span>
           </div>
 
@@ -75,7 +76,7 @@ export const MarketplaceCard = memo(function MarketplaceCard({ invoice }: Market
             <DueLabel dueDateUnix={invoice.due_date} />
           </div>
 
-          <p className="text-xs text-muted-foreground font-mono">
+          <p className="text-xs text-muted-foreground font-mono truncate">
             Originator:{' '}
             <a
               href={`${STELLAR_EXPERT}/account/${invoice.originator}`}

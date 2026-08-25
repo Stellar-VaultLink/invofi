@@ -18,6 +18,7 @@ import { getXlmBalance } from '@/lib/horizon';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STROOPS_PER_XLM } from '@/lib/constants';
+import { formatUnits } from '@/lib/formatters';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import type { UserProfile, Invoice } from '@/types';
 import { SupabaseUser } from '@/lib/types/supabase-auth';
@@ -98,7 +99,7 @@ export default function DashboardPage() {
     <AuthGuard>
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
               {isBusiness ? 'Invoice Dashboard' : 'Lender Portfolio'}
@@ -113,7 +114,7 @@ export default function DashboardPage() {
             </p>
           </div>
           {isBusiness && (
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <Link href="/invoices/new">
                 <Plus className="mr-2 h-4 w-4" /> New Invoice
               </Link>
@@ -133,18 +134,18 @@ export default function DashboardPage() {
                 : 'Connect your Stellar wallet to interact with contracts.'}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center gap-4">
+          <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4">
             <WalletButton />
             {xlmBalance !== null && (
               <span className="text-sm text-muted-foreground font-mono">
-                {parseFloat(xlmBalance).toFixed(2)} XLM
+                {formatUnits(xlmBalance)}
               </span>
             )}
           </CardContent>
         </Card>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {isBusiness ? (
             <>
               <StatCard icon={FileText} label="Total Invoices" value={invoices.length} />
@@ -170,9 +171,9 @@ export default function DashboardPage() {
         {/* Invoices / offers */}
         {isBusiness && (
           <section>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
               <h2 className="text-lg font-semibold text-foreground">Your Invoices</h2>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 {invoices.length > 0 && !loading && (
                   <div className="flex items-center rounded-md border border-border">
                     <button
@@ -196,7 +197,7 @@ export default function DashboardPage() {
                   </div>
                 )}
                 {invoices.length > 0 && !loading && (
-                  <Button variant="outline" size="sm" onClick={exportInvoicesCsv}>
+                  <Button variant="outline" size="sm" onClick={exportInvoicesCsv} className="whitespace-nowrap">
                     <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
                   </Button>
                 )}

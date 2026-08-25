@@ -5,16 +5,10 @@ import {
   Building2, Wallet, CheckCircle, Clock, Globe, Lock, ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ProtocolMetricsBand } from '@/components/common/ProtocolMetricsBand';
 
 export default async function LandingPage() {
   const t = await getTranslations('Landing');
-
-  const STATS = [
-    { label: t('stats.totalInvoices'), value: '124' },
-    { label: t('stats.totalVolume'), value: '$2.4M' },
-    { label: t('stats.activeLenders'), value: '340' },
-    { label: t('stats.avgInterestRate'), value: '8.5%' },
-  ];
 
   const HOW_IT_WORKS = [
     {
@@ -169,17 +163,8 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
-      <section className="bg-background border-b border-border py-14 px-4">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {STATS.map((stat) => (
-            <div key={stat.label} className="group">
-              <p className="text-3xl md:text-4xl font-bold text-foreground group-hover:text-blue-600 transition-colors">{stat.value}</p>
-              <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── Live Protocol Metrics ── */}
+      <ProtocolMetricsBand />
 
       {/* ── How It Works ── */}
       <section className="py-24 px-4 bg-muted">

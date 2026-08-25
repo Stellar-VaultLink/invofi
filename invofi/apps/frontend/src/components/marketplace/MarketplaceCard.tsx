@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Link from 'next/link';
 import { Calendar, DollarSign, ArrowRight, ExternalLink, Clock, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -40,7 +41,7 @@ interface MarketplaceCardProps {
   invoice: Invoice;
 }
 
-export function MarketplaceCard({ invoice }: MarketplaceCardProps) {
+export const MarketplaceCard = memo(function MarketplaceCard({ invoice }: MarketplaceCardProps) {
   return (
     <Card className="flex flex-col hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all">
       <CardContent className="pt-5 flex-1 flex flex-col">
@@ -95,4 +96,4 @@ export function MarketplaceCard({ invoice }: MarketplaceCardProps) {
       </CardContent>
     </Card>
   );
-}
+});

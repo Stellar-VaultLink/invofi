@@ -12,6 +12,7 @@ import { InvoiceTable } from '@/components/invoices/InvoiceTable';
 import { WalletButton } from '@/components/auth/WalletButton';
 import { CardSkeleton, TableSkeleton } from '@/components/common/LoadingSkeleton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { UpcomingRepaymentsWidget } from '@/components/dashboard/UpcomingRepaymentsWidget';
 import { getUserProfile, supabase } from '@/lib/supabase';
 import { getXlmBalance } from '@/lib/horizon';
 import { useWallet } from '@/components/auth/WalletProvider';
@@ -161,6 +162,11 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Upcoming repayments (originators only) */}
+        {isBusiness && !loading && invoices.length > 0 && (
+          <UpcomingRepaymentsWidget invoices={invoices} />
+        )}
+
         {/* Invoices / offers */}
         {isBusiness && (
           <section>
@@ -259,6 +265,7 @@ export default function DashboardPage() {
         description={`Invoice ${cancelTarget?.id ?? ''} will be marked as Cancelled. This cannot be undone.`}
         confirmLabel="Yes, cancel"
         variant="destructive"
+        holdToConfirm
         onConfirm={handleCancelInvoice}
         loading={cancelling}
       />

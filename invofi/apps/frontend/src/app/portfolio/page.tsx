@@ -1,8 +1,9 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, Copy, Check, Send, RefreshCw, Tag, DollarSign } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { TableSkeleton } from '@/components/common/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken } from '@/lib/contract';
 import { formatAmount, formatDate, interestRateLabel, durationLabel, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { STROOPS_PER_XLM } from '@/lib/constants';
@@ -19,6 +21,8 @@ import { stroopsToUsd } from '@/lib/live/prices';
 import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
 import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
+import { PaginationControls } from '@/components/portfolio/PaginationControls';
+import { paginate } from '@/lib/pagination';
 import type { LivePosition } from '@/lib/live/types';
 
 
@@ -118,7 +122,7 @@ function TransferPositionCard() {
       toast({ title: 'Trustline added', description: 'Your wallet can now hold POS position tokens.' });
       await refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Trustline setup failed';
+      const msg = toErrorMessage(err, 'Trustline setup failed');
       toast({ title: 'Trustline failed', description: msg, variant: 'destructive' });
     } finally {
       setAddingTrustline(false);
@@ -165,7 +169,7 @@ function TransferPositionCard() {
       setAmount('');
       await refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Transaction failed';
+      const msg = toErrorMessage(err, 'Transaction failed');
       toast({ title: 'Transfer failed', description: msg, variant: 'destructive' });
     } finally {
       setBusy(false);
@@ -348,7 +352,7 @@ function PositionCard({ offer }: { offer: LivePosition }) {
             <div className="mt-3">
               <RepaymentProgress value={offer.repaymentProgress} label={`${pct}% of total due repaid`} />
               <p className="text-xs mt-1 text-muted-foreground">
-                {formatAmount(offer.amount_repaid)} repaid · {formatAmount(offer.remaining)} remaining ·{' '}
+                {formatAmount(offer.amount_repaid)} {offer.currency} repaid · {formatAmount(offer.remaining)} {offer.currency} remaining ·{' '}
                 <span className="text-muted-foreground/70">updated {relativeUpdate(offer.updatedAt)}</span>
               </p>
             </div>
@@ -367,6 +371,36 @@ export default function PortfolioPage() {
     lastUpdatedAt,
     refresh,
   } = useLivePortfolio();
+
+  // Client-side pagination (issue #190): the contract layer still returns the
+  // full list; we slice it for rendering so a wallet with hundreds of
+  // positions stays smooth. Page size is user-adjustable, and each page is
+  // virtualized below so even 100-row pages only mount visible cards.
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Keep the current page valid when the stream shrinks (e.g. repayments move
+  // positions between buckets or the wallet changes).
+  const pageCount = Math.max(1, Math.ceil(positions.length / pageSize));
+  useEffect(() => {
+    setPage(p => Math.min(p, pageCount));
+  }, [pageCount]);
+
+  const pageItems = useMemo(
+    () => paginate(positions, page, pageSize),
+    [positions, page, pageSize],
+  );
+
+  // Virtualize the current page's rows. Every card uses `measureElement` so
+  // rows with different heights (active vs repaid) size correctly.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: pageItems.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 148,
+    overscan: 4,
+    // Placeholder height is overridden per-row by measureElement below.
+  });
 
   // An offer is active while it is financing an invoice: from acceptance until
   // it is fully repaid. Partial repayments flip offers to Financed on-chain,
@@ -513,10 +547,52 @@ export default function PortfolioPage() {
         )}
 
         <div className="space-y-3">
-          {positions.map(offer => (
-            <PositionCard key={offer.id} offer={offer} />
-          ))}
+          {pageItems.length === 0 ? (
+            <div className="text-center py-10 text-sm text-muted-foreground">
+              No positions on this page.
+            </div>
+          ) : (
+            <div
+              ref={scrollRef}
+              className="max-h-[70vh] overflow-y-auto rounded-xl border border-border"
+              data-testid="virtualized-position-list"
+            >
+              <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+                {virtualizer.getVirtualItems().map(vi => (
+                  <div
+                    key={pageItems[vi.index].id}
+                    ref={virtualizer.measureElement}
+                    data-index={vi.index}
+                    className="pb-3"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${vi.start}px)`,
+                    }}
+                  >
+                    <PositionCard offer={pageItems[vi.index]} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Pagination controls (issue #190) */}
+        {!loading && positions.length > 0 && (
+          <PaginationControls
+            page={page}
+            total={positions.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={size => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
+        )}
 
         {/* useSearchParams (the listing hand-off prefill) needs a Suspense boundary. */}
         <Suspense fallback={null}>

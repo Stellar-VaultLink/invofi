@@ -99,6 +99,32 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
 
+      {/* JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'InvoFi',
+            url: 'https://invofi-five.vercel.app',
+            applicationCategory: 'FinanceApplication',
+            operatingSystem: 'Web',
+            description:
+              'Tokenize invoices as on-chain assets and get immediate financing from investors — powered by Stellar Soroban.',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'USD',
+            },
+            author: {
+              '@type': 'Organization',
+              name: 'InvoFi',
+            },
+          }),
+        }}
+      />
+
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-28 px-4">
         {/* Subtle background pattern */}

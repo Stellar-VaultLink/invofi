@@ -11,6 +11,12 @@ import {
 import { APPROVED_WALLETS } from '@/lib/approved-wallets';
 import { isMockMode } from '@/lib/mock-mode';
 import { MOCK_WALLET_ADDRESS } from '@/lib/mock';
+import {
+  LAST_WALLET_STORAGE_KEY,
+  readLastWallet,
+  persistLastWallet,
+  clearLastWallet,
+} from '@/lib/last-wallet';
 import type { WalletState } from '@/types';
 
 interface WalletContextValue extends WalletState {
@@ -48,46 +54,8 @@ function networkMismatchFor(walletNet: string | null): boolean {
 /**
  * Persistent "last wallet" choice (issue #187): the only wallet state allowed
  * in localStorage is the *public address* — never a key, seed, or signature.
- * The stored entry is a hint that lets a returning user reconnect to the
- * wallet they chose last time without probing every installed wallet first.
+ * See `@/lib/last-wallet` for the read/persist/clear contract (issue #172).
  */
-interface LastWalletEntry {
-  walletId: string;
-  publicKey: string;
-}
-
-const LAST_WALLET_STORAGE_KEY = 'invofi:last-wallet';
-
-function readLastWallet(): LastWalletEntry | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(LAST_WALLET_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<LastWalletEntry>;
-    if (
-      typeof parsed.walletId === 'string' &&
-      typeof parsed.publicKey === 'string' &&
-      parsed.publicKey.startsWith('G') // Stellar public addresses start with G
-    ) {
-      return { walletId: parsed.walletId, publicKey: parsed.publicKey };
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function persistLastWallet(walletId: string, publicKey: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(
-      LAST_WALLET_STORAGE_KEY,
-      JSON.stringify({ walletId, publicKey } satisfies LastWalletEntry),
-    );
-  } catch {
-    // private mode or quota exceeded — persistence is best-effort
-  }
-}
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [isCheckingWallet, setIsCheckingWallet] = useState(!MOCK_MODE);
@@ -223,6 +191,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       isConnecting: false,
       networkMismatch: false,
     }));
+    // Clear the persisted last-wallet hint so a page refresh won't
+    // silently re-connect (issue #172).
+    clearLastWallet();
     // Sign out of Supabase so protected routes redirect to login.
     supabaseSignOut().catch(() => { });
   }, []);

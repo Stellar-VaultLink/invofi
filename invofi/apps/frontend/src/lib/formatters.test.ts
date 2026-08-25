@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   formatAmount,
   formatBasisPoints,
+  formatCurrencyAmount,
   formatDate,
   formatDuration,
   formatRelativeDate,
@@ -64,6 +65,25 @@ describe('formatters', () => {
       expect(formatAmount('10000000')).toBe('1.00 XLM');
       expect(formatAmount('0')).toBe('0.00 XLM');
       expect(formatAmount('12345678')).toBe('1.23 XLM');
+    });
+  });
+
+  describe('formatCurrencyAmount', () => {
+    it('produces the same output as formatAmount', () => {
+      expect(formatCurrencyAmount(12_345_678, 'XLM')).toBe('1.23 XLM');
+      expect(formatCurrencyAmount(12_345_678, 'USDC')).toBe('1.23 USDC');
+      expect(formatCurrencyAmount(0)).toBe('0.00 XLM');
+      expect(formatCurrencyAmount(10_000_000, 'USDC')).toBe('1.00 USDC');
+    });
+
+    it('defaults to XLM when no currency is provided', () => {
+      expect(formatCurrencyAmount(10_000_000)).toBe('1.00 XLM');
+      expect(formatCurrencyAmount(0)).toBe('0.00 XLM');
+    });
+
+    it('handles bigint inputs across currencies', () => {
+      expect(formatCurrencyAmount(BigInt(10_000_000), 'XLM')).toBe('1.00 XLM');
+      expect(formatCurrencyAmount(BigInt(20_000_000), 'USDC')).toBe('2.00 USDC');
     });
   });
 

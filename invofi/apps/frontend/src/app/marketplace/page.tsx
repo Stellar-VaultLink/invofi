@@ -1,10 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { Search, LayoutGrid } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { MarketplaceCard } from '@/components/marketplace/MarketplaceCard';
 import { MarketplaceTabs } from '@/components/marketplace/MarketplaceTabs';
@@ -15,6 +17,10 @@ import { useLenderPreferences } from '@/hooks/useLenderPreferences';
 import { useMatchedInvoices } from '@/hooks/useMatchedInvoices';
 import { useMarketplace } from '@/hooks/useMarketplace';
 import type { Currency, Invoice, InvoiceStatus } from '@/types';
+
+// ── Render cap ───────────────────────────────────────────────────────────────
+const INITIAL_RENDER_CAP = 24;
+const CAP_INCREMENT = 24;
 
 // ── Query client for the matching hooks ──────────────────────────────────────
 // The marketplace page currently uses raw useState + supabase. The matching
@@ -40,6 +46,12 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 function MarketplacePageInner() {
   const [search, setSearch]   = useState('');
+  const handleSearchChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+  }, []);
+  const handleViewModeChange = useCallback((mode: 'suggested' | 'all') => {
+    setViewMode(mode);
+  }, []);
   const [filters, setFilters] = useState<Filters>({ currency: 'ALL', status: 'ALL' });
   const [sort, setSort]       = useState<SortKey>('newest');
 
@@ -49,6 +61,7 @@ function MarketplacePageInner() {
    *  'all'       — show the traditional filtered/sorted list (override)
    */
   const [viewMode, setViewMode] = useState<'suggested' | 'all'>('suggested');
+  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_CAP);
 
   // ── Preferences ────────────────────────────────────────────────────────────
   const {
@@ -89,6 +102,8 @@ function MarketplacePageInner() {
       }
     });
   }, [allInvoices, filters.status, sort]);
+
+  const visibleInvoices = useMemo(() => sortedAll.slice(0, visibleCount), [sortedAll, visibleCount]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -137,7 +152,7 @@ function MarketplacePageInner() {
         <div className="flex items-center gap-2 mb-5">
           <button
             type="button"
-            onClick={() => setViewMode('suggested')}
+            onClick={() => handleViewModeChange('suggested')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               viewMode === 'suggested'
                 ? 'bg-primary text-primary-foreground'
@@ -149,7 +164,7 @@ function MarketplacePageInner() {
           </button>
           <button
             type="button"
-            onClick={() => setViewMode('all')}
+            onClick={() => handleViewModeChange('all')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               viewMode === 'all'
                 ? 'bg-primary text-primary-foreground'
@@ -169,7 +184,7 @@ function MarketplacePageInner() {
             isLoading={matchesLoading}
             isError={isError}
             totalInvoices={totalInvoices}
-            onBrowseAll={() => setViewMode('all')}
+            onBrowseAll={() => handleViewModeChange('all')}
           />
         )}
 
@@ -184,7 +199,7 @@ function MarketplacePageInner() {
                   placeholder="Search by invoice ID or originator…"
                   className="pl-9"
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  onChange={handleSearchChange}
                 />
               </div>
               <select
@@ -232,11 +247,23 @@ function MarketplacePageInner() {
             )}
 
             {!allInvoicesQuery.isLoading && sortedAll.length > 0 && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedAll.map(inv => (
-                  <MarketplaceCard key={inv.id} invoice={inv} />
-                ))}
-              </div>
+              <>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {visibleInvoices.map(inv => (
+                    <MarketplaceCard key={inv.id} invoice={inv} />
+                  ))}
+                </div>
+                {sortedAll.length > visibleCount && (
+                  <div className="mt-6 text-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => setVisibleCount(c => c + CAP_INCREMENT)}
+                    >
+                      Show more ({sortedAll.length - visibleCount} remaining)
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

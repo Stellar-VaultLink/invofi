@@ -349,7 +349,7 @@ function PositionCard({ offer }: { offer: LivePosition }) {
             <div className="mt-3">
               <RepaymentProgress value={offer.repaymentProgress} label={`${pct}% of total due repaid`} />
               <p className="text-xs mt-1 text-muted-foreground">
-                {formatAmount(offer.amount_repaid)} repaid · {formatAmount(offer.remaining)} remaining ·{' '}
+                {formatAmount(offer.amount_repaid)} {offer.currency} repaid · {formatAmount(offer.remaining)} {offer.currency} remaining ·{' '}
                 <span className="text-muted-foreground/70">updated {relativeUpdate(offer.updatedAt)}</span>
               </p>
             </div>

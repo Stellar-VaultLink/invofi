@@ -684,7 +684,7 @@ jobs:
             # the branch is behind the base and a clean merge is not
             # possible, rebase instead. Never squash — it rewrites history.
             if MERGE_OUT="$(gh pr merge "${PR}" --repo "${REPO}" \
-              --merge 2>&1)"; then
+              --merge --admin 2>&1)"; then
               echo "  ✅ merged #${PR}"
               if [ "${SELF}" != "true" ]; then
                 gh pr comment "${PR}" --repo "${REPO}" \
@@ -692,7 +692,7 @@ jobs:
                   2>/dev/null || true
               fi
             elif MERGE_OUT="$(gh pr merge "${PR}" --repo "${REPO}" \
-              --rebase 2>&1)"; then
+              --rebase --admin 2>&1)"; then
               echo "  ✅ rebased and merged #${PR}"
               if [ "${SELF}" != "true" ]; then
                 gh pr comment "${PR}" --repo "${REPO}" \

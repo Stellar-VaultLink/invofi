@@ -14,7 +14,7 @@ import { TableSkeleton } from '@/components/common/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { toErrorMessage } from '@/lib/errors';
 import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken } from '@/lib/contract';
-import { formatAmount, formatDate } from '@/lib/utils';
+import { formatDate, interestRateLabel, durationLabel, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { formatAmount as formatAmountDisplay } from '@/lib/formatters';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';

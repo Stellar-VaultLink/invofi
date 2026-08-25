@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { DEFAULT_CURRENCY_STORAGE_KEY } from '@/lib/formatters';
 import {
   EXPLORER_BASE,
   FINANCING_CONTRACT_ID,
@@ -111,6 +113,10 @@ export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [defaultCurrency, setDefaultCurrency] = useLocalStorage<string>(
+    DEFAULT_CURRENCY_STORAGE_KEY,
+    'XLM',
+  );
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -167,6 +173,44 @@ export default function SettingsPage() {
                 <ContractRow label="Registry" contractId={REGISTRY_CONTRACT_ID} />
                 <ContractRow label="Financing" contractId={FINANCING_CONTRACT_ID} />
                 <ContractRow label="Repayment" contractId={REPAYMENT_CONTRACT_ID} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Display</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">Default display currency</p>
+              <p className="text-xs text-gray-400">
+                Amounts shown without an explicit currency will use this preference.
+              </p>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="defaultCurrency"
+                    value="XLM"
+                    checked={defaultCurrency === 'XLM'}
+                    onChange={() => setDefaultCurrency('XLM')}
+                    className="accent-blue-600"
+                  />
+                  XLM
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="defaultCurrency"
+                    value="USDC"
+                    checked={defaultCurrency === 'USDC'}
+                    onChange={() => setDefaultCurrency('USDC')}
+                    className="accent-blue-600"
+                  />
+                  USDC
+                </label>
               </div>
             </div>
           </CardContent>

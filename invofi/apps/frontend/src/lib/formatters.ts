@@ -1,11 +1,30 @@
 import { STROOPS_PER_XLM } from './constants';
 
-export function formatAmount(stroops: string | number | bigint, currency: string = 'XLM'): string {
+export const DEFAULT_CURRENCY_STORAGE_KEY = 'invofi-default-currency';
+
+/** Read the user's preferred display currency from localStorage, defaulting to
+ *  'XLM' when none is stored or the environment has no Storage API. */
+export function getDefaultCurrency(): string {
+  if (typeof window === 'undefined') return 'XLM';
+  try {
+    const stored = window.localStorage.getItem(DEFAULT_CURRENCY_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as string;
+      if (parsed === 'XLM' || parsed === 'USDC') return parsed;
+    }
+  } catch {
+    /* localStorage unavailable — use default */
+  }
+  return 'XLM';
+}
+
+export function formatAmount(stroops: string | number | bigint, currency?: string): string {
   const units = Number(stroops) / STROOPS_PER_XLM;
+  const cur = currency || getDefaultCurrency();
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(units) + ` ${currency}`;
+  }).format(units) + ` ${cur}`;
 }
 
 export function formatBasisPoints(bps: number | bigint | string): string {

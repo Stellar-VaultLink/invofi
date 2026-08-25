@@ -6,14 +6,28 @@ import {
   formatDuration,
   formatRelativeDate,
   formatWalletAddress,
+  DEFAULT_CURRENCY_STORAGE_KEY,
 } from './formatters';
 
+const STORAGE_KEY = DEFAULT_CURRENCY_STORAGE_KEY;
+
 describe('formatters', () => {
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    window.localStorage.removeItem(STORAGE_KEY);
+  });
 
   it('formats stroops as a two-decimal currency amount', () => {
     expect(formatAmount(12_345_678)).toBe('1.23 XLM');
     expect(formatAmount(0, 'USDC')).toBe('0.00 USDC');
+    expect(formatAmount(12_345_678, 'XLM')).toBe('1.23 XLM');
+  });
+
+  it('respects the default display currency preference from localStorage', () => {
+    window.localStorage.setItem(STORAGE_KEY, '"USDC"');
+    expect(formatAmount(12_345_678)).toBe('1.23 USDC');
+    expect(formatAmount(0)).toBe('0.00 USDC');
+    // explicit currency still overrides
     expect(formatAmount(12_345_678, 'XLM')).toBe('1.23 XLM');
   });
 

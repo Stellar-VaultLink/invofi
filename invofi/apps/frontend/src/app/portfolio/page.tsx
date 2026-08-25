@@ -18,7 +18,7 @@ import { formatDate, interestRateLabel, durationLabel, OFFER_STATUS_COLORS } fro
 import { formatAmount as formatAmountDisplay } from '@/lib/formatters';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
-import { stroopsToUsd } from '@/lib/live/prices';
+import { getXlmUsdInfo, stroopsToUsd } from '@/lib/live/prices';
 import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
 import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
@@ -411,6 +411,19 @@ export default function PortfolioPage() {
   const pending = positions.filter(o => o.status === 'Pending');
 
   const totalValueUsd = active.reduce((sum, o) => sum + o.liveValueUsd, 0);
+
+  // Per-currency subtotals (issue #182): portfolios mix XLM and USDC, so show
+  // each currency's own total plus the USD-equivalent grand total above. All
+  // conversions use the cached reference rate — never a live oracle — so the
+  // card is labeled approximate with the rate source and as-of time.
+  const currencyTotalsUsd = useMemo(() => {
+    const buckets = new Map<string, number>();
+    for (const o of active) {
+      buckets.set(o.currency, (buckets.get(o.currency) ?? 0) + o.liveValueUsd);
+    }
+    return Array.from(buckets.entries()).sort((a, b) => b[1] - a[1]);
+  }, [active]);
+  const xlmUsdInfo = getXlmUsdInfo();
   const totalEarnedToDateUsd = active.reduce(
     (sum, o) => sum + stroopsToUsd(o.earnedToDate, o.currency),
     0,
@@ -502,7 +515,29 @@ export default function PortfolioPage() {
             <CardContent className="pt-5">
               <DollarSign className="h-4 w-4 text-muted-foreground mb-2" />
               <p className="text-lg font-bold text-foreground font-mono">${totalValueUsd.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">Portfolio Value (USD)</p>
+              <p className="text-xs text-muted-foreground">≈ Portfolio Value (USD)</p>
+              {currencyTotalsUsd.length > 0 && (
+                <ul className="mt-2 space-y-1 text-xs text-muted-foreground font-mono">
+                  {currencyTotalsUsd.map(([currency, usd]) => (
+                    <li key={currency} className="flex items-center justify-between gap-3">
+                      <span>{currency}</span>
+                      <span>≈ ${usd.toFixed(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-[11px] text-muted-foreground/70 mt-2 leading-relaxed">
+                XLM/USD {xlmUsdInfo.price.toFixed(4)}{' '}
+                {xlmUsdInfo.source === 'coingecko'
+                  ? '(CoinGecko)'
+                  : xlmUsdInfo.source === 'env'
+                    ? '(env override)'
+                    : '(default)'}
+                {xlmUsdInfo.updatedAt > 0
+                  ? ` · as of ${new Date(xlmUsdInfo.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : ''}{' '}
+                — approximate
+              </p>
             </CardContent>
           </Card>
         </div>

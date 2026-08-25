@@ -664,17 +664,17 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/Ajibose">
-                    <img src="https://avatars.githubusercontent.com/u/99620327?v=4" width="100;" alt="Ajibose"/>
-                    <br />
-                    <sub><b>Ajibose Ibrahim</b></sub>
-                </a>
-            </td>
-            <td align="center">
                 <a href="https://github.com/waterWang">
                     <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
                     <br />
                     <sub><b>water</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Ajibose">
+                    <img src="https://avatars.githubusercontent.com/u/99620327?v=4" width="100;" alt="Ajibose"/>
+                    <br />
+                    <sub><b>Ajibose Ibrahim</b></sub>
                 </a>
             </td>
             <td align="center">

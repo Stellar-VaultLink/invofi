@@ -95,6 +95,23 @@ function MarketplacePageInner() {
     <AuthGuard>
       <div className="max-w-5xl mx-auto px-4 py-8">
 
+        {/* JSON-LD structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'ItemList',
+              name: 'Invoice Marketplace',
+              description:
+                'Browse invoices available for financing and submit offers to earn yield on the InvoFi marketplace.',
+              url: 'https://invofi-five.vercel.app/marketplace',
+              itemListElement: [],
+              numberOfItems: 0,
+            }),
+          }}
+        />
+
         {/* Page header */}
         <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
           <div>

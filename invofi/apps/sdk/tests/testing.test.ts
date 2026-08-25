@@ -1,757 +1,385 @@
 /**
- * Unit tests — contract interaction testing framework (#226)
+ * Unit tests — contract-interaction testing framework (#226)
  *
- * Covers:
- *   - createTestInvoice / createTestOffer factory helpers
- *   - MockServerBuilder configurable failure scenarios
- *   - EventTracker event capture, counting, and reset
- *   - Combining MockServerBuilder with EventTracker
+ * Covers the mock's testing surface: emitted protocol-event tracking, typed
+ * domain failures (not found / unauthorized / insufficient balance / already
+ * exists), deterministic failure injection (`failures` option, `failNext`,
+ * `addFailure`), state control (`reset`, `setBalance`/`getBalance`,
+ * `seededInvoices`/`seededOffers`), and the `createTestInvoice` /
+ * `createTestOffer` fixture builders.
  */
 
 import { describe, it, expect } from 'vitest';
 import {
   createMockClient,
-  MOCK_WALLET_ADDRESS,
-  MOCK_BUSINESS_A,
-} from '../src/mock';
-import {
   createTestInvoice,
   createTestOffer,
-  MockServerBuilder,
-  createMockServerBuilder,
-  EventTracker,
-  createEventTracker,
-} from '../src/testing';
-import type { Invoice, FinancingOffer } from '../src/types';
+  toStroops,
+  STROOP_BASE,
+  MOCK_WALLET_ADDRESS,
+  MOCK_BUSINESS_A,
+  MOCK_BUSINESS_B,
+  MOCK_LENDER_B,
+  MOCK_POSITION_TOKEN_ID,
+  MOCK_REGISTRY_ID,
+  MOCK_FINANCING_ID,
+  MOCK_REPAYMENT_ID,
+  ContractError,
+  ContractErrorType,
+} from '../src/index';
+import { SdkValidationError } from '../src/validation';
 
-// ── Shared fixtures ──────────────────────────────────────────────────────────
-
-const FUTURE_TS = Math.floor(Date.now() / 1000) + 365 * 24 * 3600;
-
-// A Pending invoice already in the mock's seed set (originator = MOCK_BUSINESS_A).
-const EXISTING_INVOICE_ID = 'inv_mock_p001';
-// A seeded offer from MOCK_WALLET_ADDRESS on a Financed invoice.
-const EXISTING_OFFER_ID = 'off_mock_001';
-const EXISTING_FINANCED_INVOICE_ID = 'inv_mock_f001';
-
-// ── createTestInvoice ────────────────────────────────────────────────────────
-
-describe('createTestInvoice', () => {
-  it('returns a valid Invoice with sensible defaults', () => {
+describe('fixture builders — createTestInvoice', () => {
+  it('produces valid deterministic defaults', () => {
     const invoice = createTestInvoice();
-
-    expect(typeof invoice.id).toBe('string');
-    expect(invoice.id.length).toBeGreaterThan(0);
-    expect(typeof invoice.originator).toBe('string');
-    expect(invoice.originator.length).toBeGreaterThan(0);
-    expect(typeof invoice.amount).toBe('bigint');
-    expect(invoice.amount > 0n).toBe(true);
-    expect(['XLM', 'USDC']).toContain(invoice.currency);
-    expect(typeof invoice.due_date).toBe('number');
-    expect(invoice.due_date > Math.floor(Date.now() / 1000)).toBe(true);
+    expect(invoice.id).toBe('inv_test_001');
+    expect(invoice.originator).toBe(MOCK_BUSINESS_A);
+    expect(invoice.amount).toBe(100n * STROOP_BASE);
+    expect(invoice.currency).toBe('XLM');
     expect(invoice.status).toBe('Pending');
+    expect(invoice.due_date).toBeGreaterThan(Math.floor(Date.now() / 1000));
+    expect(invoice.created_at).toBeTruthy();
   });
 
-  it('satisfies the Invoice TypeScript interface', () => {
-    const invoice: Invoice = createTestInvoice();
-    expect(invoice).toBeDefined();
-  });
-
-  it('applies partial overrides while keeping other defaults', () => {
-    const invoice = createTestInvoice({ id: 'inv_custom', status: 'Financed', currency: 'USDC' });
-
+  it('applies field overrides and the dueDate alias', () => {
+    const due = Math.floor(Date.now() / 1000) + 10 * 86_400;
+    const invoice = createTestInvoice({ id: 'inv_custom', amount: toStroops(5), currency: 'USDC', dueDate: due });
     expect(invoice.id).toBe('inv_custom');
-    expect(invoice.status).toBe('Financed');
+    expect(invoice.amount).toBe(5n * STROOP_BASE);
     expect(invoice.currency).toBe('USDC');
-    // defaults preserved
-    expect(typeof invoice.amount).toBe('bigint');
-    expect(invoice.amount > 0n).toBe(true);
-    expect(typeof invoice.originator).toBe('string');
+    expect(invoice.due_date).toBe(due);
+    // dueDate wins over due_date when both are supplied.
+    const both = createTestInvoice({ due_date: due + 1, dueDate: due });
+    expect(both.due_date).toBe(due);
   });
 
-  it('allows overriding every field', () => {
-    const now = Math.floor(Date.now() / 1000);
-    const custom: Invoice = createTestInvoice({
-      id: 'inv_full_override',
-      originator: MOCK_BUSINESS_A,
-      amount: 999n,
-      currency: 'USDC',
-      due_date: now + 7 * 86_400,
-      status: 'Repaid',
-      created_at: '2026-01-01T00:00:00.000Z',
-    });
-
-    expect(custom.id).toBe('inv_full_override');
-    expect(custom.originator).toBe(MOCK_BUSINESS_A);
-    expect(custom.amount).toBe(999n);
-    expect(custom.currency).toBe('USDC');
-    expect(custom.status).toBe('Repaid');
-    expect(custom.created_at).toBe('2026-01-01T00:00:00.000Z');
+  it('is accepted by the mock client (registerInvoice) as-is', async () => {
+    const client = createMockClient();
+    const invoice = createTestInvoice();
+    const registered = await client.registerInvoice(
+      { id: invoice.id, amount: invoice.amount, currency: invoice.currency, dueDate: invoice.due_date },
+      invoice.originator,
+    );
+    expect(registered.status).toBe('Pending');
+    expect((await client.getInvoice(invoice.id)).id).toBe(invoice.id);
   });
 });
 
-// ── createTestOffer ──────────────────────────────────────────────────────────
-
-describe('createTestOffer', () => {
-  it('returns a valid FinancingOffer with sensible defaults', () => {
+describe('fixture builders — createTestOffer', () => {
+  it('produces valid deterministic defaults', () => {
     const offer = createTestOffer();
-
-    expect(typeof offer.id).toBe('string');
-    expect(offer.id.length).toBeGreaterThan(0);
-    expect(typeof offer.invoice_id).toBe('string');
-    expect(typeof offer.lender).toBe('string');
-    expect(typeof offer.amount).toBe('bigint');
-    expect(offer.amount > 0n).toBe(true);
-    expect(['XLM', 'USDC']).toContain(offer.currency);
-    expect(typeof offer.interest_rate).toBe('number');
-    expect(offer.interest_rate).toBeGreaterThan(0);
-    expect(typeof offer.duration).toBe('number');
-    expect(offer.duration).toBeGreaterThan(0);
-    expect(typeof offer.amount_repaid).toBe('bigint');
+    expect(offer.id).toBe('off_test_001');
+    expect(offer.invoice_id).toBe('inv_test_001');
+    expect(offer.lender).toBe(MOCK_LENDER_B);
+    expect(offer.amount).toBe(100n * STROOP_BASE);
+    expect(offer.interest_rate).toBe(500);
+    expect(offer.duration).toBe(30 * 86_400);
     expect(offer.amount_repaid).toBe(0n);
     expect(offer.status).toBe('Pending');
     expect(offer.funded_at).toBe(0);
   });
 
-  it('satisfies the FinancingOffer TypeScript interface', () => {
-    const offer: FinancingOffer = createTestOffer();
-    expect(offer).toBeDefined();
-  });
-
-  it('applies partial overrides while keeping other defaults', () => {
-    const offer = createTestOffer({ id: 'off_custom', interest_rate: 750, status: 'Financed' });
-
+  it('applies field overrides and the invoiceId alias', () => {
+    const offer = createTestOffer({ id: 'off_custom', invoiceId: 'inv_x', interest_rate: 800 });
     expect(offer.id).toBe('off_custom');
-    expect(offer.interest_rate).toBe(750);
-    expect(offer.status).toBe('Financed');
-    // defaults preserved
-    expect(typeof offer.amount).toBe('bigint');
-    expect(offer.amount > 0n).toBe(true);
+    expect(offer.invoice_id).toBe('inv_x');
+    expect(offer.interest_rate).toBe(800);
+    // invoiceId wins over invoice_id when both are supplied.
+    const both = createTestOffer({ invoice_id: 'inv_y', invoiceId: 'inv_x' });
+    expect(both.invoice_id).toBe('inv_x');
   });
 
-  it('allows overriding every field', () => {
-    const custom: FinancingOffer = createTestOffer({
-      id: 'off_full_override',
-      invoice_id: 'inv_full_override',
-      lender: MOCK_WALLET_ADDRESS,
-      amount: 500_000_000n,
-      currency: 'USDC',
-      interest_rate: 1000,
-      duration: 60 * 86_400,
-      amount_repaid: 250_000_000n,
-      status: 'Repaid',
-      funded_at: 1_700_000_000,
-    });
-
-    expect(custom.id).toBe('off_full_override');
-    expect(custom.invoice_id).toBe('inv_full_override');
-    expect(custom.lender).toBe(MOCK_WALLET_ADDRESS);
-    expect(custom.amount).toBe(500_000_000n);
-    expect(custom.currency).toBe('USDC');
-    expect(custom.interest_rate).toBe(1000);
-    expect(custom.duration).toBe(60 * 86_400);
-    expect(custom.amount_repaid).toBe(250_000_000n);
-    expect(custom.status).toBe('Repaid');
-    expect(custom.funded_at).toBe(1_700_000_000);
-  });
-});
-
-// ── MockServerBuilder — failure scenarios ────────────────────────────────────
-
-describe('MockServerBuilder — no failures (baseline)', () => {
-  it('build() with no failure config returns a working mock client', async () => {
-    const client = createMockServerBuilder().build();
-
-    const invoice = await client.getInvoice(EXISTING_INVOICE_ID);
-    expect(invoice.id).toBe(EXISTING_INVOICE_ID);
-  });
-});
-
-describe('MockServerBuilder — withInsufficientBalance()', () => {
-  it('getTokenBalance rejects with Insufficient balance', async () => {
-    const client = createMockServerBuilder().withInsufficientBalance().build();
-    await expect(
-      client.getTokenBalance('CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7', MOCK_WALLET_ADDRESS),
-    ).rejects.toThrow('Insufficient balance');
-  });
-
-  it('getTokenDecimals rejects with Insufficient balance', async () => {
-    const client = createMockServerBuilder().withInsufficientBalance().build();
-    await expect(
-      client.getTokenDecimals('CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7'),
-    ).rejects.toThrow('Insufficient balance');
-  });
-
-  it('transferPositionToken rejects with Insufficient balance', async () => {
-    const client = createMockServerBuilder().withInsufficientBalance().build();
-    await expect(
-      client.transferPositionToken(
-        'CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7',
-        MOCK_WALLET_ADDRESS,
-        MOCK_BUSINESS_A,
-        1_000n,
-      ),
-    ).rejects.toThrow('Insufficient balance');
-  });
-
-  it('repayInvoice rejects with Insufficient balance', async () => {
-    const client = createMockServerBuilder().withInsufficientBalance().build();
-    await expect(
-      client.repayInvoice(EXISTING_FINANCED_INVOICE_ID, EXISTING_OFFER_ID, MOCK_BUSINESS_A, 1_000n),
-    ).rejects.toThrow('Insufficient balance');
-  });
-
-  it('read-only methods still work under insufficientBalance', async () => {
-    const client = createMockServerBuilder().withInsufficientBalance().build();
-    // getInvoice / getOffer are not affected
-    const invoice = await client.getInvoice(EXISTING_INVOICE_ID);
-    expect(invoice.id).toBe(EXISTING_INVOICE_ID);
-  });
-});
-
-describe('MockServerBuilder — withAuthError()', () => {
-  it('registerInvoice rejects with Auth error: unauthorized', async () => {
-    const client = createMockServerBuilder().withAuthError().build();
-    await expect(
-      client.registerInvoice(
-        { id: 'inv_auth_test', amount: 10_000_000n, currency: 'XLM', dueDate: FUTURE_TS },
-        MOCK_BUSINESS_A,
-      ),
-    ).rejects.toThrow('Auth error: unauthorized');
-  });
-
-  it('cancelInvoice rejects with Auth error: unauthorized', async () => {
-    const client = createMockServerBuilder().withAuthError().build();
-    await expect(client.cancelInvoice(EXISTING_INVOICE_ID, MOCK_BUSINESS_A)).rejects.toThrow(
-      'Auth error: unauthorized',
-    );
-  });
-
-  it('createOffer rejects with Auth error: unauthorized', async () => {
-    const client = createMockServerBuilder().withAuthError().build();
-    await expect(
-      client.createOffer(
-        {
-          offerId: 'off_auth_test',
-          invoiceId: EXISTING_INVOICE_ID,
-          amount: 10_000_000n,
-          currency: 'XLM',
-          interestRate: 500,
-          duration: 86_400,
-        },
-        MOCK_WALLET_ADDRESS,
-      ),
-    ).rejects.toThrow('Auth error: unauthorized');
-  });
-
-  it('acceptOffer rejects with Auth error: unauthorized', async () => {
-    const client = createMockServerBuilder().withAuthError().build();
-    await expect(client.acceptOffer('off_mock_003', MOCK_BUSINESS_A)).rejects.toThrow(
-      'Auth error: unauthorized',
-    );
-  });
-
-  it('rejectOffer rejects with Auth error: unauthorized', async () => {
-    const client = createMockServerBuilder().withAuthError().build();
-    await expect(client.rejectOffer('off_mock_003', MOCK_BUSINESS_A)).rejects.toThrow(
-      'Auth error: unauthorized',
-    );
-  });
-
-  it('repayInvoice rejects with Auth error: unauthorized', async () => {
-    const client = createMockServerBuilder().withAuthError().build();
-    await expect(
-      client.repayInvoice(EXISTING_FINANCED_INVOICE_ID, EXISTING_OFFER_ID, MOCK_BUSINESS_A, 1_000n),
-    ).rejects.toThrow('Auth error: unauthorized');
-  });
-
-  it('markOverdue rejects with Auth error: unauthorized', async () => {
-    const client = createMockServerBuilder().withAuthError().build();
-    await expect(client.markOverdue('inv_mock_o001', MOCK_WALLET_ADDRESS)).rejects.toThrow(
-      'Auth error: unauthorized',
-    );
-  });
-
-  it('transferPositionToken rejects with Auth error: unauthorized', async () => {
-    const client = createMockServerBuilder().withAuthError().build();
-    await expect(
-      client.transferPositionToken(
-        'CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7',
-        MOCK_WALLET_ADDRESS,
-        MOCK_BUSINESS_A,
-        1_000n,
-      ),
-    ).rejects.toThrow('Auth error: unauthorized');
-  });
-
-  it('read-only methods still work under authError', async () => {
-    const client = createMockServerBuilder().withAuthError().build();
-    const offer = await client.getOffer(EXISTING_OFFER_ID);
-    expect(offer.id).toBe(EXISTING_OFFER_ID);
-  });
-});
-
-describe('MockServerBuilder — withNetworkError()', () => {
-  it('getInvoice rejects with Network error', async () => {
-    const client = createMockServerBuilder().withNetworkError().build();
-    await expect(client.getInvoice(EXISTING_INVOICE_ID)).rejects.toThrow('Network error');
-  });
-
-  it('getOffer rejects with Network error', async () => {
-    const client = createMockServerBuilder().withNetworkError().build();
-    await expect(client.getOffer(EXISTING_OFFER_ID)).rejects.toThrow('Network error');
-  });
-
-  it('registerInvoice rejects with Network error', async () => {
-    const client = createMockServerBuilder().withNetworkError().build();
-    await expect(
-      client.registerInvoice(
-        { id: 'inv_net_test', amount: 10_000_000n, currency: 'XLM', dueDate: FUTURE_TS },
-        MOCK_BUSINESS_A,
-      ),
-    ).rejects.toThrow('Network error');
-  });
-
-  it('createOffer rejects with Network error', async () => {
-    const client = createMockServerBuilder().withNetworkError().build();
-    await expect(
-      client.createOffer(
-        {
-          offerId: 'off_net_test',
-          invoiceId: EXISTING_INVOICE_ID,
-          amount: 10_000_000n,
-          currency: 'XLM',
-          interestRate: 500,
-          duration: 86_400,
-        },
-        MOCK_WALLET_ADDRESS,
-      ),
-    ).rejects.toThrow('Network error');
-  });
-
-  it('acceptOffer rejects with Network error', async () => {
-    const client = createMockServerBuilder().withNetworkError().build();
-    await expect(client.acceptOffer('off_mock_003', MOCK_BUSINESS_A)).rejects.toThrow('Network error');
-  });
-
-  it('repayInvoice rejects with Network error', async () => {
-    const client = createMockServerBuilder().withNetworkError().build();
-    await expect(
-      client.repayInvoice(EXISTING_FINANCED_INVOICE_ID, EXISTING_OFFER_ID, MOCK_BUSINESS_A, 1_000n),
-    ).rejects.toThrow('Network error');
-  });
-
-  it('getTokenBalance rejects with Network error', async () => {
-    const client = createMockServerBuilder().withNetworkError().build();
-    await expect(
-      client.getTokenBalance('CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7', MOCK_WALLET_ADDRESS),
-    ).rejects.toThrow('Network error');
-  });
-});
-
-describe('MockServerBuilder — withRejectedOffer()', () => {
-  it('acceptOffer rejects with Offer rejected', async () => {
-    const client = createMockServerBuilder().withRejectedOffer().build();
-    await expect(client.acceptOffer('off_mock_003', MOCK_BUSINESS_A)).rejects.toThrow('Offer rejected');
-  });
-
-  it('other methods still work under rejectedOffer', async () => {
-    const client = createMockServerBuilder().withRejectedOffer().build();
-    const invoice = await client.getInvoice(EXISTING_INVOICE_ID);
-    expect(invoice.id).toBe(EXISTING_INVOICE_ID);
-  });
-
-  it('createOffer still works when only rejectedOffer is set', async () => {
-    const client = createMockServerBuilder().withRejectedOffer().build();
-    const offer = await client.createOffer(
-      {
-        offerId: 'off_rej_test_001',
-        invoiceId: EXISTING_INVOICE_ID,
-        amount: 10_000_000n,
-        currency: 'XLM',
-        interestRate: 500,
-        duration: 86_400,
-      },
-      MOCK_WALLET_ADDRESS,
-    );
-    expect(offer.status).toBe('Pending');
-    // But accepting it fails
-    await expect(client.acceptOffer('off_rej_test_001', MOCK_BUSINESS_A)).rejects.toThrow('Offer rejected');
-  });
-});
-
-describe('MockServerBuilder — withOverdueInvoice()', () => {
-  it('built-in fixture inv_mock_o001 is already Overdue without configuration', async () => {
+  it('is accepted by the mock client (createOffer) as-is', async () => {
     const client = createMockClient();
-    const invoice = await client.getInvoice('inv_mock_o001');
-    expect(invoice.status).toBe('Overdue');
-  });
-
-  it('withOverdueInvoice with an existing fixture ID keeps the invoice Overdue', async () => {
-    const client = createMockServerBuilder().withOverdueInvoice('inv_mock_o001').build();
-    // Allow the async seeding to complete
-    await new Promise(r => setTimeout(r, 50));
-    const invoice = await client.getInvoice('inv_mock_o001');
-    expect(invoice.status).toBe('Overdue');
-  });
-});
-
-describe('MockServerBuilder — fluent chaining', () => {
-  it('returns the same builder instance for chaining', () => {
-    const builder = createMockServerBuilder();
-    expect(builder.withInsufficientBalance()).toBe(builder);
-    expect(builder.withAuthError()).toBe(builder);
-    expect(builder.withNetworkError()).toBe(builder);
-    expect(builder.withRejectedOffer()).toBe(builder);
-    expect(builder.withOverdueInvoice('inv_mock_o001')).toBe(builder);
-  });
-
-  it('networkError takes precedence over authError (all calls fail with Network error)', async () => {
-    const client = createMockServerBuilder().withAuthError().withNetworkError().build();
-    await expect(client.getInvoice(EXISTING_INVOICE_ID)).rejects.toThrow('Network error');
-    await expect(client.registerInvoice(
-      { id: 'x', amount: 1n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    )).rejects.toThrow('Network error');
-  });
-});
-
-// ── EventTracker ─────────────────────────────────────────────────────────────
-
-describe('EventTracker — construction', () => {
-  it('createEventTracker wraps a client and exposes .client', () => {
-    const base = createMockClient();
-    const tracker = createEventTracker(base);
-    expect(tracker.client).toBeDefined();
-    expect(typeof tracker.client.registerInvoice).toBe('function');
-  });
-
-  it('EventTracker.wrap() is equivalent to new EventTracker()', () => {
-    const base = createMockClient();
-    const tracker = EventTracker.wrap(base);
-    expect(tracker).toBeInstanceOf(EventTracker);
-  });
-
-  it('starts with an empty event list', () => {
-    const tracker = createEventTracker(createMockClient());
-    expect(tracker.getEvents()).toHaveLength(0);
-  });
-});
-
-describe('EventTracker — registerInvoice emits inv_reg', () => {
-  it('records an inv_reg event with correct payload', async () => {
-    const tracker = createEventTracker(createMockClient());
-
-    await tracker.client.registerInvoice(
-      { id: 'inv_track_001', amount: 5_000_000n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
+    const invoice = createTestInvoice();
+    await client.registerInvoice(
+      { id: invoice.id, amount: invoice.amount, currency: invoice.currency, dueDate: invoice.due_date },
+      invoice.originator,
     );
-
-    expect(tracker.getEventCount('inv_reg')).toBe(1);
-    const events = tracker.getEvents();
-    expect(events[0].type).toBe('inv_reg');
-    expect(events[0].payload.originator).toBe(MOCK_BUSINESS_A);
-    expect(events[0].payload.amount).toBe(5_000_000n);
-  });
-
-  it('accumulates multiple inv_reg events', async () => {
-    const tracker = createEventTracker(createMockClient());
-
-    await tracker.client.registerInvoice(
-      { id: 'inv_track_a', amount: 1n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
-    await tracker.client.registerInvoice(
-      { id: 'inv_track_b', amount: 2n, currency: 'USDC', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
-
-    expect(tracker.getEventCount('inv_reg')).toBe(2);
-    expect(tracker.getEvents()).toHaveLength(2);
-  });
-});
-
-describe('EventTracker — createOffer emits off_new', () => {
-  it('records an off_new event', async () => {
-    const tracker = createEventTracker(createMockClient());
-
-    await tracker.client.createOffer(
+    const offer = createTestOffer({ invoiceId: invoice.id });
+    const created = await client.createOffer(
       {
-        offerId: 'off_track_001',
-        invoiceId: EXISTING_INVOICE_ID,
-        amount: 10_000_000n,
-        currency: 'XLM',
-        interestRate: 500,
-        duration: 86_400,
+        offerId: offer.id,
+        invoiceId: offer.invoice_id,
+        amount: offer.amount,
+        currency: offer.currency,
+        interestRate: offer.interest_rate,
+        duration: offer.duration,
       },
+      offer.lender,
+    );
+    expect(created.status).toBe('Pending');
+  });
+});
+
+describe('event emission tracking', () => {
+  it('records inv_reg on registerInvoice and inv_cxl on cancelInvoice', async () => {
+    const client = createMockClient();
+    const invoice = createTestInvoice();
+    await client.registerInvoice(
+      { id: invoice.id, amount: invoice.amount, currency: invoice.currency, dueDate: invoice.due_date },
+      invoice.originator,
+    );
+    expect(client.events).toHaveLength(1);
+    const reg = client.events[0];
+    expect(reg.type).toBe('inv_reg');
+    expect(reg.subjectId).toBe(invoice.id);
+    expect(reg.contractId).toBe(MOCK_REGISTRY_ID);
+    expect(reg.ledger).toBeGreaterThan(0);
+    expect(reg.txHash).toMatch(/^0+[0-9a-f]+$/);
+    if (reg.type === 'inv_reg') {
+      expect(reg.data.originator).toBe(invoice.originator);
+      expect(reg.data.amount).toBe(invoice.amount);
+    }
+
+    await client.cancelInvoice(invoice.id, invoice.originator);
+    const cxl = client.events[1];
+    expect(cxl.type).toBe('inv_cxl');
+    if (cxl.type === 'inv_cxl') expect(cxl.data.originator).toBe(invoice.originator);
+  });
+
+  it('records off_new, off_acc, off_rej with financing contract ids', async () => {
+    const client = createMockClient();
+    await client.createOffer(
+      { offerId: 'off_t1', invoiceId: 'inv_mock_p002', amount: 25_000n, currency: 'XLM', interestRate: 500, duration: 86_400 },
       MOCK_WALLET_ADDRESS,
     );
+    expect(client.events[0].type).toBe('off_new');
+    expect(client.events[0].contractId).toBe(MOCK_FINANCING_ID);
 
-    expect(tracker.getEventCount('off_new')).toBe(1);
-    const event = tracker.getEvents()[0];
-    expect(event.type).toBe('off_new');
-    expect(event.payload.lender).toBe(MOCK_WALLET_ADDRESS);
-    expect(event.payload.invoice_id).toBe(EXISTING_INVOICE_ID);
-  });
-});
+    await client.acceptOffer('off_t1', MOCK_BUSINESS_B);
+    const acc = client.events[1];
+    expect(acc.type).toBe('off_acc');
+    if (acc.type === 'off_acc') {
+      expect(acc.data.invoiceId).toBe('inv_mock_p002');
+      expect(acc.data.lender).toBe(MOCK_WALLET_ADDRESS);
+      expect(acc.data.amount).toBe(25_000n);
+    }
 
-describe('EventTracker — acceptOffer emits off_acc', () => {
-  it('records an off_acc event', async () => {
-    const tracker = createEventTracker(createMockClient());
-
-    // off_mock_003 is a Pending offer on inv_mock_p001 (originator = MOCK_BUSINESS_A).
-    await tracker.client.acceptOffer('off_mock_003', MOCK_BUSINESS_A);
-
-    expect(tracker.getEventCount('off_acc')).toBe(1);
-    const event = tracker.getEvents()[0];
-    expect(event.type).toBe('off_acc');
-    expect(event.payload.lender).toBe(MOCK_WALLET_ADDRESS);
-  });
-});
-
-describe('EventTracker — repayInvoice emits inv_rep', () => {
-  it('records an inv_rep event with correct payload', async () => {
-    const tracker = createEventTracker(createMockClient());
-
-    await tracker.client.repayInvoice(
-      EXISTING_FINANCED_INVOICE_ID,
-      EXISTING_OFFER_ID,
-      MOCK_BUSINESS_A,
-      1_000n,
-    );
-
-    expect(tracker.getEventCount('inv_rep')).toBe(1);
-    const event = tracker.getEvents()[0];
-    expect(event.type).toBe('inv_rep');
-    expect(event.payload.offer_id).toBe(EXISTING_OFFER_ID);
-    expect(event.payload.amount).toBe(1_000n);
-    expect(event.payload.fully_repaid).toBe(false);
+    await client.rejectOffer('off_mock_006', MOCK_BUSINESS_B);
+    expect(client.events[2].type).toBe('off_rej');
+    expect(client.events[2].contractId).toBe(MOCK_FINANCING_ID);
   });
 
-  it('records fully_repaid = true when invoice is fully repaid', async () => {
-    const base = createMockClient();
-    const offer = await base.getOffer(EXISTING_OFFER_ID);
+  it('records inv_rep with fullyRepaid, inv_ovd, and off_def', async () => {
+    const client = createMockClient();
+    // Partial repayment → fullyRepaid: false.
+    await client.repayInvoice('inv_mock_f001', 'off_mock_001', MOCK_BUSINESS_A, 1_000n);
+    const partial = client.events[0];
+    expect(partial.type).toBe('inv_rep');
+    expect(partial.contractId).toBe(MOCK_REPAYMENT_ID);
+    if (partial.type === 'inv_rep') {
+      expect(partial.data.offerId).toBe('off_mock_001');
+      expect(partial.data.amount).toBe(1_000n);
+      expect(partial.data.fullyRepaid).toBe(false);
+    }
+
+    // Full repayment → fullyRepaid: true.
+    const offer = await client.getOffer('off_mock_001');
     const totalDue = offer.amount + (offer.amount * BigInt(offer.interest_rate)) / 10_000n;
     const outstanding = totalDue - offer.amount_repaid;
+    await client.repayInvoice('inv_mock_f001', 'off_mock_001', MOCK_BUSINESS_A, outstanding);
+    const full = client.events[1];
+    if (full.type === 'inv_rep') expect(full.data.fullyRepaid).toBe(true);
 
-    const tracker = createEventTracker(base);
-    await tracker.client.repayInvoice(
-      EXISTING_FINANCED_INVOICE_ID,
-      EXISTING_OFFER_ID,
+    await client.markOverdue('inv_mock_p001', MOCK_BUSINESS_A);
+    const ovd = client.events[2];
+    expect(ovd.type).toBe('inv_ovd');
+    if (ovd.type === 'inv_ovd') expect(ovd.data.dueDate).toBe(BigInt((await client.getInvoice('inv_mock_p001')).due_date));
+
+    await client.reclaimInvoice('inv_mock_o001', 'off_mock_004', MOCK_WALLET_ADDRESS);
+    const def = client.events[3];
+    expect(def.type).toBe('off_def');
+    if (def.type === 'off_def') {
+      expect(def.data.invoiceId).toBe('inv_mock_o001');
+      expect(def.data.lender).toBe(MOCK_WALLET_ADDRESS);
+    }
+  });
+
+  it('does not record events for read-only calls, and clearEvents wipes the log', async () => {
+    const client = createMockClient();
+    await client.getInvoice('inv_mock_p001');
+    await client.getOffer('off_mock_001');
+    await client.getTokenBalance(MOCK_POSITION_TOKEN_ID, MOCK_WALLET_ADDRESS);
+    expect(client.events).toHaveLength(0);
+
+    await client.registerInvoice(
+      { id: 'inv_evt', amount: 1_000n, currency: 'XLM', dueDate: Math.floor(Date.now() / 1000) + 86_400 },
       MOCK_BUSINESS_A,
-      outstanding,
     );
+    expect(client.events).toHaveLength(1);
+    client.clearEvents();
+    expect(client.events).toHaveLength(0);
+  });
 
-    const event = tracker.getEvents()[0];
-    expect(event.payload.fully_repaid).toBe(true);
+  it('does not record an event when a call fails', async () => {
+    const client = createMockClient();
+    await expect(client.acceptOffer('off_mock_006', MOCK_WALLET_ADDRESS)).rejects.toMatchObject({
+      errorType: ContractErrorType.UNAUTHORIZED,
+    });
+    expect(client.events).toHaveLength(0);
   });
 });
 
-describe('EventTracker — read-only methods do not emit events', () => {
-  it('getInvoice does not add events', async () => {
-    const tracker = createEventTracker(createMockClient());
-    await tracker.client.getInvoice(EXISTING_INVOICE_ID);
-    expect(tracker.getEvents()).toHaveLength(0);
+describe('typed domain failures (#226)', () => {
+  it('throws ContractError NOT_FOUND for missing resources', async () => {
+    const client = createMockClient();
+    await expect(client.getInvoice('inv_nope')).rejects.toMatchObject({
+      errorType: ContractErrorType.NOT_FOUND,
+    });
+    await expect(client.getOffer('off_nope')).rejects.toMatchObject({
+      errorType: ContractErrorType.NOT_FOUND,
+    });
   });
 
-  it('getOffer does not add events', async () => {
-    const tracker = createEventTracker(createMockClient());
-    await tracker.client.getOffer(EXISTING_OFFER_ID);
-    expect(tracker.getEvents()).toHaveLength(0);
+  it('throws ContractError UNAUTHORIZED for auth failures', async () => {
+    const client = createMockClient();
+    await expect(client.cancelInvoice('inv_mock_p001', MOCK_WALLET_ADDRESS)).rejects.toMatchObject({
+      errorType: ContractErrorType.UNAUTHORIZED,
+    });
+    await expect(client.acceptOffer('off_mock_006', MOCK_WALLET_ADDRESS)).rejects.toMatchObject({
+      errorType: ContractErrorType.UNAUTHORIZED,
+    });
+    await expect(client.reclaimInvoice('inv_mock_o001', 'off_mock_004', MOCK_BUSINESS_A)).rejects.toMatchObject({
+      errorType: ContractErrorType.UNAUTHORIZED,
+    });
   });
 
-  it('getTokenBalance does not add events', async () => {
-    const tracker = createEventTracker(createMockClient());
-    await tracker.client.getTokenBalance(
-      'CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7',
-      MOCK_WALLET_ADDRESS,
-    );
-    expect(tracker.getEvents()).toHaveLength(0);
-  });
-});
-
-describe('EventTracker — reset()', () => {
-  it('clears all tracked events', async () => {
-    const tracker = createEventTracker(createMockClient());
-
-    await tracker.client.registerInvoice(
-      { id: 'inv_reset_001', amount: 1n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
-    expect(tracker.getEventCount('inv_reg')).toBe(1);
-
-    tracker.reset();
-
-    expect(tracker.getEvents()).toHaveLength(0);
-    expect(tracker.getEventCount('inv_reg')).toBe(0);
-  });
-
-  it('resumes tracking after reset', async () => {
-    const tracker = createEventTracker(createMockClient());
-
-    await tracker.client.registerInvoice(
-      { id: 'inv_reset_002', amount: 1n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
-    tracker.reset();
-
-    await tracker.client.registerInvoice(
-      { id: 'inv_reset_003', amount: 1n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
-
-    expect(tracker.getEventCount('inv_reg')).toBe(1);
-    const events = tracker.getEvents();
-    expect(events[0].payload.originator).toBe(MOCK_BUSINESS_A);
-  });
-});
-
-describe('EventTracker — getEventCount()', () => {
-  it('returns 0 for an event type that has not been emitted', () => {
-    const tracker = createEventTracker(createMockClient());
-    expect(tracker.getEventCount('off_acc')).toBe(0);
-  });
-
-  it('returns the correct count for mixed event types', async () => {
-    const tracker = createEventTracker(createMockClient());
-
-    // Register two invoices
-    await tracker.client.registerInvoice(
-      { id: 'inv_count_a', amount: 1n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
-    await tracker.client.registerInvoice(
-      { id: 'inv_count_b', amount: 1n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
-    // Create an offer
-    await tracker.client.createOffer(
-      {
-        offerId: 'off_count_001',
-        invoiceId: EXISTING_INVOICE_ID,
-        amount: 10_000_000n,
-        currency: 'XLM',
-        interestRate: 500,
-        duration: 86_400,
-      },
-      MOCK_WALLET_ADDRESS,
-    );
-
-    expect(tracker.getEventCount('inv_reg')).toBe(2);
-    expect(tracker.getEventCount('off_new')).toBe(1);
-    expect(tracker.getEventCount('off_acc')).toBe(0);
-    expect(tracker.getEvents()).toHaveLength(3);
-  });
-});
-
-describe('EventTracker — getEvents() returns a copy', () => {
-  it('mutating the returned array does not affect internal state', async () => {
-    const tracker = createEventTracker(createMockClient());
-
-    await tracker.client.registerInvoice(
-      { id: 'inv_copy_test', amount: 1n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
-
-    const snapshot = tracker.getEvents();
-    snapshot.pop(); // mutate the copy
-
-    // Internal state unchanged
-    expect(tracker.getEventCount('inv_reg')).toBe(1);
-  });
-});
-
-// ── Combining MockServerBuilder with EventTracker ────────────────────────────
-
-describe('MockServerBuilder + EventTracker — combined usage', () => {
-  it('EventTracker wrapping a builder client captures events on successful calls', async () => {
-    // No failure modes → all calls succeed; events should be tracked.
-    const baseClient = createMockServerBuilder().build();
-    const tracker = EventTracker.wrap(baseClient);
-
-    await tracker.client.registerInvoice(
-      { id: 'inv_combo_001', amount: 10_000_000n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
-
-    expect(tracker.getEventCount('inv_reg')).toBe(1);
-  });
-
-  it('EventTracker wrapping an authError builder records no events (call throws)', async () => {
-    const baseClient = createMockServerBuilder().withAuthError().build();
-    const tracker = EventTracker.wrap(baseClient);
-
+  it('throws ContractError ALREADY_EXISTS for duplicate registrations', async () => {
+    const client = createMockClient();
     await expect(
-      tracker.client.registerInvoice(
-        { id: 'inv_combo_fail', amount: 10_000_000n, currency: 'XLM', dueDate: FUTURE_TS },
+      client.registerInvoice(
+        { id: 'inv_mock_p001', amount: 1_000n, currency: 'XLM', dueDate: Math.floor(Date.now() / 1000) + 86_400 },
         MOCK_BUSINESS_A,
       ),
-    ).rejects.toThrow('Auth error: unauthorized');
-
-    // Failed calls should not produce events.
-    expect(tracker.getEventCount('inv_reg')).toBe(0);
-    expect(tracker.getEvents()).toHaveLength(0);
+    ).rejects.toMatchObject({ errorType: ContractErrorType.ALREADY_EXISTS });
+    await expect(
+      client.createOffer(
+        { offerId: 'off_mock_001', invoiceId: 'inv_mock_p002', amount: 1_000n, currency: 'XLM', interestRate: 500, duration: 86_400 },
+        MOCK_WALLET_ADDRESS,
+      ),
+    ).rejects.toMatchObject({ errorType: ContractErrorType.ALREADY_EXISTS });
   });
 
-  it('EventTracker wrapping a networkError builder records no events', async () => {
-    const baseClient = createMockServerBuilder().withNetworkError().build();
-    const tracker = EventTracker.wrap(baseClient);
+  it('throws ContractError INSUFFICIENT_BALANCE on overdraft transfers', async () => {
+    const client = createMockClient();
+    client.setBalance(MOCK_BUSINESS_A, 5n);
+    await expect(
+      client.transferPositionToken(MOCK_POSITION_TOKEN_ID, MOCK_BUSINESS_A, MOCK_BUSINESS_B, 10n),
+    ).rejects.toMatchObject({ errorType: ContractErrorType.INSUFFICIENT_BALANCE });
+  });
+});
 
-    await expect(tracker.client.getInvoice(EXISTING_INVOICE_ID)).rejects.toThrow('Network error');
-    expect(tracker.getEvents()).toHaveLength(0);
+describe('failure injection', () => {
+  it('failNext rejects exactly once, then the call succeeds', async () => {
+    const client = createMockClient();
+    const boom = new ContractError(5, ContractErrorType.INSUFFICIENT_BALANCE, 'lender is broke');
+    client.failNext('acceptOffer', boom);
+    await expect(client.acceptOffer('off_mock_006', MOCK_BUSINESS_B)).rejects.toMatchObject({
+      errorType: ContractErrorType.INSUFFICIENT_BALANCE,
+    });
+    await expect(client.acceptOffer('off_mock_006', MOCK_BUSINESS_B)).resolves.toBeDefined();
   });
 
-  it('EventTracker wrapping a rejectedOffer builder records no off_acc event', async () => {
-    const baseClient = createMockServerBuilder().withRejectedOffer().build();
-    const tracker = EventTracker.wrap(baseClient);
-
-    await expect(tracker.client.acceptOffer('off_mock_003', MOCK_BUSINESS_A)).rejects.toThrow(
-      'Offer rejected',
-    );
-    expect(tracker.getEventCount('off_acc')).toBe(0);
+  it('failNext default error is a ContractError UNKNOWN with a readable message', async () => {
+    const client = createMockClient();
+    client.failNext('getInvoice', undefined, 'testnet is down');
+    await expect(client.getInvoice('inv_mock_p001')).rejects.toMatchObject({
+      errorType: ContractErrorType.UNKNOWN,
+      message: 'testnet is down',
+    });
   });
 
-  it('full lifecycle: register → createOffer → acceptOffer → repay tracked end-to-end', async () => {
-    const tracker = createEventTracker(createMockClient());
+  it('options.failures with on: "*" matches every method and respects times', async () => {
+    const client = createMockClient({ failures: [{ on: '*', message: 'chain down', times: 2 }] });
+    await expect(client.getInvoice('inv_mock_p001')).rejects.toThrow(/chain down/);
+    await expect(client.getOffer('off_mock_001')).rejects.toThrow(/chain down/);
+    await expect(client.getInvoice('inv_mock_p001')).resolves.toBeDefined();
+  });
 
-    // Register a fresh invoice
-    await tracker.client.registerInvoice(
-      { id: 'inv_e2e_001', amount: 50_000_000n, currency: 'XLM', dueDate: FUTURE_TS },
-      MOCK_BUSINESS_A,
-    );
+  it('options.failures can target a single method', async () => {
+    const client = createMockClient({ failures: [{ on: 'transferPositionToken', error: new Error('simulated slop') }] });
+    await expect(
+      client.transferPositionToken(MOCK_POSITION_TOKEN_ID, MOCK_WALLET_ADDRESS, MOCK_BUSINESS_A, 1n),
+    ).rejects.toThrow(/simulated slop/);
+    // Reads still work.
+    await expect(client.getInvoice('inv_mock_p001')).resolves.toBeDefined();
+  });
 
-    // Create an offer
-    await tracker.client.createOffer(
-      {
-        offerId: 'off_e2e_001',
-        invoiceId: 'inv_e2e_001',
-        amount: 50_000_000n,
-        currency: 'XLM',
-        interestRate: 500,
-        duration: 30 * 86_400,
-      },
-      MOCK_WALLET_ADDRESS,
-    );
+  it('addFailure installs a sticky rule until reset', async () => {
+    const client = createMockClient();
+    client.addFailure({ on: 'rejectOffer', message: 'reject is disabled' });
+    await expect(client.rejectOffer('off_mock_006', MOCK_BUSINESS_B)).rejects.toThrow(/reject is disabled/);
+    await client.reset();
+    await expect(client.rejectOffer('off_mock_006', MOCK_BUSINESS_B)).resolves.toBeDefined();
+  });
 
-    // Accept the offer (originator = MOCK_BUSINESS_A)
-    await tracker.client.acceptOffer('off_e2e_001', MOCK_BUSINESS_A);
+  it('validation still runs before injected failures (SdkValidationError wins)', async () => {
+    const client = createMockClient();
+    client.failNext('registerInvoice');
+    await expect(
+      client.registerInvoice(
+        { id: '', amount: 1_000n, currency: 'XLM', dueDate: Math.floor(Date.now() / 1000) + 86_400 },
+        MOCK_BUSINESS_A,
+      ),
+    ).rejects.toBeInstanceOf(SdkValidationError);
+  });
+});
 
-    // Partial repayment
-    await tracker.client.repayInvoice('inv_e2e_001', 'off_e2e_001', MOCK_BUSINESS_A, 1_000_000n);
+describe('state control', () => {
+  it('reset restores the seeded state and clears events + one-shot failures', async () => {
+    const client = createMockClient();
+    await client.cancelInvoice('inv_mock_p001', MOCK_BUSINESS_A);
+    client.failNext('getOffer');
+    await expect(client.getOffer('off_mock_001')).rejects.toThrow(/Simulated failure/);
 
-    // Assert total events
-    expect(tracker.getEvents()).toHaveLength(4);
-    expect(tracker.getEventCount('inv_reg')).toBe(1);
-    expect(tracker.getEventCount('off_new')).toBe(1);
-    expect(tracker.getEventCount('off_acc')).toBe(1);
-    expect(tracker.getEventCount('inv_rep')).toBe(1);
+    await client.reset();
 
-    // Spot-check payloads
-    const events = tracker.getEvents();
-    expect(events[0].type).toBe('inv_reg');
-    expect(events[1].type).toBe('off_new');
-    expect(events[2].type).toBe('off_acc');
-    expect(events[3].type).toBe('inv_rep');
-    expect(events[3].payload.fully_repaid).toBe(false);
+    expect((await client.getInvoice('inv_mock_p001')).status).toBe('Pending');
+    expect(client.events).toHaveLength(0);
+    await expect(client.getOffer('off_mock_001')).resolves.toBeDefined();
+  });
+
+  it('reset restores failures configured via options', async () => {
+    const client = createMockClient({ failures: [{ on: 'getInvoice', message: 'boom', times: 1 }] });
+    await expect(client.getInvoice('inv_mock_p001')).rejects.toThrow(/boom/);
+    await client.reset();
+    await expect(client.getInvoice('inv_mock_p001')).rejects.toThrow(/boom/);
+  });
+
+  it('setBalance/getBalance drive balance-based scenarios', () => {
+    const client = createMockClient();
+    expect(client.getBalance(MOCK_BUSINESS_A)).toBe(0n);
+    client.setBalance(MOCK_BUSINESS_A, 42n);
+    expect(client.getBalance(MOCK_BUSINESS_A)).toBe(42n);
+    // Unrelated to the position token's demo wallet balance.
+    expect(client.getBalance(MOCK_WALLET_ADDRESS)).toBeGreaterThan(0n);
+  });
+
+  it('seededInvoices/seededOffers return fresh copies of the fixtures', async () => {
+    const client = createMockClient();
+    const seeded = client.seededInvoices();
+    expect(seeded.length).toBeGreaterThan(0);
+    seeded[0].status = 'Cancelled';
+    // Mutating the returned copy must not affect the client's state.
+    expect((await client.getInvoice(seeded[0].id)).status).not.toBe('Cancelled');
+    expect(client.seededOffers().length).toBeGreaterThan(0);
+  });
+});
+
+describe('API surface', () => {
+  it('exposes the testing framework from the package root', () => {
+    const client = createMockClient();
+    expect(typeof createTestInvoice).toBe('function');
+    expect(typeof createTestOffer).toBe('function');
+    expect(toStroops(1)).toBe(STROOP_BASE);
+    expect(MOCK_REGISTRY_ID).toMatch(/^C[A-Z2-7]{55}$/);
+    expect(MOCK_FINANCING_ID).toMatch(/^C[A-Z2-7]{55}$/);
+    expect(MOCK_REPAYMENT_ID).toMatch(/^C[A-Z2-7]{55}$/);
+    expect(typeof client.reset).toBe('function');
+    expect(typeof client.failNext).toBe('function');
+    expect(typeof client.clearEvents).toBe('function');
+    expect(Array.isArray(client.events)).toBe(true);
+    expect(client.cache).toBeDefined();
   });
 });

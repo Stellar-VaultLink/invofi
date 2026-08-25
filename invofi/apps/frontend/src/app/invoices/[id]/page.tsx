@@ -14,10 +14,12 @@ import { InvoiceDocuments } from '@/components/invoices/documents/InvoiceDocumen
 import { MessagingPanel } from '@/components/invoices/MessagingPanel';
 import { EventTimeline } from '@/components/invoices/EventTimeline';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { getInvoice, cancelInvoice } from '@/lib/contract';
+import { getInvoice, cancelInvoice, registerInvoice } from '@/lib/contract';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
-import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
+import { ToastAction } from '@/components/ui/toast';
+import { toErrorMessage } from '@/lib/errors';
+import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS, generateInvoiceId } from '@/lib/utils';
 import type { Invoice, FinancingOffer } from '@/types';
 
 export default function InvoiceDetailPage() {
@@ -37,15 +39,57 @@ export default function InvoiceDetailPage() {
   const handleCancel = async () => {
     if (!invoice || !publicKey) return;
     setCancelling(true);
+    // Capture the invoice data before cancelling so we can re-register on undo.
+    const cancelledInvoice = invoice;
     try {
       const updated = await cancelInvoice(invoice.id, publicKey);
       await supabase.from('invoices').update({ status: 'Cancelled' }).eq('id', invoice.id);
       setInvoice(updated);
-      toast({ title: 'Invoice cancelled', description: 'The invoice is now cancelled on-chain.' });
+      toast({
+        title: 'Invoice cancelled',
+        description: 'The invoice is now cancelled on-chain.',
+        action: (
+          <ToastAction
+            altText="Undo cancel"
+            onClick={async () => {
+              try {
+                const newId = generateInvoiceId();
+                const restored = await registerInvoice(
+                  {
+                    id: newId,
+                    amount: cancelledInvoice.amount,
+                    currency: cancelledInvoice.currency,
+                    dueDate: Number(cancelledInvoice.due_date),
+                  },
+                  publicKey,
+                );
+                await supabase.from('invoices').insert({
+                  id: newId,
+                  originator: publicKey,
+                  amount: cancelledInvoice.amount,
+                  currency: cancelledInvoice.currency,
+                  due_date: new Date(Number(cancelledInvoice.due_date) * 1000).toISOString(),
+                  status: 'Pending',
+                });
+                setInvoice(restored);
+                toast({ title: 'Invoice restored', description: 'A new invoice with the same terms has been created.' });
+              } catch (undoErr: unknown) {
+                toast({
+                  title: 'Failed to restore invoice',
+                  description: toErrorMessage(undoErr, 'Error'),
+                  variant: 'destructive',
+                });
+              }
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
     } catch (err: unknown) {
       toast({
         title: 'Failed to cancel invoice',
-        description: err instanceof Error ? err.message : 'Error',
+        description: toErrorMessage(err, 'Error'),
         variant: 'destructive',
       });
     } finally {
@@ -216,6 +260,7 @@ export default function InvoiceDetailPage() {
           description="The invoice will be cancelled on-chain and can no longer receive financing offers. This cannot be undone."
           confirmLabel="Cancel Invoice"
           variant="destructive"
+          holdToConfirm
           onConfirm={() => {
             setConfirmCancel(false);
             handleCancel();

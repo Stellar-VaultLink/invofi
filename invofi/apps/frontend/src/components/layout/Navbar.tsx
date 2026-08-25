@@ -13,8 +13,9 @@ import {
   Moon,
   Menu,
   X,
+  Keyboard,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { WalletButton } from "@/components/auth/WalletButton";
@@ -22,6 +23,7 @@ import { useWallet } from "@/components/auth/WalletProvider";
 import { supabase } from "@/lib/supabase";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { NavbarEventIndicator } from "@/components/NavbarEventIndicator";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 import { useTranslations } from 'next-intl';
 
@@ -35,6 +37,7 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { networkMismatch } = useWallet();
+  const { helpOpen, setHelpOpen, shortcuts } = useKeyboardShortcuts();
 
   const NAV_LINKS = [
     { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
@@ -45,6 +48,9 @@ export function Navbar() {
 
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement | null>(null);
+  const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
+  const shortcutsRef = useRef<HTMLDivElement | null>(null);
 
   const [theme, setTheme] = useLocalStorage<"light" | "dark">("theme", "light");
 
@@ -65,6 +71,69 @@ export function Navbar() {
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
+
+  // Focus management for the mobile drawer (WCAG 2.1 AA): trap focus while
+  // open, return focus to the toggle on close.
+  useEffect(() => {
+    if (!drawerOpen) {
+      if (drawerToggleRef.current) drawerToggleRef.current.focus();
+      return;
+    }
+
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const drawer = drawerRef.current;
+    // Move focus into the drawer on open.
+    if (drawer) {
+      const firstFocusable = drawer.querySelector<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      (firstFocusable ?? drawer).focus();
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape closes the drawer
+      if (e.key === 'Escape') {
+        setDrawerOpen(false);
+        return;
+      }
+      // Trap Tab within the drawer
+      if (e.key !== 'Tab' || !drawer) return;
+      const focusables = drawer.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, [drawerOpen]);
+
+  // Escape closes the keyboard-shortcuts help popover.
+  useEffect(() => {
+    if (!helpOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setHelpOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [helpOpen, setHelpOpen]);
 
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
 
@@ -123,6 +192,56 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             <NavbarEventIndicator />
 
+            {/* Keyboard shortcuts help */}
+            <div className="relative">
+              <button
+                onClick={() => setHelpOpen(!helpOpen)}
+                className="p-2 rounded-md text-muted-foreground hover:bg-accent transition-colors"
+                title="Keyboard shortcuts (?)"
+                aria-label="Toggle keyboard shortcuts help"
+                aria-expanded={helpOpen}
+              >
+                <Keyboard className="h-5 w-5" />
+              </button>
+              {helpOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    aria-hidden
+                    onClick={() => setHelpOpen(false)}
+                  />
+                  <div
+                    ref={shortcutsRef}
+                    role="dialog"
+                    aria-label="Keyboard shortcuts"
+                    className="absolute right-0 top-full mt-2 z-50 w-60 rounded-lg border border-border bg-background shadow-lg p-3 space-y-2"
+                  >
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Keyboard shortcuts
+                    </p>
+                    <div className="space-y-1.5">
+                      {shortcuts.map((s) => (
+                        <div
+                          key={s.label}
+                          className="flex items-center justify-between text-sm"
+                        >
+                          <kbd className="inline-flex items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-mono text-foreground">
+                            {s.label}
+                          </kbd>
+                          <span className="text-muted-foreground">
+                            {s.description}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground pt-1 border-t border-border">
+                      Press <kbd className="rounded border border-border bg-muted px-1 py-0.5 text-[10px] font-mono">?</kbd> to toggle
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
             <button
               onClick={toggleTheme}
               className="p-2 rounded-md text-muted-foreground hover:bg-accent transition-colors"
@@ -174,9 +293,11 @@ export function Navbar() {
 
             {/* Mobile hamburger */}
             <button
+              ref={drawerToggleRef}
               onClick={() => setDrawerOpen((v) => !v)}
               className="md:hidden p-2 rounded-md text-muted-foreground hover:bg-accent transition-colors"
               aria-label={drawerOpen ? "Close menu" : "Open menu"}
+              aria-expanded={drawerOpen}
             >
               {drawerOpen ? (
                 <X className="h-5 w-5" />
@@ -199,10 +320,14 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       <div
+        ref={drawerRef}
         className={cn(
           "fixed top-16 right-0 bottom-0 z-40 w-72 bg-background border-l border-border shadow-xl flex flex-col transition-transform duration-200 md:hidden",
           drawerOpen ? "translate-x-0" : "translate-x-full",
         )}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
       >
         <nav className="flex-1 p-4 space-y-1">
           {NAV_LINKS.map((link) => (
@@ -247,3 +372,4 @@ export function Navbar() {
     </>
   );
 }
+

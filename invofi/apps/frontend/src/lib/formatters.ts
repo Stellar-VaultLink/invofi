@@ -8,6 +8,19 @@ export function formatAmount(stroops: string | number | bigint, currency: string
   }).format(units) + ` ${currency}`;
 }
 
+/**
+ * Currency-aware display helper — alias for `formatAmount` with an explicit
+ * name that makes the currency context clear. Produces e.g. "1.23 XLM".
+ * Use this consistently for all amount displays to ensure every view shows
+ * the currency alongside the numeric value.
+ */
+export function formatCurrencyAmount(
+  stroops: string | number | bigint,
+  currency: string = 'XLM',
+): string {
+  return formatAmount(stroops, currency);
+}
+
 export function formatBasisPoints(bps: number | bigint | string): string {
   return (Number(bps) / 100).toFixed(2) + '%';
 }

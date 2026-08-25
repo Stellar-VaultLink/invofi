@@ -18,48 +18,28 @@ export {
 export type { InvofiClientConfig } from './config';
 export type { Currency, FinancingOffer, Invoice, InvoiceStatus, OfferStatus } from './types';
 
-// ── Typed contract call builder (#215) ──────────────────────────────────────
-// `client.contracts.<name>.<method>(params)` — compile-time checked function
-// names and parameter types (derived from the ABI below), plus runtime
-// validation of parameter values before each call reaches the network.
-// Available on both `createInvofiClient` and `createMockClient` results.
-export {
-  createContractsNamespace,
-  buildTypedContract,
-  validateAbiParams,
-  type ContractsNamespace,
-  type RegistryContract,
-  type FinancingContract,
-  type RepaymentContract,
-  type PositionTokenContract,
-  type TypedContract,
-  type TypedContractImpl,
-} from './contracts';
-export {
-  REGISTRY_ABI,
-  FINANCING_ABI,
-  REPAYMENT_ABI,
-  POSITION_TOKEN_ABI,
-  type AbiScalarType,
-  type AbiNativeType,
-  type AbiParamDef,
-  type AbiFunctionDef,
-  type InferParams,
-  type RegistryReturns,
-  type FinancingReturns,
-  type RepaymentReturns,
-  type PositionTokenReturns,
-} from './types/contract-abi';
-
-// ── Offline mock client (#177) ──────────────────────────────────────────────
+// ── Offline mock client (#177) + contract-interaction testing (#226) ────────
 // `createMockClient` is a drop-in replacement for `createInvofiClient` backed
 // by in-memory state — no RPC, Horizon, wallet, or testnet required. It is for
 // UI development only (no crypto/signing simulation). Deterministic fixtures
 // cover every invoice status, offers, and position-token balances.
+//
+// Since #226 it doubles as a contract-interaction testing framework: every
+// successful state-changing call records the protocol event it would have
+// emitted on-chain (`client.events`, same `ProtocolEvent` shapes as
+// `listenToEvents`), domain failures throw typed `ContractError`s, failure
+// rules (`failures` option / `failNext`) simulate deterministic RPC/contract
+// failures, and `reset()`/`setBalance`/`seededInvoices`/`seededOffers` give
+// tests full control over in-memory state. Pair with `createTestInvoice` /
+// `createTestOffer` (below) to compose pre-seeded data.
 export {
   createMockClient,
   type MockClient,
   type MockClientOptions,
+  // Testing framework (#226) types.
+  type MockTestingSurface,
+  type MockFailureRule,
+  type MockMethodName,
   // Deterministic mock identities + fixtures (shared with the frontend mock).
   MOCK_WALLET_ADDRESS,
   MOCK_BUSINESS_A,
@@ -68,7 +48,23 @@ export {
   MOCK_LENDER_B,
   MOCK_POSITION_TOKEN_ID,
   MOCK_POSITION_BALANCE,
+  // Contract ids reported in mock-emitted events.
+  MOCK_REGISTRY_ID,
+  MOCK_FINANCING_ID,
+  MOCK_REPAYMENT_ID,
 } from './mock';
+
+// ── Test fixture builders (#226) ────────────────────────────────────────────
+// `createTestInvoice` / `createTestOffer` produce SDK-valid fixture objects
+// for composing custom pre-seeded data in contract-interaction tests.
+export {
+  createTestInvoice,
+  createTestOffer,
+  toStroops,
+  STROOP_BASE,
+  type TestInvoiceOverrides,
+  type TestOfferOverrides,
+} from './testing';
 
 // Validation helpers re-exported for consumers who want to pre-validate
 // before calling SDK methods (e.g. form-level validation in the frontend).
@@ -131,11 +127,12 @@ export { Contract, Networks, xdr, nativeToScVal, scValToNative } from '@stellar/
 // // Stop polling when done:
 // stop();
 // ```
-export { listenToEvents } from './events';
+export { listenToEvents, replayEvents } from './events';
 export type {
   ProtocolEventName,
   ProtocolEvent,
   ListenToEventsOptions,
+  ReplayEventsOptions,
   StopListening,
   // Per-event payload types
   InvoiceRegisteredData,
@@ -158,23 +155,6 @@ export type {
   PoolPayoutData,
   ReputationRecordedData,
 } from './events';
-
-// ── Contract interaction testing framework (#226) ───────────────────────────
-// `createTestInvoice` / `createTestOffer` — typed factory helpers with
-// sensible defaults + partial overrides.
-// `MockServerBuilder` — fluent builder for configuring failure scenarios on
-// the mock client (insufficient balance, auth errors, network errors, …).
-// `EventTracker` — wraps any InvofiClient and captures protocol events emitted
-// by each state-changing call so tests can assert on event history.
-export {
-  createTestInvoice,
-  createTestOffer,
-  MockServerBuilder,
-  createMockServerBuilder,
-  EventTracker,
-  createEventTracker,
-} from './testing';
-export type { TrackedEventType, TrackedEvent } from './testing';
 
 // ── Offline cache (IndexedDB, stale-while-revalidate) ───────────────────────
 // Browser-only, gracefully no-ops under SSR/Node (see cache.ts). Caches

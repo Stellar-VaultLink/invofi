@@ -12,6 +12,7 @@ import { ListPositionForm } from '@/components/marketplace/ListPositionForm';
 import { PositionListingCard } from '@/components/marketplace/PositionListingCard';
 import { CardSkeleton } from '@/components/common/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import {
   LISTING_SORT_OPTIONS,
@@ -91,7 +92,7 @@ export default function PositionListingsPage() {
             : 'The listing is no longer on the board.',
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not update the listing';
+      const msg = toErrorMessage(err, 'Could not update the listing');
       toast({ title: 'Update failed', description: msg, variant: 'destructive' });
     } finally {
       setBusyId(null);

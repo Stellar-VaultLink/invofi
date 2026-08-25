@@ -11,6 +11,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { TableSkeleton } from '@/components/common/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken } from '@/lib/contract';
 import { formatAmount, formatDate, interestRateLabel, durationLabel, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { STROOPS_PER_XLM } from '@/lib/constants';
@@ -118,7 +119,7 @@ function TransferPositionCard() {
       toast({ title: 'Trustline added', description: 'Your wallet can now hold POS position tokens.' });
       await refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Trustline setup failed';
+      const msg = toErrorMessage(err, 'Trustline setup failed');
       toast({ title: 'Trustline failed', description: msg, variant: 'destructive' });
     } finally {
       setAddingTrustline(false);
@@ -165,7 +166,7 @@ function TransferPositionCard() {
       setAmount('');
       await refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Transaction failed';
+      const msg = toErrorMessage(err, 'Transaction failed');
       toast({ title: 'Transfer failed', description: msg, variant: 'destructive' });
     } finally {
       setBusy(false);
@@ -348,7 +349,7 @@ function PositionCard({ offer }: { offer: LivePosition }) {
             <div className="mt-3">
               <RepaymentProgress value={offer.repaymentProgress} label={`${pct}% of total due repaid`} />
               <p className="text-xs mt-1 text-muted-foreground">
-                {formatAmount(offer.amount_repaid)} repaid · {formatAmount(offer.remaining)} remaining ·{' '}
+                {formatAmount(offer.amount_repaid)} {offer.currency} repaid · {formatAmount(offer.remaining)} {offer.currency} remaining ·{' '}
                 <span className="text-muted-foreground/70">updated {relativeUpdate(offer.updatedAt)}</span>
               </p>
             </div>

@@ -398,11 +398,11 @@ export default function InvoicePrintView() {
                           {repaid > 0n ? (
                             <>
                               <span style={{ color: '#16a34a' }}>
-                                {formatAmount(repaid)}
+                                {formatAmount(repaid)} {offer.currency}
                               </span>
                               {remaining > 0n && (
                                 <span style={{ color: '#9ca3af', fontSize: 10 }}>
-                                  {' '}/ {formatAmount(remaining)} rem.
+                                  {' '}/ {formatAmount(remaining)} {offer.currency} rem.
                                 </span>
                               )}
                             </>

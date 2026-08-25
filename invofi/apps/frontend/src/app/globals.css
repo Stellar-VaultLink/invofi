@@ -68,6 +68,26 @@
   }
 }
 
+/* ── Responsive base styles ────────────────────────────────────────────────── */
+
+/* Prevent horizontal overflow on small screens */
+html {
+  overflow-x: hidden;
+}
+
+/* Ensure touch targets are at least 44px on touch devices */
+@media (max-width: 767px) {
+  a,
+  button,
+  [role="button"],
+  select,
+  input,
+  textarea,
+  summary {
+    touch-action: manipulation;
+  }
+}
+
 @media print {
   header,
   footer,

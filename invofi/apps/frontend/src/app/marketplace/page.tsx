@@ -140,7 +140,7 @@ function MarketplacePageInner() {
         />
 
         {/* Page header */}
-        <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Invoice Marketplace</h1>
             <p className="text-muted-foreground text-sm mt-1">
@@ -161,10 +161,10 @@ function MarketplacePageInner() {
         <MarketplaceTabs />
 
         {/* View toggle */}
-        <div className="flex items-center gap-2 mb-5">
+        <div className="flex flex-wrap items-center gap-2 mb-5">
           <button
             type="button"
-            onClick={() => handleViewModeChange('suggested')}
+            onClick={() => setViewMode('suggested')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               viewMode === 'suggested'
                 ? 'bg-primary text-primary-foreground'
@@ -176,7 +176,7 @@ function MarketplacePageInner() {
           </button>
           <button
             type="button"
-            onClick={() => handleViewModeChange('all')}
+            onClick={() => setViewMode('all')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               viewMode === 'all'
                 ? 'bg-primary text-primary-foreground'
@@ -225,7 +225,7 @@ function MarketplacePageInner() {
                 )}
               </div>
               <select
-                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="w-full sm:w-auto h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                 value={filters.status}
                 onChange={e => setFilters(f => ({ ...f, status: e.target.value as InvoiceStatus | 'ALL' }))}
               >
@@ -235,7 +235,7 @@ function MarketplacePageInner() {
                 <option value="Overdue">Overdue</option>
               </select>
               <select
-                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="w-full sm:w-auto h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                 value={filters.currency}
                 onChange={e => setFilters(f => ({ ...f, currency: e.target.value as Currency | 'ALL' }))}
               >
@@ -244,7 +244,7 @@ function MarketplacePageInner() {
                 <option value="USDC">USDC</option>
               </select>
               <select
-                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="w-full sm:w-auto h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                 value={sort}
                 onChange={e => setSort(e.target.value as SortKey)}
                 aria-label="Sort invoices"

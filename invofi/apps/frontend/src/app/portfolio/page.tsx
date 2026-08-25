@@ -1,8 +1,9 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, Copy, Check, Send, RefreshCw, Tag, DollarSign } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,8 @@ import { stroopsToUsd } from '@/lib/live/prices';
 import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
 import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
+import { PaginationControls } from '@/components/portfolio/PaginationControls';
+import { paginate } from '@/lib/pagination';
 import type { LivePosition } from '@/lib/live/types';
 
 
@@ -369,6 +372,36 @@ export default function PortfolioPage() {
     refresh,
   } = useLivePortfolio();
 
+  // Client-side pagination (issue #190): the contract layer still returns the
+  // full list; we slice it for rendering so a wallet with hundreds of
+  // positions stays smooth. Page size is user-adjustable, and each page is
+  // virtualized below so even 100-row pages only mount visible cards.
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Keep the current page valid when the stream shrinks (e.g. repayments move
+  // positions between buckets or the wallet changes).
+  const pageCount = Math.max(1, Math.ceil(positions.length / pageSize));
+  useEffect(() => {
+    setPage(p => Math.min(p, pageCount));
+  }, [pageCount]);
+
+  const pageItems = useMemo(
+    () => paginate(positions, page, pageSize),
+    [positions, page, pageSize],
+  );
+
+  // Virtualize the current page's rows. Every card uses `measureElement` so
+  // rows with different heights (active vs repaid) size correctly.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: pageItems.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 148,
+    overscan: 4,
+    // Placeholder height is overridden per-row by measureElement below.
+  });
+
   // An offer is active while it is financing an invoice: from acceptance until
   // it is fully repaid. Partial repayments flip offers to Financed on-chain,
   // so both statuses count as deployed capital.
@@ -514,10 +547,52 @@ export default function PortfolioPage() {
         )}
 
         <div className="space-y-3">
-          {positions.map(offer => (
-            <PositionCard key={offer.id} offer={offer} />
-          ))}
+          {pageItems.length === 0 ? (
+            <div className="text-center py-10 text-sm text-muted-foreground">
+              No positions on this page.
+            </div>
+          ) : (
+            <div
+              ref={scrollRef}
+              className="max-h-[70vh] overflow-y-auto rounded-xl border border-border"
+              data-testid="virtualized-position-list"
+            >
+              <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+                {virtualizer.getVirtualItems().map(vi => (
+                  <div
+                    key={pageItems[vi.index].id}
+                    ref={virtualizer.measureElement}
+                    data-index={vi.index}
+                    className="pb-3"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${vi.start}px)`,
+                    }}
+                  >
+                    <PositionCard offer={pageItems[vi.index]} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Pagination controls (issue #190) */}
+        {!loading && positions.length > 0 && (
+          <PaginationControls
+            page={page}
+            total={positions.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={size => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
+        )}
 
         {/* useSearchParams (the listing hand-off prefill) needs a Suspense boundary. */}
         <Suspense fallback={null}>

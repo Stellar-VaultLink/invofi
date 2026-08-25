@@ -671,17 +671,17 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/fadesany">
-                    <img src="https://avatars.githubusercontent.com/u/285033142?v=4" width="100;" alt="fadesany"/>
-                    <br />
-                    <sub><b>fadesany</b></sub>
-                </a>
-            </td>
-            <td align="center">
                 <a href="https://github.com/waterWang">
                     <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
                     <br />
                     <sub><b>water</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/fadesany">
+                    <img src="https://avatars.githubusercontent.com/u/285033142?v=4" width="100;" alt="fadesany"/>
+                    <br />
+                    <sub><b>fadesany</b></sub>
                 </a>
             </td>
             <td align="center">

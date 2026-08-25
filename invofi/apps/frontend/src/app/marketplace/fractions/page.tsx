@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search, Layers, Tag } from 'lucide-react';
+import { AlertCircle, Search, Layers, Tag } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -13,10 +13,11 @@ import { MarketplaceTabs } from '@/components/marketplace/MarketplaceTabs';
 import { PurchaseFractionModal } from '@/components/securitization/PurchaseFractionModal';
 import { PriceHistoryChart } from '@/components/securitization/PriceHistoryChart';
 import { CardSkeleton } from '@/components/common/LoadingSkeleton';
+import { WalletButton } from '@/components/auth/WalletButton';
 import { supabase } from '@/lib/supabase';
 import {
-  fetchActiveFragrationalizations,
-  fetchPriceHistory,
+  fetchActiveFractionalizations,
+  fetchPriceHistoryBatch,
 } from '@/lib/securitization';
 import type { Currency } from '@/types';
 import type { FractionalizationRecord, PriceHistoryPoint } from '@/types/securitization';
@@ -37,9 +38,10 @@ interface FracCardProps {
   history: PriceHistoryPoint[];
   userId: string | null;
   userAddress: string | null;
+  onPurchased: () => void;
 }
 
-function FracCard({ record, history, userId, userAddress }: FracCardProps) {
+function FracCard({ record, history, userId, userAddress, onPurchased }: FracCardProps) {
   const soldPercent =
     record.total_fractions > 0
       ? Math.round(((record.total_fractions - record.available_fractions) / record.total_fractions) * 100)
@@ -65,8 +67,8 @@ function FracCard({ record, history, userId, userAddress }: FracCardProps) {
             variant="outline"
             className={
               record.status === 'active'
-                ? 'bg-green-50 text-green-700 border-green-200 shrink-0'
-                : 'bg-gray-50 text-gray-500 border-gray-200 shrink-0'
+                ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-800 shrink-0'
+                : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-700 shrink-0'
             }
           >
             {record.status === 'sold_out' ? 'Sold out' : record.status}
@@ -132,11 +134,12 @@ function FracCard({ record, history, userId, userAddress }: FracCardProps) {
               </Link>
             </Button>
           ) : userId && userAddress ? (
+            // Authenticated investor with a linked wallet
             <PurchaseFractionModal
               record={record}
               lenderId={userId}
               lenderAddress={userAddress}
-              onPurchased={() => {/* refetch handled by parent via key */}}
+              onPurchased={onPurchased}
               trigger={
                 <Button
                   size="sm"
@@ -148,7 +151,11 @@ function FracCard({ record, history, userId, userAddress }: FracCardProps) {
                 </Button>
               }
             />
+          ) : userId && !userAddress ? (
+            // Authenticated but no wallet linked — prompt wallet connection
+            <WalletButton size="sm" className="w-full" />
           ) : (
+            // Not authenticated
             <Button asChild size="sm" variant="outline" className="w-full">
               <Link href="/auth/login">Sign in to buy</Link>
             </Button>
@@ -165,6 +172,7 @@ export default function FractionsMarketplacePage() {
   const [records, setRecords] = useState<FractionalizationRecord[]>([]);
   const [historyMap, setHistoryMap] = useState<Map<string, PriceHistoryPoint[]>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -173,10 +181,11 @@ export default function FractionsMarketplacePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [{ data: { user } }, recs] = await Promise.all([
         supabase.auth.getUser(),
-        fetchActiveFragrationalizations(),
+        fetchActiveFractionalizations(),
       ]);
 
       if (user) {
@@ -193,11 +202,14 @@ export default function FractionsMarketplacePage() {
 
       setRecords(recs);
 
-      // Fetch price history for all fracs in parallel
-      const histEntries = await Promise.all(
-        recs.map(async r => [r.id, await fetchPriceHistory(r.id, 20)] as [string, PriceHistoryPoint[]]),
-      );
-      setHistoryMap(new Map(histEntries));
+      // Batch-fetch price history for all visible records in one query
+      if (recs.length > 0) {
+        const ids = recs.map(r => r.id);
+        const histMap = await fetchPriceHistoryBatch(ids, 20);
+        setHistoryMap(histMap);
+      }
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load fractions marketplace');
     } finally {
       setLoading(false);
     }
@@ -224,9 +236,17 @@ export default function FractionsMarketplacePage() {
       case 'available_desc':
         return b.available_fractions - a.available_fractions;
       case 'price_asc':
-        return parseFloat(a.price_per_fraction) - parseFloat(b.price_per_fraction);
+        // Only compare prices when both records share the same currency to
+        // avoid misleading cross-currency orderings
+        if (currencyFilter !== 'ALL') {
+          return parseFloat(a.price_per_fraction) - parseFloat(b.price_per_fraction);
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       case 'price_desc':
-        return parseFloat(b.price_per_fraction) - parseFloat(a.price_per_fraction);
+        if (currencyFilter !== 'ALL') {
+          return parseFloat(b.price_per_fraction) - parseFloat(a.price_per_fraction);
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       case 'newest':
       default:
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -260,6 +280,7 @@ export default function FractionsMarketplacePage() {
             className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
             value={currencyFilter}
             onChange={e => setCurrencyFilter(e.target.value as Currency | 'ALL')}
+            aria-label="Filter by currency"
           >
             <option value="ALL">All currencies</option>
             <option value="XLM">XLM</option>
@@ -272,10 +293,26 @@ export default function FractionsMarketplacePage() {
             aria-label="Sort fractions"
           >
             {SORT_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>
+                {o.value.startsWith('price') && currencyFilter === 'ALL'
+                  ? `${o.label} (same currency only)`
+                  : o.label}
+              </option>
             ))}
           </select>
         </div>
+
+        {/* Error state */}
+        {loadError && (
+          <div className="mb-6 flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+            <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-destructive">Failed to load marketplace</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{loadError}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={load}>Retry</Button>
+          </div>
+        )}
 
         {loading && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -283,7 +320,7 @@ export default function FractionsMarketplacePage() {
           </div>
         )}
 
-        {!loading && sorted.length === 0 && (
+        {!loading && !loadError && sorted.length === 0 && (
           <div className="text-center py-20 border-2 border-dashed border-border rounded-xl">
             <Layers className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-lg font-medium text-muted-foreground">No fractionalized invoices yet</p>
@@ -293,7 +330,7 @@ export default function FractionsMarketplacePage() {
           </div>
         )}
 
-        {!loading && sorted.length > 0 && (
+        {!loading && !loadError && sorted.length > 0 && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sorted.map(rec => (
               <FracCard
@@ -302,6 +339,7 @@ export default function FractionsMarketplacePage() {
                 history={historyMap.get(rec.id) ?? []}
                 userId={userId}
                 userAddress={userAddress}
+                onPurchased={load}
               />
             ))}
           </div>

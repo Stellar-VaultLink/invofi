@@ -6,19 +6,25 @@
  * Three-step flow for invoice owners to split their invoice into N position
  * fraction tokens:
  *
- *   Step 1 — Configure: set N, price/fraction, token metadata, description
- *   Step 2 — Review:    summary of economics, confirm before writing
+ *   Step 1 — Configure: set N, token metadata, description
+ *   Step 2 — Review:    economics summary (price derived, not user-editable),
+ *                       confirm before writing
  *   Step 3 — Done:      success state with share link and next actions
  *
- * The wizard records the fractionalization in Supabase via
- * createFractionalization(). The on-chain position token transfer (moving
- * POS tokens into a "vault" held by the platform) is outside scope for the
- * off-chain-first design — the record itself unlocks the purchase flow.
+ * The `pricePerFraction` is **derived** as
+ * `floor(invoice.amount / totalFractions)` using bigint truncating division so
+ * `pricePerFraction × totalFractions ≤ invoice.amount` — the fractionalization
+ * never over-promises value.
+ *
+ * `createFractionalization()` atomically inserts the record and seeds the first
+ * price-history point.  If the price-history write fails it rolls back the
+ * record so the caller can retry cleanly.
  */
 
 import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   ArrowLeft,
   ArrowRight,
@@ -34,17 +40,37 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  fractionalizationSchema,
   createFractionalization,
   computeTotalCost,
-  type FractionalizationDraft,
+  derivePerFractionPrice,
 } from '@/lib/securitization';
-import { formatAmount, toStroopsBigInt } from '@/lib/utils';
+import { formatAmount } from '@/lib/utils';
 import type { FractionalizationRecord } from '@/types/securitization';
 import type { Invoice } from '@/types';
 
+// ── Wizard-local form schema ──────────────────────────────────────────────────
+// pricePerFraction is derived, not user-editable.
+
+const wizardSchema = z.object({
+  totalFractions: z
+    .number({ invalid_type_error: 'Enter a whole number' })
+    .int('Must be a whole number')
+    .min(2, 'Minimum 2 fractions')
+    .max(1_000_000, 'Maximum 1 000 000 fractions'),
+  tokenSymbol: z
+    .string()
+    .min(3, 'At least 3 characters')
+    .max(12, 'Max 12 characters')
+    .regex(/^[A-Z0-9-]+$/, 'Uppercase letters, digits, and hyphens only'),
+  tokenName: z.string().min(3, 'At least 3 characters').max(64, 'Max 64 characters'),
+  description: z.string().max(500, 'Max 500 characters'),
+});
+
+type WizardDraft = z.infer<typeof wizardSchema>;
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+/** Animated step indicator for the 3-step wizard. */
 interface StepIndicatorProps {
   current: number;
   total: number;
@@ -90,24 +116,20 @@ function FieldError({ message }: { message?: string }) {
 
 interface Step1Props {
   invoice: Invoice;
-  onNext: (data: FractionalizationDraft) => void;
-  defaultValues?: Partial<FractionalizationDraft>;
+  onNext: (data: WizardDraft) => void;
+  defaultValues?: Partial<WizardDraft>;
 }
 
 function Step1Configure({ invoice, onNext, defaultValues }: Step1Props) {
-  const invoiceAmountXlm = Number(toStroopsBigInt(invoice.amount)) / 1e7;
-
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<FractionalizationDraft>({
-    resolver: zodResolver(fractionalizationSchema),
+  } = useForm<WizardDraft>({
+    resolver: zodResolver(wizardSchema),
     defaultValues: {
       totalFractions: defaultValues?.totalFractions ?? 100,
-      pricePerFraction: defaultValues?.pricePerFraction ?? '',
-      priceCurrency: defaultValues?.priceCurrency ?? 'USDC',
       tokenSymbol: defaultValues?.tokenSymbol ?? `INV-${invoice.id.toUpperCase().slice(-4)}-FRAC`,
       tokenName: defaultValues?.tokenName ?? `Invoice ${invoice.id} Fraction`,
       description: defaultValues?.description ?? '',
@@ -115,67 +137,58 @@ function Step1Configure({ invoice, onNext, defaultValues }: Step1Props) {
   });
 
   const totalFractions = watch('totalFractions') || 0;
-  const pricePerFraction = watch('pricePerFraction') || '0';
-  const priceCurrency = watch('priceCurrency');
 
-  let totalSaleValue = '0';
+  // Derive price from invoice amount — display only, not editable
+  let derivedPrice = '';
+  let derivedTotalValue = '';
   try {
-    totalSaleValue = computeTotalCost(pricePerFraction || '0', totalFractions);
-  } catch { /* invalid input — ignore */ }
+    if (Number.isInteger(totalFractions) && totalFractions >= 2) {
+      derivedPrice = derivePerFractionPrice(invoice.amount as unknown as string, totalFractions);
+      derivedTotalValue = computeTotalCost(derivedPrice, totalFractions);
+    }
+  } catch { /* not yet valid */ }
 
   return (
     <form onSubmit={handleSubmit(onNext)} className="space-y-5">
       <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-        Fractionalizing invoice <span className="font-mono font-medium text-foreground">{invoice.id}</span>
+        Fractionalizing invoice{' '}
+        <span className="font-mono font-medium text-foreground">{invoice.id}</span>
         {' '}· {formatAmount(invoice.amount)} {invoice.currency}
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="totalFractions">
-            Number of fractions
-            <span className="ml-1 text-xs text-muted-foreground font-normal">(2 – 1 000 000)</span>
-          </Label>
-          <Input
-            id="totalFractions"
-            type="number"
-            min="2"
-            max="1000000"
-            step="1"
-            {...register('totalFractions', { valueAsNumber: true })}
-          />
-          <FieldError message={errors.totalFractions?.message} />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="pricePerFraction">Price per fraction</Label>
-          <div className="flex gap-2">
-            <Input
-              id="pricePerFraction"
-              placeholder="10.00"
-              className="flex-1"
-              {...register('pricePerFraction')}
-            />
-            <select
-              {...register('priceCurrency')}
-              className="h-10 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-            >
-              <option value="USDC">USDC</option>
-              <option value="XLM">XLM</option>
-            </select>
-          </div>
-          <FieldError message={errors.pricePerFraction?.message} />
-        </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="totalFractions">
+          Number of fractions
+          <span className="ml-1 text-xs text-muted-foreground font-normal">(2 – 1 000 000)</span>
+        </Label>
+        <Input
+          id="totalFractions"
+          type="number"
+          min="2"
+          max="1000000"
+          step="1"
+          {...register('totalFractions', { valueAsNumber: true })}
+        />
+        <FieldError message={errors.totalFractions?.message} />
       </div>
 
-      {totalFractions > 0 && Number(totalSaleValue) > 0 && (
+      {/* Derived economics — read-only display */}
+      {derivedPrice && (
         <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 p-3 text-sm space-y-1">
           <p>
+            <span className="text-muted-foreground">Price / fraction: </span>
+            <span className="font-semibold font-mono text-foreground">
+              {derivedPrice} {invoice.currency}
+            </span>
+          </p>
+          <p>
             <span className="text-muted-foreground">Total sale value: </span>
-            <span className="font-semibold text-foreground">{totalSaleValue} {priceCurrency}</span>
+            <span className="font-semibold font-mono text-foreground">
+              {derivedTotalValue} {invoice.currency}
+            </span>
           </p>
           <p className="text-xs text-muted-foreground">
-            Each fraction = {(invoiceAmountXlm / totalFractions).toFixed(4)} {invoice.currency} of invoice principal
+            Price is derived from the invoice amount to prevent over-promising.
           </p>
         </div>
       )}
@@ -231,24 +244,22 @@ function Step1Configure({ invoice, onNext, defaultValues }: Step1Props) {
 
 interface Step2Props {
   invoice: Invoice;
-  draft: FractionalizationDraft;
+  draft: WizardDraft;
+  derivedPrice: string;
   onBack: () => void;
   onConfirm: () => Promise<void>;
   submitting: boolean;
 }
 
-function Step2Review({ invoice, draft, onBack, onConfirm, submitting }: Step2Props) {
-  const totalSaleValue = computeTotalCost(draft.pricePerFraction, draft.totalFractions);
-  const invoiceAmountXlm = Number(toStroopsBigInt(invoice.amount)) / 1e7;
-  const principalPerFraction = (invoiceAmountXlm / draft.totalFractions).toFixed(4);
+function Step2Review({ invoice, draft, derivedPrice, onBack, onConfirm, submitting }: Step2Props) {
+  const totalSaleValue = computeTotalCost(derivedPrice, draft.totalFractions);
 
   const rows = [
     { label: 'Invoice', value: invoice.id },
     { label: 'Invoice value', value: `${formatAmount(invoice.amount)} ${invoice.currency}` },
     { label: 'Total fractions', value: draft.totalFractions.toLocaleString() },
-    { label: 'Price per fraction', value: `${draft.pricePerFraction} ${draft.priceCurrency}` },
-    { label: 'Total sale value', value: `${totalSaleValue} ${draft.priceCurrency}` },
-    { label: 'Principal per fraction', value: `${principalPerFraction} ${invoice.currency}` },
+    { label: 'Price per fraction', value: `${derivedPrice} ${invoice.currency}` },
+    { label: 'Total sale value', value: `${totalSaleValue} ${invoice.currency}` },
     { label: 'Token symbol', value: draft.tokenSymbol },
     { label: 'Token name', value: draft.tokenName },
   ];
@@ -318,9 +329,7 @@ function Step3Done({ record, onViewMarketplace }: Step3Props) {
         {record.token_symbol}
       </div>
       <div className="flex justify-center gap-3 pt-2">
-        <Button onClick={onViewMarketplace}>
-          View in marketplace
-        </Button>
+        <Button onClick={onViewMarketplace}>View in marketplace</Button>
       </div>
     </div>
   );
@@ -332,12 +341,19 @@ interface FractionalizationWizardProps {
   invoice: Invoice;
   originatorId: string;
   originatorAddress: string;
-  /** Called after successful publication. */
+  /** Called after successful publication with the created record. */
   onComplete?: (record: FractionalizationRecord) => void;
   /** Called when "View in marketplace" is clicked. */
   onViewMarketplace?: () => void;
 }
 
+/**
+ * Three-step wizard to fractionalize an invoice.
+ *
+ * The price per fraction is derived from `invoice.amount / totalFractions`
+ * (truncating bigint division) rather than accepted as free-form user input,
+ * so the fractionalization never over-promises value.
+ */
 export function FractionalizationWizard({
   invoice,
   originatorId,
@@ -348,21 +364,34 @@ export function FractionalizationWizard({
   const { toast } = useToast();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [draft, setDraft] = useState<FractionalizationDraft | null>(null);
+  const [draft, setDraft] = useState<WizardDraft | null>(null);
+  const [derivedPrice, setDerivedPrice] = useState('');
   const [record, setRecord] = useState<FractionalizationRecord | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleStep1 = useCallback((data: FractionalizationDraft) => {
-    setDraft(data);
-    setStep(2);
-  }, []);
+  const handleStep1 = useCallback(
+    (data: WizardDraft) => {
+      const price = derivePerFractionPrice(
+        invoice.amount as unknown as string,
+        data.totalFractions,
+      );
+      setDerivedPrice(price);
+      setDraft(data);
+      setStep(2);
+    },
+    [invoice.amount],
+  );
 
   const handleConfirm = useCallback(async () => {
-    if (!draft) return;
+    if (!draft || !derivedPrice) return;
     setSubmitting(true);
     try {
       const created = await createFractionalization(
-        draft,
+        {
+          ...draft,
+          pricePerFraction: derivedPrice,
+          priceCurrency: invoice.currency as 'XLM' | 'USDC',
+        },
         invoice.id,
         originatorId,
         originatorAddress,
@@ -371,17 +400,16 @@ export function FractionalizationWizard({
       setStep(3);
       onComplete?.(created);
     } catch (err) {
+      const raw = err instanceof Error ? err.message : '';
       const msg =
-        err instanceof Error
-          ? err.message.includes('unique')
-            ? 'This invoice already has an active fractionalization.'
-            : err.message
-          : 'Could not publish the fractionalization';
+        raw.includes('unique') || raw.includes('duplicate')
+          ? 'This invoice already has an active fractionalization.'
+          : raw || 'Could not publish the fractionalization';
       toast({ title: 'Fractionalization failed', description: msg, variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
-  }, [draft, invoice.id, originatorId, originatorAddress, onComplete, toast]);
+  }, [draft, derivedPrice, invoice, originatorId, originatorAddress, onComplete, toast]);
 
   const STEP_LABELS = ['Configure', 'Review', 'Done'];
 
@@ -409,16 +437,14 @@ export function FractionalizationWizard({
         <Step2Review
           invoice={invoice}
           draft={draft}
+          derivedPrice={derivedPrice}
           onBack={() => setStep(1)}
           onConfirm={handleConfirm}
           submitting={submitting}
         />
       )}
       {step === 3 && record && (
-        <Step3Done
-          record={record}
-          onViewMarketplace={() => onViewMarketplace?.()}
-        />
+        <Step3Done record={record} onViewMarketplace={() => onViewMarketplace?.()} />
       )}
     </div>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
 
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { FractionalizationWizard } from '@/components/securitization/FractionalizationWizard';
@@ -20,7 +20,7 @@ import {
 import { formatAmount, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import type { Invoice } from '@/types';
-import type { FractionalizationRecord } from '@/types/securitization';
+import type { FractionalizationRecord, PriceHistoryPoint } from '@/types/securitization';
 
 export default function SecuritizePage() {
   const params = useParams<{ invoiceId: string }>();
@@ -29,10 +29,11 @@ export default function SecuritizePage() {
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [record, setRecord] = useState<FractionalizationRecord | null>(null);
-  const [priceHistory, setPriceHistory] = useState<import('@/types/securitization').PriceHistoryPoint[]>([]);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryPoint[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [authError, setAuthError] = useState(false);
 
@@ -41,63 +42,76 @@ export default function SecuritizePage() {
   useEffect(() => {
     if (!invoiceId) return;
 
+    let cancelled = false;
+
     (async () => {
       setLoading(true);
+      setLoadError(null);
+      setAuthError(false);
+      try {
+        // Auth check
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || cancelled) { return; }
+        setUserId(user.id);
 
-      // Auth check
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-      setUserId(user.id);
+        // Profile wallet
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('wallet_address')
+          .eq('id', user.id)
+          .maybeSingle();
+        const wallet = (profile as { wallet_address: string | null } | null)?.wallet_address ?? null;
+        if (!cancelled) setWalletAddress(wallet);
 
-      // Profile wallet
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('wallet_address')
-        .eq('id', user.id)
-        .maybeSingle();
-      const wallet = (profile as { wallet_address: string | null } | null)?.wallet_address ?? null;
-      setWalletAddress(wallet);
+        // Fetch invoice
+        const { data: invData, error: invErr } = await supabase
+          .from('invoices')
+          .select('*')
+          .eq('id', invoiceId)
+          .single();
 
-      // Fetch invoice
-      const { data: invData, error: invErr } = await supabase
-        .from('invoices')
-        .select('*')
-        .eq('id', invoiceId)
-        .single();
+        if (invErr || !invData) {
+          if (!cancelled) setLoadError(invErr?.message ?? 'Invoice not found');
+          return;
+        }
 
-      if (invErr || !invData) {
-        setLoading(false);
-        return;
+        const inv = invData as Invoice;
+
+        // Only the originator may access this page
+        if ((invData as { originator_id?: string }).originator_id !== user.id) {
+          if (!cancelled) setAuthError(true);
+          return;
+        }
+
+        if (!cancelled) setInvoice(inv);
+
+        // Existing fractionalization?
+        const existing = await fetchFractionalizationRecord(invoiceId);
+        if (cancelled) return;
+        setRecord(existing);
+
+        if (existing) {
+          const ph = await fetchPriceHistory(existing.id);
+          if (!cancelled) setPriceHistory(ph);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(err instanceof Error ? err.message : 'Failed to load invoice');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      const inv = invData as Invoice;
-
-      // Only the originator may access this page
-      if ((invData as { originator_id?: string }).originator_id !== user.id) {
-        setAuthError(true);
-        setLoading(false);
-        return;
-      }
-
-      setInvoice(inv);
-
-      // Existing fractionalization?
-      const existing = await fetchFractionalizationRecord(invoiceId);
-      setRecord(existing);
-
-      if (existing) {
-        const ph = await fetchPriceHistory(existing.id);
-        setPriceHistory(ph);
-      }
-
-      setLoading(false);
     })();
+
+    return () => { cancelled = true; };
   }, [invoiceId]);
 
   const handleComplete = async (newRecord: FractionalizationRecord) => {
     setRecord(newRecord);
-    const ph = await fetchPriceHistory(newRecord.id);
-    setPriceHistory(ph);
+    try {
+      const ph = await fetchPriceHistory(newRecord.id);
+      setPriceHistory(ph);
+    } catch { /* price history is supplementary */ }
   };
 
   const handleCancel = async () => {
@@ -140,6 +154,17 @@ export default function SecuritizePage() {
           </div>
         )}
 
+        {/* Load error */}
+        {!loading && loadError && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex gap-3">
+            <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-destructive">Failed to load invoice</p>
+              <p className="text-xs text-muted-foreground mt-1">{loadError}</p>
+            </div>
+          </div>
+        )}
+
         {/* Auth error */}
         {!loading && authError && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex gap-3">
@@ -153,13 +178,13 @@ export default function SecuritizePage() {
           </div>
         )}
 
-        {/* Invoice not found */}
-        {!loading && !authError && !invoice && (
+        {/* Invoice not found (no error but no invoice) */}
+        {!loading && !authError && !loadError && !invoice && (
           <p className="text-muted-foreground">Invoice not found.</p>
         )}
 
         {/* Main content */}
-        {!loading && !authError && invoice && (
+        {!loading && !authError && !loadError && invoice && (
           <>
             {/* Invoice summary */}
             <div className="flex items-center justify-between mb-6">
@@ -193,8 +218,8 @@ export default function SecuritizePage() {
                       variant="outline"
                       className={
                         record.status === 'active'
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : 'bg-gray-50 text-gray-500 border-gray-200'
+                          ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-800'
+                          : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-700'
                       }
                     >
                       {record.status}
@@ -244,7 +269,7 @@ export default function SecuritizePage() {
                 originatorId={userId}
                 originatorAddress={walletAddress}
                 onComplete={handleComplete}
-                onViewMarketplace={() => router.push('/marketplace/positions')}
+                onViewMarketplace={() => router.push('/marketplace/fractions')}
               />
             )}
 

@@ -109,5 +109,17 @@
       "imBusinessBtn": "I'm a Business",
       "imLenderBtn": "I'm a Lender"
     }
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "emptyTitle": "No notifications",
+    "emptyDesc": "Events from your invoices and offers will appear here.",
+    "aria": "Notifications",
+    "ariaUnread": "Notifications ({count} unread)",
+    "justNow": "just now",
+    "minutesAgo": "{m}m ago",
+    "hoursAgo": "{h}h ago",
+    "daysAgo": "{d}d ago"
   }
 }

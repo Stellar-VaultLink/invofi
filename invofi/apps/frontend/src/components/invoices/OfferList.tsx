@@ -21,6 +21,7 @@ import { GRACE_PERIOD_SECS, STROOPS_PER_XLM } from '@/lib/constants';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { toErrorMessage } from '@/lib/errors';
+import { OfferTermsPreview } from './OfferTermsPreview';
 import type { Currency, FinancingOffer, Invoice } from '@/types';
 
 const offerSchema = z.object({
@@ -51,7 +52,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   >(null);
   const [repayAmounts, setRepayAmounts] = useState<Record<string, string>>({});
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<OfferFormValues>({
+  const { register, watch, handleSubmit, formState: { errors }, reset } = useForm<OfferFormValues>({
     resolver: zodResolver(offerSchema),
     defaultValues: { currency: 'USDC', interestRate: 500, durationDays: 30 },
   });
@@ -263,6 +264,9 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
     downloadCsv(`invofi-offers-${invoiceId}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
+  // Live form values for the repayment preview — re-renders on every keystroke.
+  const liveValues = watch();
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -326,6 +330,12 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                 {errors.durationDays && <p className="text-xs text-red-500">{errors.durationDays.message}</p>}
               </div>
             </div>
+            <OfferTermsPreview
+              amount={liveValues.amount ?? ''}
+              rateBps={Number(liveValues.interestRate)}
+              durationDays={Number(liveValues.durationDays)}
+              currency={liveValues.currency ?? 'USDC'}
+            />
             <div className="flex gap-2">
               <Button type="submit" size="sm" disabled={loading}>
                 {loading && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}

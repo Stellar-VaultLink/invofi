@@ -458,7 +458,7 @@ export default function PortfolioPage() {
   return (
     <AuthGuard>
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Your Portfolio</h1>
             <p className="text-muted-foreground text-sm mt-1">
@@ -489,7 +489,7 @@ export default function PortfolioPage() {
         )}
 
         {/* Summary stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
           <Card>
             <CardContent className="pt-5">
               <TrendingUp className="h-4 w-4 text-blue-500 mb-2" />

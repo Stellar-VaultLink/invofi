@@ -64,9 +64,9 @@ export const MarketplaceCard = memo(function MarketplaceCard({ invoice }: Market
         </div>
 
         <div className="space-y-2 flex-1 mb-4">
-          <div className="flex items-center gap-1.5 text-foreground">
+          <div className="flex items-center gap-1.5 text-foreground min-w-0">
             <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="font-semibold text-lg">
+            <span className="font-semibold text-lg truncate">
               {formatAmount(invoice.amount, invoice.currency)}
             </span>
           </div>
@@ -76,7 +76,7 @@ export const MarketplaceCard = memo(function MarketplaceCard({ invoice }: Market
             <DueLabel dueDateUnix={invoice.due_date} />
           </div>
 
-          <p className="text-xs text-muted-foreground font-mono">
+          <p className="text-xs text-muted-foreground font-mono truncate">
             Originator:{' '}
             <a
               href={`${STELLAR_EXPERT}/account/${invoice.originator}`}

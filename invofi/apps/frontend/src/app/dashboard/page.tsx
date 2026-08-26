@@ -13,6 +13,7 @@ import { WalletButton } from '@/components/auth/WalletButton';
 import { CardSkeleton, TableSkeleton } from '@/components/common/LoadingSkeleton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { UpcomingRepaymentsWidget } from '@/components/dashboard/UpcomingRepaymentsWidget';
+import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
 import { getUserProfile, supabase } from '@/lib/supabase';
 import { getXlmBalance } from '@/lib/horizon';
 import { useWallet } from '@/components/auth/WalletProvider';
@@ -167,6 +168,9 @@ export default function DashboardPage() {
         {isBusiness && !loading && invoices.length > 0 && (
           <UpcomingRepaymentsWidget invoices={invoices} />
         )}
+
+        {/* Activity feed — recent protocol events */}
+        {!loading && <ActivityFeed />}
 
         {/* Invoices / offers */}
         {isBusiness && (

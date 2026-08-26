@@ -40,9 +40,16 @@ const LobstrLogo = () => (
   </div>
 );
 
+const AlbedoLogo = () => (
+  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+    A
+  </div>
+);
+
 const LOGOS: Record<string, React.ReactNode> = {
   [WALLET_IDS.freighter]: <FreighterLogo />,
   [WALLET_IDS.lobstr]: <LobstrLogo />,
+  [WALLET_IDS.albedo]: <AlbedoLogo />,
 };
 
 export function WalletSelectDialog({
@@ -81,7 +88,7 @@ export function WalletSelectDialog({
         <DialogHeader>
           <DialogTitle>Connect Wallet</DialogTitle>
           <DialogDescription>
-            Choose a Stellar wallet extension to connect.
+            Choose a Stellar wallet to connect.
           </DialogDescription>
         </DialogHeader>
 
@@ -137,7 +144,7 @@ export function WalletSelectDialog({
         </div>
 
         <p className="text-xs text-muted-foreground text-center pt-1">
-          Approved wallets connect via their browser extensions.
+          Approved wallets connect via the Stellar Wallets Kit.
         </p>
       </DialogContent>
     </Dialog>

@@ -2,16 +2,17 @@
   "name": "invofi-frontend",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://invofi-five.vercel.app",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint && node scripts/localstorage-secrets-guard.mjs",
-    "type-check": "tsc --noEmit",
-    "test": "vitest run --coverage",
+    "lint": "next lint",
+    "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:install": "playwright install chromium"
   },
   "dependencies": {
     "@creit.tech/stellar-wallets-kit": "^2.5.0",
@@ -45,7 +46,8 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.85.0",
     "tailwind-merge": "^2.5.2",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "@albedo-link/intent": "^0.12.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",

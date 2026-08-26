@@ -106,7 +106,7 @@ npm install && npm run dev
 - **Trustless** — all terms, state transitions, and repayments enforced by Soroban smart contracts
 - **Transparent** — every action is a public transaction on Stellar, auditable by anyone
 - **Permissionless** — anyone with a Stellar wallet can participate
-- **Dual auth** — email/password (Supabase) and Stellar wallet (Freighter or Lobstr)
+- **Dual auth** — email/password (Supabase) and Stellar wallet (Freighter, LOBSTR, or Albedo)
 - **Multi-currency** — invoices denominated in XLM or USDC
 - **Partial repayment** — businesses can repay incrementally; offer stays Financed until fully cleared
 - **Free to deploy** — Vercel (free) + Supabase (free) + Stellar testnet
@@ -121,7 +121,7 @@ npm install && npm run dev
 │                Next.js 14 App Router — deployed on Vercel                  │
 │                                                                            │
 │   ┌──────────────────────┐   ┌─────────────────────────────────────────┐   │
-│   │ Email / Password auth │   │  Stellar wallet: Freighter / LOBSTR    │   │
+│   │ Email / Password auth │   │  Stellar wallet: Freighter / LOBSTR / Albedo    │   │
 │   │ via Supabase          │   │  @creit.tech/stellar-wallets-kit      │   │
 │   │                       │   │  approved-wallets.ts allowlist (6A)    │   │
 │   └──────────┬───────────┘   └─────────────────────┬───────────────────┘   │
@@ -179,7 +179,7 @@ invofi/
 │           │   └── settings/         Account settings
 │           ├── components/
 │           │   ├── auth/             AuthGuard, WalletButton, WalletProvider,
-│           │   │                     WalletSelectDialog (Freighter + Lobstr picker)
+│           │   │                     WalletSelectDialog (Freighter + Lobstr + Albedo picker)
 │           │   ├── common/           ConfirmDialog, StatsCard, StatsGrid,
 │           │   │                     StatusBadge, PageHeader, EmptyState
 │           │   ├── invoices/         InvoiceCard, InvoiceForm, InvoiceTable,
@@ -347,7 +347,7 @@ register_invoice()
 | Frontend | Next.js 14 (App Router) + TypeScript 5.5 | Free Vercel deployment, SSR |
 | Styling | Tailwind CSS + shadcn/ui | Fast, accessible, composable |
 | Auth | Supabase | Free tier, row-level security |
-| Wallet | Freighter + LOBSTR (approved allowlist) via `@creit.tech/stellar-wallets-kit` | Approving a 3rd wallet = one entry in `approved-wallets.ts` |
+| Wallet | Freighter + LOBSTR + Albedo (approved allowlist) via `@creit.tech/stellar-wallets-kit` | Approving a 4th wallet = one entry in `approved-wallets.ts` |
 | Data Fetching | TanStack Query v5 | Caching, background refetch |
 | Forms | React Hook Form + Zod | Type-safe validation |
 | Icons | Lucide React | Consistent icon set |
@@ -361,7 +361,7 @@ register_invoice()
 
 - [Node.js 20+](https://nodejs.org)
 - [Rust 1.70+](https://rustup.rs) with `wasm32-unknown-unknown` target (`rustup target add wasm32-unknown-unknown`)
-- A Stellar wallet: [Freighter](https://freighter.app) (browser extension) **or** [LOBSTR](https://lobstr.co) (mobile / browser extension)
+- A Stellar wallet: [Freighter](https://freighter.app) (browser extension), [LOBSTR](https://lobstr.co) (mobile / browser extension), **or** [Albedo](https://albedo.link) (web wallet)
 - A free [Supabase](https://supabase.com) account
 
 ### 1. Clone
@@ -602,7 +602,7 @@ Both identities are auto-funded via Friendbot on testnet. See
 - [x] Dispute lifecycle — `raise_dispute` / `resolve_dispute` with admin resolution
 - [x] Lender stats — `get_lender_stats` tracking total offered, accepted, pending, repaid
 - [x] Input validation — `amount >= MIN_INVOICE_AMOUNT`, `due_date > now`, `interest_rate > 0`, `duration <= MAX_OFFER_DURATION_SECS`
-- [x] Next.js 14 frontend with multi-wallet support (Freighter + LOBSTR via `@creit.tech/stellar-wallets-kit`)
+- [x] Next.js 14 frontend with multi-wallet support (Freighter + LOBSTR + Albedo via `@creit.tech/stellar-wallets-kit`)
 - [x] Alpha / demo mode — app runs fully off-chain when no contract is deployed; shows info banner
 - [x] Supabase auth (email + wallet), dark mode, accessibility, SEO metadata
 - [x] Marketplace and portfolio views, sortable InvoiceTable, StatsCard KPIs

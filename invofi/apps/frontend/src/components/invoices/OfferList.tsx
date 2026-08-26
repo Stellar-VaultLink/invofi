@@ -48,6 +48,8 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
+  /** IDs of offers currently being submitted/accepted on-chain (optimistic UI). */
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [confirmTarget, setConfirmTarget] = useState<
     { offer: FinancingOffer; kind: 'reject' | 'reclaim' } | null
   >(null);
@@ -81,8 +83,29 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
     if (!publicKey) return;
     setLoading(true);
     const offerId = generateOfferId();
+    const durationSecs = values.durationDays * 86_400;
+
+    // Optimistic: add the offer to local state immediately so the UI reflects
+    // the pending offer while the on-chain transaction confirms.
+    const optimisticOffer: FinancingOffer & { pending?: boolean } = {
+      id: offerId,
+      invoice_id: invoiceId,
+      lender: publicKey,
+      amount: amountToStroops(values.amount),
+      currency: values.currency as Currency,
+      interest_rate: values.interestRate,
+      duration: durationSecs,
+      amount_repaid: 0n,
+      status: 'Pending',
+      funded_at: 0,
+      pending: true,
+    };
+    setOffers(prev => [optimisticOffer, ...prev]);
+    setPendingIds(prev => new Set(prev).add(offerId));
+    reset();
+    setShowForm(false);
+
     try {
-      const durationSecs = values.durationDays * 86_400;
       const offer = await createOffer(
         {
           offerId,
@@ -103,13 +126,19 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           status: 'Pending', funded_at: 0,
         });
       }
-      setOffers(prev => [offer, ...prev]);
-      reset();
-      setShowForm(false);
+      // Replace the optimistic offer with the real one from the contract.
+      setOffers(prev => prev.map(o => o.id === offerId ? offer : o));
       toast({ title: 'Offer submitted!', description: 'The invoice originator will be notified.' });
     } catch (err: unknown) {
+      // Rollback: remove the optimistic offer on failure.
+      setOffers(prev => prev.filter(o => o.id !== offerId));
       toast({ title: 'Failed to submit offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
+      setPendingIds(prev => {
+        const next = new Set(prev);
+        next.delete(offerId);
+        return next;
+      });
       setLoading(false);
     }
   };
@@ -117,8 +146,18 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   const handleAccept = async (offer: FinancingOffer) => {
     if (!publicKey) return;
     setActionId(offer.id);
+    setPendingIds(prev => new Set(prev).add(offer.id));
+
+    // Optimistic: immediately flip the offer and invoice to their expected
+    // post-acceptance states so the UI reflects the action instantly.
+    const previousOfferStatus = offer.status;
+    const previousInvoiceStatus = invoice.status;
+    setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: 'Accepted' as const } : o));
+    onUpdate({ ...invoice, status: 'Financed' as const });
+
     try {
       const updatedOffer = await acceptOffer(offer.id, publicKey);
+      // Reconcile with the authoritative on-chain response.
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       await supabase.from('financing_offers').update({ status: 'Accepted', funded_at: Math.floor(Date.now() / 1000) }).eq('id', offer.id);
       const updatedInvoice = { ...invoice, status: 'Financed' as const };
@@ -126,8 +165,16 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       onUpdate(updatedInvoice);
       toast({ title: 'Offer accepted!', description: 'Invoice is now marked as Financed.' });
     } catch (err: unknown) {
+      // Rollback: revert to the previous states on failure.
+      setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: previousOfferStatus } : o));
+      onUpdate({ ...invoice, status: previousInvoiceStatus });
       toast({ title: 'Failed to accept offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
+      setPendingIds(prev => {
+        const next = new Set(prev);
+        next.delete(offer.id);
+        return next;
+      });
       setActionId(null);
     }
   };
@@ -368,7 +415,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           const repaid = toStroopsBigInt(offer.amount_repaid);
           const remaining = totalDue(offer) - repaid;
           return (
-          <div key={offer.id} className="flex items-center justify-between border rounded-lg p-3">
+          <div key={offer.id} className={`flex items-center justify-between border rounded-lg p-3 ${pendingIds.has(offer.id) ? 'opacity-60' : ''}`}>
             <div>
               <p className="text-sm font-mono text-gray-600">{formatAddress(offer.lender)}</p>
               <p className="text-xs text-gray-400 mt-0.5">
@@ -384,7 +431,10 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Badge className={OFFER_STATUS_COLORS[offer.status]}>{offer.status}</Badge>
+              <Badge className={pendingIds.has(offer.id) ? 'bg-amber-100 text-amber-800 border-amber-200 animate-pulse' : OFFER_STATUS_COLORS[offer.status]}>
+                {pendingIds.has(offer.id) && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                {offer.status}
+              </Badge>
               {isOriginator && offer.status === 'Pending' && (
                 <>
                   <Button

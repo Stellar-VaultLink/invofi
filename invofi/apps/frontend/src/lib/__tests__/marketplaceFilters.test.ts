@@ -6,7 +6,7 @@ import {
   DEFAULT_MARKETPLACE_FILTERS,
   MarketplaceFilters,
 } from '@/lib/marketplaceFilters';
-import type { Currency, InvoiceStatus } from '@/types';
+import type { Currency, Invoice, InvoiceStatus } from '@/types';
 
 // Runtime: supabase returns amount as string, SDK type says bigint.
 // Use as any to match the runtime shape the codebase relies on.

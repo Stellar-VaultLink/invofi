@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Search, LayoutGrid, X } from 'lucide-react';
@@ -17,6 +17,13 @@ import { CardSkeleton } from '@/components/common/LoadingSkeleton';
 import { useLenderPreferences } from '@/hooks/useLenderPreferences';
 import { useMatchedInvoices } from '@/hooks/useMatchedInvoices';
 import { useMarketplace } from '@/hooks/useMarketplace';
+import {
+  filtersFromQuery,
+  filtersToQuery,
+  applyStatusAndAmountFilter,
+  DEFAULT_MARKETPLACE_FILTERS,
+  type MarketplaceFilters,
+} from '@/lib/marketplaceFilters';
 import type { Currency, Invoice, InvoiceStatus } from '@/types';
 
 // ── Render cap ───────────────────────────────────────────────────────────────
@@ -32,7 +39,7 @@ const queryClient = new QueryClient();
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Filters = { currency: Currency | 'ALL'; status: InvoiceStatus | 'ALL' };
+type Filters = MarketplaceFilters;
 type SortKey = 'newest' | 'oldest' | 'amount_desc' | 'amount_asc' | 'due_soonest';
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
@@ -53,7 +60,14 @@ function MarketplacePageInner() {
   const handleViewModeChange = useCallback((mode: 'suggested' | 'all') => {
     setViewMode(mode);
   }, []);
-  const [filters, setFilters] = useState<Filters>({ currency: 'ALL', status: 'ALL' });
+  // Initial filter state is read from the URL query params so a shared
+  // /marketplace?currency=USDC&min_amount=500 link opens with the view applied.
+  // SSR guard: window is undefined during prerender, so fall back to defaults.
+  const [filters, setFilters] = useState<Filters>(() =>
+    typeof window === 'undefined'
+      ? DEFAULT_MARKETPLACE_FILTERS
+      : filtersFromQuery(window.location.search.replace(/^\?/, '')),
+  );
   const [sort, setSort]       = useState<SortKey>('newest');
 
   /**
@@ -98,10 +112,7 @@ function MarketplacePageInner() {
   }, [allInvoices, debouncedSearch]);
 
   const sortedAll = useMemo(() => {
-    let list = filteredBySearch.filter(inv => {
-      if (filters.status !== 'ALL' && inv.status !== filters.status) return false;
-      return true;
-    });
+    let list = applyStatusAndAmountFilter(filteredBySearch, filters);
 
     return [...list].sort((a: Invoice, b: Invoice) => {
       switch (sort) {
@@ -116,6 +127,15 @@ function MarketplacePageInner() {
   }, [filteredBySearch, filters.status, sort]);
 
   const visibleInvoices = useMemo(() => sortedAll.slice(0, visibleCount), [sortedAll, visibleCount]);
+
+  // Keep the URL query params in sync with the active filters (issue #81).
+  // replaceState (not pushState) so lenders can share a filtered link without
+  // cluttering browser history on every keystroke.
+  useEffect(() => {
+    const qs = filtersToQuery(filters);
+    const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    window.history.replaceState(null, '', next);
+  }, [filters]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -243,6 +263,31 @@ function MarketplacePageInner() {
                 <option value="XLM">XLM</option>
                 <option value="USDC">USDC</option>
               </select>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="Min amount"
+                  className="w-24 h-10"
+                  value={filters.minAmount}
+                  onChange={e => setFilters(f => ({ ...f, minAmount: e.target.value }))}
+                  aria-label="Minimum amount"
+                />
+                <span className="text-muted-foreground text-sm" aria-hidden="true">–</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="Max amount"
+                  className="w-24 h-10"
+                  value={filters.maxAmount}
+                  onChange={e => setFilters(f => ({ ...f, maxAmount: e.target.value }))}
+                  aria-label="Maximum amount"
+                />
+              </div>
               <select
                 className="w-full sm:w-auto h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                 value={sort}

@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
+// `render` wraps in NextIntlClientProvider — OfferList reads its copy from
+// the message catalogue (issue #227).
+import { render } from '@/test/intl';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OfferList } from '../OfferList';
 import type { FinancingOffer, Invoice } from '@/types';

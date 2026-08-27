@@ -171,3 +171,32 @@ export type {
   ScoreBreakdown,
 } from './matching';
 export { DEFAULT_PREFERENCES, serializePreferences, deserializePreferences } from './matching';
+
+// ── In-app notifications (issue #179) ────────────────────────────────────────
+
+export type NotificationType =
+  | 'offer_received'
+  | 'offer_accepted'
+  | 'invoice_repaid'
+  | 'invoice_cancelled'
+  | 'invoice_overdue'
+  | 'offer_rejected'
+  | 'invoice_defaulted';
+
+/**
+ * A single in-app notification. Stored in the `notifications` Supabase table
+ * (migration 004); written by the frontend when protocol events match the
+ * current user's wallet, or by the indexer. The UI renders it from `title` /
+ * `body` and routes clicks through `payload` (invoice_id / offer_id / amount).
+ */
+export interface AppNotification {
+  id: string;
+  user_id: string | null;
+  type: NotificationType;
+  title: string;
+  body: string;
+  /** JSONB — invoice_id, offer_id, amount, currency, counterparty, tx_hash… */
+  payload: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+}

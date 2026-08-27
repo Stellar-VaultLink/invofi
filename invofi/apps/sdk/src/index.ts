@@ -12,6 +12,8 @@ export {
   type InvofiClient,
   type InvofiClientMethods,
   type BatchCall,
+  type SendCall,
+  type SendEnvelope,
   SdkValidationError,
   ErrorCode,
 } from './client';
@@ -94,6 +96,7 @@ export {
   CONTRACT_ERROR_MAP,
   parseContractError,
   setErrorReporter,
+  type InvofiError,
   type RecoverySuggestion,
 } from './errors';
 

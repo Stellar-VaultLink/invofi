@@ -7,6 +7,7 @@ import { FreighterModule, FREIGHTER_ID } from '@creit.tech/stellar-wallets-kit/m
 import { LobstrModule, LOBSTR_ID } from '@creit.tech/stellar-wallets-kit/modules/lobstr';
 import { AlbedoModule, ALBEDO_ID } from '@creit.tech/stellar-wallets-kit/modules/albedo';
 import { xBullModule, XBULL_ID } from '@creit.tech/stellar-wallets-kit/modules/xbull';
+import { LedgerModule, LEDGER_ID } from '@creit.tech/stellar-wallets-kit/modules/ledger';
 import { isConnected as isLobstrConnected } from '@lobstrco/signer-extension-api';
 import { isConnected as isFreighterConnected } from '@stellar/freighter-api';
 
@@ -48,6 +49,18 @@ function hasXBullAvailable(): Promise<boolean> {
   return Promise.resolve(hasWindow());
 }
 
+// Ledger is a hardware wallet accessed over WebUSB (the kit's Ledger module
+// uses @ledgerhq/hw-transport-webusb). There is no extension to detect — the
+// module opens the native WebUSB picker on connect — so availability is
+// gated on the browser exposing the WebUSB API (`navigator.usb`). The kit
+// module re-validates via transport.isSupported() at connect time, so this
+// check is only a cheap capability probe, mirroring the module's own
+// `isAvailable()`. Note: like all hardware wallets, a Ledger key never
+// leaves the device; see ADR-0001 for hardware-wallet caveats.
+function hasLedgerAvailable(): Promise<boolean> {
+  return Promise.resolve(hasWindow() && typeof navigator.usb !== 'undefined');
+}
+
 export const APPROVED_WALLETS = [
   {
     id: FREIGHTER_ID,
@@ -56,6 +69,7 @@ export const APPROVED_WALLETS = [
     installUrl: 'https://freighter.app',
     module: FreighterModule,
     isInstalled: hasFreighterExtension,
+    autoConnectable: true,
   },
   {
     id: LOBSTR_ID,
@@ -64,6 +78,7 @@ export const APPROVED_WALLETS = [
     installUrl: 'https://lobstr.co/extension',
     module: LobstrModule,
     isInstalled: hasLobstrExtension,
+    autoConnectable: true,
   },
   {
     id: ALBEDO_ID,
@@ -72,6 +87,7 @@ export const APPROVED_WALLETS = [
     installUrl: 'https://albedo.link/',
     module: AlbedoModule,
     isInstalled: hasAlbedoAvailable,
+    autoConnectable: true,
   },
   {
     id: XBULL_ID,
@@ -80,6 +96,18 @@ export const APPROVED_WALLETS = [
     installUrl: 'https://xbull.app',
     module: xBullModule,
     isInstalled: hasXBullAvailable,
+    autoConnectable: true,
+  },
+  {
+    id: LEDGER_ID,
+    name: 'Ledger',
+    description: 'Hardware wallet (Stellar app) — keys never leave the device',
+    installUrl: 'https://www.ledger.com/',
+    module: LedgerModule,
+    isInstalled: hasLedgerAvailable,
+    // Hardware wallets connect only on explicit user action — auto-restoring
+    // would open the native WebUSB device picker on every page load.
+    autoConnectable: false,
   },
 ] as const;
 
@@ -92,4 +120,5 @@ export const WALLET_IDS = {
   lobstr: LOBSTR_ID,
   albedo: ALBEDO_ID,
   xbull: XBULL_ID,
+  ledger: LEDGER_ID,
 } as const;

@@ -207,13 +207,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       // Prefer the last-connected wallet so returning users reconnect to the
       // wallet they chose last time; fall back to probing every approved
-      // wallet for a previously-granted session.
+      // wallet for a previously-granted session. Wallets that opt out of
+      // auto-connect (`autoConnectable: false`, e.g. hardware wallets that
+      // would open a WebUSB picker) are skipped — they connect on explicit
+      // user action only.
+      const isAutoConnectable = (walletId: string): boolean => {
+        const w = APPROVED_WALLETS.find(entry => entry.id === walletId);
+        return w ? w.autoConnectable !== false : true;
+      };
       const lastWallet = readLastWallet();
-      if (lastWallet && installed.has(lastWallet.walletId)) {
+      if (lastWallet && installed.has(lastWallet.walletId) && isAutoConnectable(lastWallet.walletId)) {
         if (await tryRestoreWallet(lastWallet.walletId)) return;
       }
       for (const w of APPROVED_WALLETS) {
-        if (!installed.has(w.id)) continue;
+        if (!installed.has(w.id) || !isAutoConnectable(w.id)) continue;
         if (await tryRestoreWallet(w.id)) return;
       }
 

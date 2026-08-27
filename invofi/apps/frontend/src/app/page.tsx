@@ -7,6 +7,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { ProtocolMetricsBand } from '@/components/common/ProtocolMetricsBand';
 
+// ISR (issue #149): the landing page is public marketing content with no
+// authenticated per-user data, so it is safe to serve as cached HTML and
+// revalidate on a long window. The live protocol metrics band is a client
+// component that fetches its own data, so the numeric freshness is preserved.
+export const revalidate = 3600;
+
 export default async function LandingPage() {
   const t = await getTranslations('Landing');
 

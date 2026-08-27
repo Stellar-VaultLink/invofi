@@ -1,11 +1,15 @@
-'use client';
-
 // Public protocol stats (Task 14). Reads the indexer's aggregate row
 // (`protocol_stats`, id=1) written by apps/indexer on a 6-hour schedule.
 // The table has a public-read RLS policy, so this page works without auth.
 // See invofi/apps/indexer/README.md for the schema and pipeline.
+//
+// ISR (issue #149): this page is Incremental Static Regeneration — the
+// server renders it once and revalidates every `revalidate` seconds, so the
+// RPC/Supabase load from public crawlers is bounded. The render is
+// server-side only (`no-store` semantics via the Supabase anon client);
+// the interactive refresh button lives in StatsRefreshButton and re-runs
+// the server component via router.refresh().
 
-import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   FileText,
@@ -15,13 +19,14 @@ import {
   ShieldCheck,
   Layers,
   AlertTriangle,
-  RefreshCw,
 } from 'lucide-react';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { StatsCard } from '@/components/common/StatsCard';
 import { StatsGrid } from '@/components/common/StatsGrid';
-import { CardSkeleton } from '@/components/common/LoadingSkeleton';
-import { supabase } from '@/lib/supabase';
+import StatsRefreshButton from './StatsRefreshButton';
 import { formatAmount } from '@/lib/formatters';
+
+export const revalidate = 60;
 
 interface ProtocolStats {
   id: number;
@@ -44,26 +49,47 @@ function formatDate(iso?: string): string {
   return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 }
 
-export default function StatsPage() {
-  const [stats, setStats] = useState<ProtocolStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+/**
+ * Fetch the aggregate protocol stats row with the anon key only.
+ *
+ * The `protocol_stats` table has a public-read RLS policy, so the data can be
+ * fetched server-side at build/ISR time without any authenticated session.
+ * Deliberately NOT using the cookies-based server client (utils/supabase/server)
+ * — that reads `cookies()` and would opt every page into dynamic rendering.
+ */
+async function fetchProtocolStats(): Promise<{
+  stats: ProtocolStats | null;
+  error: string | null;
+}> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const { data, error } = await supabase.from('protocol_stats').select('*').eq('id', 1).maybeSingle();
-    if (error) {
-      setError(error.message);
-    } else {
-      setStats((data as ProtocolStats | null) ?? null);
-    }
-    setLoading(false);
-  }, []);
+  if (!url || !key) {
+    // Graceful offline/CI degradation — same outcome as the old client fetch
+    // before env vars are wired up: render the "no stats" empty state.
+    return { stats: null, error: null };
+  }
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const supabase = createSupabaseClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { data, error } = await supabase
+    .from('protocol_stats')
+    .select('*')
+    .eq('id', 1)
+    .maybeSingle();
+
+  if (error) {
+    return { stats: null, error: error.message };
+  }
+  return { stats: (data as ProtocolStats | null) ?? null, error: null };
+}
+
+export default async function StatsPage() {
+  const { stats, error } = await fetchProtocolStats();
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -75,24 +101,10 @@ export default function StatsPage() {
             Soroban on-chain events and contract state.
           </p>
         </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          className="p-2 rounded-md text-muted-foreground hover:bg-accent transition-colors"
-          title="Refresh"
-          aria-label="Refresh stats"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <StatsRefreshButton />
       </div>
 
-      {loading && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <CardSkeleton key={i} />)}
-        </div>
-      )}
-
-      {!loading && error && (
+      {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800 p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-3" />
           <p className="text-sm font-medium text-red-800 dark:text-red-300">Could not load stats</p>
@@ -103,7 +115,7 @@ export default function StatsPage() {
         </div>
       )}
 
-      {!loading && !error && stats === null && (
+      {!error && stats === null && (
         <div className="text-center py-20 border-2 border-dashed border-border rounded-xl">
           <Layers className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-muted-foreground mb-2">No stats yet — the indexer hasn&apos;t written its first row.</p>
@@ -114,7 +126,7 @@ export default function StatsPage() {
         </div>
       )}
 
-      {!loading && !error && stats && (
+      {!error && stats && (
         <>
           <StatsGrid columns={4}>
             <StatsCard

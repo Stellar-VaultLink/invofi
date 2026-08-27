@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,19 +11,87 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { SimulateConfirm } from '@/components/common/SimulateConfirm';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { createOffer, acceptOffer, rejectOffer, repayInvoice, markOverdue, reclaimInvoice } from '@/lib/contract';
+import {
+  simulateContractCall,
+  encodeSymbol,
+  encodeAddress,
+  encodeI128,
+} from '@/lib/simulate';
 import { supabase } from '@/lib/supabase';
 import { formatAmount } from '@/lib/formatters';
 import { formatAmount as formatUnits, interestRateLabel, durationLabel, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { toCsv, downloadCsv } from '@/lib/csv';
-import { GRACE_PERIOD_SECS, STROOPS_PER_XLM } from '@/lib/constants';
+import {
+  FINANCING_CONTRACT_ID as FINANCING_ID,
+  REPAYMENT_CONTRACT_ID as REPAYMENT_ID,
+  GRACE_PERIOD_SECS,
+  STROOPS_PER_XLM,
+} from '@/lib/constants';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { toErrorMessage } from '@/lib/errors';
 import { OfferTermsPreview } from './OfferTermsPreview';
 import type { Currency, FinancingOffer, Invoice } from '@/types';
+import type { SimulationResult } from '@/lib/simulate';
+
+/** The state-changing actions a lender/originator can take on an offer. */
+type SimKind = 'accept' | 'reject' | 'repay' | 'reclaim';
+
+interface SimTarget {
+  offer: FinancingOffer;
+  kind: SimKind;
+  /** Stroops, for `repay` only. */
+  amount?: bigint;
+}
+
+/** Dialog copy per action — the only thing that differs between previews. */
+const SIM_ACTIONS: Record<SimKind, {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  variant?: 'default' | 'destructive';
+  /** Irreversible actions require a press-and-hold, not a single click. */
+  holdToConfirm?: boolean;
+}> = {
+  accept: {
+    title: 'Preview: Accept Offer',
+    description: 'Review the expected effects before accepting this financing offer.',
+    confirmLabel: 'Accept Offer',
+  },
+  reject: {
+    title: 'Preview: Reject Offer',
+    description: 'Review the expected effects before rejecting this offer. The lender will be notified and this cannot be undone.',
+    confirmLabel: 'Reject Offer',
+  },
+  repay: {
+    title: 'Preview: Repay Invoice',
+    description: 'Review the expected token transfer before submitting repayment.',
+    confirmLabel: 'Submit Repayment',
+  },
+  reclaim: {
+    title: 'Preview: Reclaim Offer',
+    description: 'Review the expected effects before marking this offer Defaulted on-chain. Principal was already paid at acceptance — this does not return funds, and cannot be undone.',
+    confirmLabel: 'Reclaim',
+    variant: 'destructive',
+    holdToConfirm: true,
+  },
+};
+
+/** A blocked result — the dialog renders it as a failure and disables submit. */
+function emptySimulation(error: string): SimulationResult {
+  return {
+    success: false,
+    error,
+    tokenMovements: [],
+    stateChanges: [],
+    events: [],
+    resourceFee: '0',
+    latestLedger: 0,
+  };
+}
 
 const offerSchema = z.object({
   amount: z.string().regex(/^\d+(\.\d{1,7})?$/, 'Enter a valid amount'),
@@ -48,10 +116,12 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
-  const [confirmTarget, setConfirmTarget] = useState<
-    { offer: FinancingOffer; kind: 'reject' | 'reclaim' } | null
-  >(null);
+  /** IDs of offers currently being submitted/accepted on-chain (optimistic UI). */
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [repayAmounts, setRepayAmounts] = useState<Record<string, string>>({});
+
+  // ── Simulation state: non-null while a preview dialog is open ───────────
+  const [simTarget, setSimTarget] = useState<SimTarget | null>(null);
 
   const { register, watch, handleSubmit, formState: { errors }, reset } = useForm<OfferFormValues>({
     resolver: zodResolver(offerSchema),
@@ -81,8 +151,29 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
     if (!publicKey) return;
     setLoading(true);
     const offerId = generateOfferId();
+    const durationSecs = values.durationDays * 86_400;
+
+    // Optimistic: add the offer to local state immediately so the UI reflects
+    // the pending offer while the on-chain transaction confirms.
+    const optimisticOffer: FinancingOffer & { pending?: boolean } = {
+      id: offerId,
+      invoice_id: invoiceId,
+      lender: publicKey,
+      amount: amountToStroops(values.amount),
+      currency: values.currency as Currency,
+      interest_rate: values.interestRate,
+      duration: durationSecs,
+      amount_repaid: 0n,
+      status: 'Pending',
+      funded_at: 0,
+      pending: true,
+    };
+    setOffers(prev => [optimisticOffer, ...prev]);
+    setPendingIds(prev => new Set(prev).add(offerId));
+    reset();
+    setShowForm(false);
+
     try {
-      const durationSecs = values.durationDays * 86_400;
       const offer = await createOffer(
         {
           offerId,
@@ -103,22 +194,70 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           status: 'Pending', funded_at: 0,
         });
       }
-      setOffers(prev => [offer, ...prev]);
-      reset();
-      setShowForm(false);
+      // Replace the optimistic offer with the real one from the contract.
+      setOffers(prev => prev.map(o => o.id === offerId ? offer : o));
       toast({ title: 'Offer submitted!', description: 'The invoice originator will be notified.' });
     } catch (err: unknown) {
+      // Rollback: remove the optimistic offer on failure.
+      setOffers(prev => prev.filter(o => o.id !== offerId));
       toast({ title: 'Failed to submit offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
+      setPendingIds(prev => {
+        const next = new Set(prev);
+        next.delete(offerId);
+        return next;
+      });
       setLoading(false);
     }
   };
 
+  // One simulation entry point for every action: which contract and method a
+  // preview targets is derived from `simTarget`, so adding an action means
+  // adding a case here and a row in SIM_ACTIONS — not a fifth near-identical
+  // callback/dialog pair.
+  const simulateAction = useCallback(async (): Promise<SimulationResult> => {
+    if (!simTarget || !publicKey) return emptySimulation('No action selected');
+    const { offer, kind, amount } = simTarget;
+    const source = encodeAddress(publicKey);
+
+    switch (kind) {
+      case 'accept':
+        return simulateContractCall(FINANCING_ID, 'accept_offer', [encodeSymbol(offer.id), source], publicKey);
+      case 'reject':
+        return simulateContractCall(FINANCING_ID, 'reject_offer', [encodeSymbol(offer.id), source], publicKey);
+      case 'repay':
+        if (!amount) return emptySimulation('No repayment amount entered');
+        return simulateContractCall(
+          REPAYMENT_ID,
+          'repay_invoice',
+          [encodeSymbol(invoiceId), encodeSymbol(offer.id), source, encodeI128(amount)],
+          publicKey,
+        );
+      case 'reclaim':
+        return simulateContractCall(
+          REPAYMENT_ID,
+          'reclaim_invoice',
+          [encodeSymbol(invoiceId), encodeSymbol(offer.id), source],
+          publicKey,
+        );
+    }
+  }, [simTarget, publicKey, invoiceId]);
+
   const handleAccept = async (offer: FinancingOffer) => {
     if (!publicKey) return;
     setActionId(offer.id);
+    setPendingIds(prev => new Set(prev).add(offer.id));
+
+    // Optimistic: immediately flip the offer and invoice to their expected
+    // post-acceptance states so the UI reflects the action instantly.
+    const previousOfferStatus = offer.status;
+    const previousInvoiceStatus = invoice.status;
+    setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: 'Accepted' as const } : o));
+    onUpdate({ ...invoice, status: 'Financed' as const });
+
     try {
       const updatedOffer = await acceptOffer(offer.id, publicKey);
+      // Reconcile with the authoritative on-chain response.
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       await supabase.from('financing_offers').update({ status: 'Accepted', funded_at: Math.floor(Date.now() / 1000) }).eq('id', offer.id);
       const updatedInvoice = { ...invoice, status: 'Financed' as const };
@@ -126,8 +265,16 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       onUpdate(updatedInvoice);
       toast({ title: 'Offer accepted!', description: 'Invoice is now marked as Financed.' });
     } catch (err: unknown) {
+      // Rollback: revert to the previous states on failure.
+      setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: previousOfferStatus } : o));
+      onUpdate({ ...invoice, status: previousInvoiceStatus });
       toast({ title: 'Failed to accept offer', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
     } finally {
+      setPendingIds(prev => {
+        const next = new Set(prev);
+        next.delete(offer.id);
+        return next;
+      });
       setActionId(null);
     }
   };
@@ -179,26 +326,52 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         toast({ title: 'Amount must be greater than zero', variant: 'destructive' });
         return;
       }
-      const updatedInvoice = await repayInvoice(invoiceId, offer.id, publicKey, amountStroops);
-      // A repayment that clears the full balance flips the invoice to Repaid;
-      // anything less keeps it Financed (offer → Financed for the remainder).
-      const fullyRepaid = updatedInvoice.status === 'Repaid';
-      const nextOfferStatus: FinancingOffer['status'] = fullyRepaid ? 'Repaid' : 'Financed';
-      const nextInvoiceStatus: Invoice['status'] = fullyRepaid ? 'Repaid' : 'Financed';
-      const newRepaid = toStroopsBigInt(offer.amount_repaid) + amountStroops;
-      setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: nextOfferStatus, amount_repaid: newRepaid } : o));
-      // Mirror stores human-decimal strings (same format as its amount column).
-      await supabase.from('financing_offers').update({ status: nextOfferStatus, amount_repaid: formatUnits(newRepaid) }).eq('id', offer.id);
-      await supabase.from('invoices').update({ status: nextInvoiceStatus }).eq('id', invoiceId);
-      onUpdate(updatedInvoice);
-      toast({
-        title: fullyRepaid ? 'Invoice fully repaid' : 'Repayment sent',
-        description: fullyRepaid
-          ? 'Principal + yield transferred to the lender. The invoice is now Repaid.'
-          : 'Partial repayment recorded on-chain. Continue repaying until the balance clears.',
-      });
-    } catch (err: unknown) {
-      toast({ title: 'Failed to repay', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+
+      // ── Optimistic (issue #178): apply the expected post-payment state
+      //    immediately so the UI reflects the repayment while the wallet/RPC
+      //    round-trip confirms — no offline queueing, so a failed tx rolls back.
+      const previousOfferStatus = offer.status;
+      const previousInvoiceStatus = invoice.status;
+      const previousRepaid = toStroopsBigInt(offer.amount_repaid);
+      const optimisticRepaid = previousRepaid + amountStroops;
+      const optimisticFullyRepaid = optimisticRepaid >= totalDue(offer);
+      const optimisticOfferStatus: FinancingOffer['status'] = optimisticFullyRepaid ? 'Repaid' : 'Financed';
+      const optimisticInvoiceStatus: Invoice['status'] = optimisticFullyRepaid ? 'Repaid' : 'Financed';
+      setPendingIds(prev => new Set(prev).add(offer.id));
+      setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: optimisticOfferStatus, amount_repaid: optimisticRepaid } : o));
+      onUpdate({ ...invoice, status: optimisticInvoiceStatus });
+
+      try {
+        const updatedInvoice = await repayInvoice(invoiceId, offer.id, publicKey, amountStroops);
+        // A repayment that clears the full balance flips the invoice to Repaid;
+        // anything less keeps it Financed (offer → Financed for the remainder).
+        const fullyRepaid = updatedInvoice.status === 'Repaid';
+        const nextOfferStatus: FinancingOffer['status'] = fullyRepaid ? 'Repaid' : 'Financed';
+        const nextInvoiceStatus: Invoice['status'] = fullyRepaid ? 'Repaid' : 'Financed';
+        const newRepaid = previousRepaid + amountStroops;
+        setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: nextOfferStatus, amount_repaid: newRepaid } : o));
+        // Mirror stores human-decimal strings (same format as its amount column).
+        await supabase.from('financing_offers').update({ status: nextOfferStatus, amount_repaid: formatUnits(newRepaid) }).eq('id', offer.id);
+        await supabase.from('invoices').update({ status: nextInvoiceStatus }).eq('id', invoiceId);
+        onUpdate(updatedInvoice);
+        toast({
+          title: fullyRepaid ? 'Invoice fully repaid' : 'Repayment sent',
+          description: fullyRepaid
+            ? 'Principal + yield transferred to the lender. The invoice is now Repaid.'
+            : 'Partial repayment recorded on-chain. Continue repaying until the balance clears.',
+        });
+      } catch (err: unknown) {
+        // Rollback: revert the optimistic state on failure.
+        setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: previousOfferStatus, amount_repaid: previousRepaid } : o));
+        onUpdate({ ...invoice, status: previousInvoiceStatus });
+        toast({ title: 'Failed to repay', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+      } finally {
+        setPendingIds(prev => {
+          const next = new Set(prev);
+          next.delete(offer.id);
+          return next;
+        });
+      }
     } finally {
       setActionId(null);
     }
@@ -235,6 +408,21 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   };
 
   const isOriginator = publicKey === invoice.originator;
+  /** Submits the previewed action once the user confirms a clean simulation. */
+  const runSimulatedAction = () => {
+    if (!simTarget) return;
+    const { offer, kind } = simTarget;
+    setSimTarget(null);
+    if (kind === 'accept') return handleAccept(offer);
+    if (kind === 'reject') return handleReject(offer);
+    if (kind === 'repay') return handleRepay(offer);
+    return handleReclaim(offer);
+  };
+
+  // Copy for the open preview; `accept` is an inert placeholder while closed,
+  // since Radix unmounts the dialog body when `open` is false.
+  const simAction = SIM_ACTIONS[simTarget?.kind ?? 'accept'];
+
   const canMakeOffer = invoice.status === 'Pending' && publicKey && !isOriginator;
   const nowSecs = Math.floor(Date.now() / 1000);
   const canMarkOverdue = invoice.status === 'Financed' && publicKey && nowSecs > invoice.due_date;
@@ -368,7 +556,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           const repaid = toStroopsBigInt(offer.amount_repaid);
           const remaining = totalDue(offer) - repaid;
           return (
-          <div key={offer.id} className="flex items-center justify-between border rounded-lg p-3">
+          <div key={offer.id} className={`flex items-center justify-between border rounded-lg p-3 ${pendingIds.has(offer.id) ? 'opacity-60' : ''}`}>
             <div>
               <p className="text-sm font-mono text-gray-600">{formatAddress(offer.lender)}</p>
               <p className="text-xs text-gray-400 mt-0.5">
@@ -384,12 +572,15 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Badge className={OFFER_STATUS_COLORS[offer.status]}>{offer.status}</Badge>
+              <Badge className={pendingIds.has(offer.id) ? 'bg-amber-100 text-amber-800 border-amber-200 animate-pulse' : OFFER_STATUS_COLORS[offer.status]}>
+                {pendingIds.has(offer.id) && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                {offer.status}
+              </Badge>
               {isOriginator && offer.status === 'Pending' && (
                 <>
                   <Button
                     size="sm"
-                    onClick={() => handleAccept(offer)}
+                    onClick={() => setSimTarget({ offer, kind: 'accept' })}
                     disabled={actionId === offer.id}
                   >
                     {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
@@ -398,7 +589,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setConfirmTarget({ offer, kind: 'reject' })}
+                    onClick={() => setSimTarget({ offer, kind: 'reject' })}
                     disabled={actionId === offer.id}
                   >
                     Reject
@@ -416,7 +607,19 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                   />
                   <Button
                     size="sm"
-                    onClick={() => handleRepay(offer)}
+                    onClick={() => {
+                      const raw = (repayAmounts[offer.id] ?? '').trim();
+                      if (!/^\d+(\.\d{1,7})?$/.test(raw)) {
+                        toast({ title: 'Enter a valid amount', variant: 'destructive' });
+                        return;
+                      }
+                      const amountStroops = amountToStroops(raw);
+                      if (amountStroops <= 0n) {
+                        toast({ title: 'Amount must be greater than zero', variant: 'destructive' });
+                        return;
+                      }
+                      setSimTarget({ offer, kind: 'repay', amount: amountStroops });
+                    }}
                     disabled={actionId === offer.id}
                   >
                     {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
@@ -424,16 +627,15 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
                   </Button>
                 </div>
               )}
-              {canReclaim(offer) && (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => setConfirmTarget({ offer, kind: 'reclaim' })}
-                  disabled={actionId === offer.id}
-                >
-                  {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                  Reclaim
-                </Button>
+              {canReclaim(offer) && (                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setSimTarget({ offer, kind: 'reclaim' })}
+                    disabled={actionId === offer.id}
+                  >
+                    {actionId === offer.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                    Reclaim
+                  </Button>
               )}
             </div>
           </div>
@@ -441,25 +643,17 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         })}
       </CardContent>
 
-      <ConfirmDialog
-        open={confirmTarget !== null}
-        onOpenChange={open => { if (!open) setConfirmTarget(null); }}
-        title={confirmTarget?.kind === 'reclaim' ? 'Reclaim this offer?' : 'Reject this offer?'}
-        description={
-          confirmTarget?.kind === 'reclaim'
-            ? 'This marks the offer Defaulted on-chain. Principal was already paid to the business at acceptance — this does not return funds, and cannot be undone.'
-            : 'The lender will be notified their offer was rejected. This cannot be undone.'
-        }
-        confirmLabel={confirmTarget?.kind === 'reclaim' ? 'Reclaim' : 'Reject'}
-        variant={confirmTarget?.kind === 'reclaim' ? 'destructive' : 'default'}
-        holdToConfirm={confirmTarget?.kind === 'reclaim'}
-        onConfirm={() => {
-          if (!confirmTarget) return;
-          const { offer, kind } = confirmTarget;
-          setConfirmTarget(null);
-          if (kind === 'reclaim') handleReclaim(offer);
-          else handleReject(offer);
-        }}
+      {/* ── Simulation gate: every state-changing action passes through here ── */}
+      <SimulateConfirm
+        open={simTarget !== null}
+        onOpenChange={open => { if (!open) setSimTarget(null); }}
+        title={simAction.title}
+        description={simAction.description}
+        onSimulate={simulateAction}
+        onConfirm={runSimulatedAction}
+        confirmLabel={simAction.confirmLabel}
+        variant={simAction.variant}
+        holdToConfirm={simAction.holdToConfirm}
       />
     </Card>
   );

@@ -8,6 +8,7 @@ Thank you for your interest in contributing to InvoFi. This document covers ever
 
 - [Code of Conduct](#code-of-conduct)
 - [What Can I Contribute?](#what-can-i-contribute)
+- [Issue Assignment Workflow](#issue-assignment-workflow)
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
 - [Making Changes](#making-changes)
@@ -47,6 +48,38 @@ Issues are labelled by **complexity** so contributors can gauge effort at a glan
 | `good-first-issue` | Onboarding-friendly tasks; usually also trivial or medium |
 
 Additional area labels (`frontend`, `contracts`, `sdk`, `docs`, `infra`) describe *where* the work lives, not its size — a `docs` issue can still be `trivial`, `medium`, or `high-complexity`.
+
+---
+
+## Issue Assignment Workflow
+
+**You must be assigned to an issue before opening a pull request for it.** This prevents duplicate efforts and ensures work is coordinated across contributors.
+
+### How to claim an issue
+
+1. Find an unassigned issue you'd like to work on
+2. Comment on the issue to claim it (e.g., "I'd like to work on this")
+3. Wait for a maintainer to **assign you** to the issue
+4. Once assigned, start working and open your PR
+
+### Why this matters
+
+- Without assignment, multiple contributors may work on the same issue simultaneously
+- Maintainers need to know who is working on what to coordinate reviews and avoid conflicts
+- Unassigned PRs may be closed without review
+
+### Automated enforcement
+
+A CI check (`check-issue-assignment`) verifies that the PR author is assigned to the linked issue. If the check fails:
+
+- The PR will not be mergeable until the issue is assigned to you
+- Comment on the issue asking to be assigned, and a maintainer will update it
+
+### Exceptions
+
+- **Documentation-only PRs** (typos, README updates) that don't reference an issue are exempt
+- **Dependabot PRs** are automatically exempt
+- If you're a **maintainer**, you can self-assign issues directly
 
 ---
 
@@ -166,6 +199,7 @@ git push origin feat/your-feature-name
 
 ## Pull Request Guidelines
 
+- **Be assigned first.** You must be assigned to the related issue before opening a PR. See [Issue Assignment Workflow](#issue-assignment-workflow).
 - **One concern per PR.** If you fix a bug and add a feature, open two PRs.
 - **Reference the issue.** Add `Fixes #123` or `Closes #123` in the PR description.
 - **Fill in the PR template.** It includes a checklist — tick every item before requesting review.
@@ -275,6 +309,40 @@ npm run test:e2e
 It runs against the live Stellar testnet contracts and stubs Supabase + the
 on-chain invoice read with fixtures, so no Supabase credentials are needed.
 There is no unit test suite yet — if you add one, use Vitest.
+
+### Bundle-size budget & route smoke check
+
+CI enforces a **per-route JavaScript budget** and a **route smoke check** on
+every PR and on `main` (job `frontend-bundle-and-smoke`):
+
+- **Bundle budget** — after `next build`, `scripts/check-bundle-budget.mjs`
+  parses the per-route *First Load JS* table and compares it against the
+  committed baseline in `scripts/bundle-budget.json`. Any route that grows more
+  than **10%** over its committed budget fails the job.
+- **Route smoke check** — `scripts/route-smoke-check.mjs` boots the production
+  server and requests every page route, failing if any returns HTTP ≥ 500 (a
+  page that throws only when rendered).
+
+Run them locally:
+
+```bash
+cd invofi/apps/frontend
+npm run build 2>&1 | tee next-build.log
+node ../../../scripts/check-bundle-budget.mjs --log next-build.log
+node ../../../scripts/route-smoke-check.mjs --port 3100 < next-build.log
+```
+
+**Raising the budget deliberately** — when a feature legitimately adds
+client-side JS (and you've reviewed that it isn't accidental bloat), regenerate
+the baseline with `--update` and commit it:
+
+```bash
+node ../../../scripts/check-bundle-budget.mjs --log next-build.log --update
+```
+
+The regeneration writes the current build's *First Load JS* figures as the new
+committed baseline, so include the `bundle-budget.json` diff in the same PR and
+explain why the route grew in the PR description.
 
 ### Scripted on-chain flow
 

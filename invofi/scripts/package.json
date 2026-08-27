@@ -6,11 +6,15 @@
   "scripts": {
     "keeper": "tsx keeper.ts",
     "e2e:onchain": "tsx e2e-onchain.ts",
+    "health-collector": "tsx health-collector.ts",
     "type-check": "tsc --noEmit",
-    "test": "tsx --test keeper.test.ts"
+    "test": "tsx --test keeper.test.ts && tsx --test health-collector.test.ts",
+    "test:keeper": "tsx --test keeper.test.ts",
+    "test:health": "tsx --test health-collector.test.ts"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^16.0.1"
+    "@stellar/stellar-sdk": "^16.0.1",
+    "@supabase/supabase-js": "^2.50.5"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",

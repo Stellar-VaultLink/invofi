@@ -1,0 +1,92 @@
+name: Require assignment
+
+# Blocks PRs from contributors who are not assigned to the linked issue.
+# Runs on every PR open/reopen — provides immediate feedback instead of
+# waiting for the auto-merge bot's hourly sweep.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+  issues: read
+
+concurrency:
+  group: assign-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-assignment:
+    name: Check issue assignment
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Verify PR author is assigned to linked issue
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REPO="${GITHUB_REPOSITORY}"
+          PR="${{ github.event.pull_request.number }}"
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          BODY="${{ github.event.pull_request.body }}"
+
+          # Bot-authored PRs are exempt (contributors bot, dependabot)
+          if [[ "${AUTHOR}" == "github-actions[bot]" ]] || [[ "${AUTHOR}" == "app/dependabot" ]]; then
+            echo "Bot PR — skipping assignment check"
+            exit 0
+          fi
+
+          # Draft PRs are exempt (not ready for merge anyway)
+          IS_DRAFT="${{ github.event.pull_request.draft }}"
+          if [ "${IS_DRAFT}" = "true" ]; then
+            echo "Draft PR — skipping assignment check"
+            exit 0
+          fi
+
+          # Extract linked issue number from PR body
+          LINKED_ISSUE="$(printf '%s' "${BODY}" \
+            | grep -oE '(Closes|Fixes|close[s]?|fixes) #?[0-9]+' \
+            | head -1 | grep -oE '[0-9]+' || true)"
+
+          if [ -z "${LINKED_ISSUE}" ]; then
+            echo "No linked issue found — skipping assignment check"
+            exit 0
+          fi
+
+          echo "PR #${PR} by ${AUTHOR} links to issue #${LINKED_ISSUE}"
+
+          # Check if author is assigned to the issue
+          IS_ASSIGNED="$(gh issue view "${LINKED_ISSUE}" --repo "${REPO}" \
+            --json assignees \
+            --jq "[.assignees[] | select(.login == \"${AUTHOR}\")] | length" \
+            2>/dev/null || echo 0)"
+
+          if [ "${IS_ASSIGNED}" -eq 0 ]; then
+            echo "❌ ${AUTHOR} is NOT assigned to #${LINKED_ISSUE}"
+
+            gh pr comment "${PR}" --repo "${REPO}" --body "$(cat <<'MSG'
+            🤖 **Assignment check** — ⚠️ You are not assigned to the linked issue.
+
+            **To get your PR reviewed and merged:**
+            1. Comment on the issue requesting assignment
+            2. Wait for a maintainer to assign you
+            3. The auto-merge bot will then evaluate your PR
+
+            Maintainers assign issues to avoid duplicate work and ensure quality review. Unassigned PRs will not be auto-merged.
+            MSG
+            )" 2>/dev/null || true
+
+            # Add a label to mark the PR as unassigned
+            gh pr edit "${PR}" --repo "${REPO}" --add-label "needs-assignment" 2>/dev/null || true
+
+            exit 1
+          fi
+
+          echo "✅ ${AUTHOR} is assigned to #${LINKED_ISSUE}"
+
+          # Remove the label if it was previously added
+          gh pr edit "${PR}" --repo "${REPO}" --remove-label "needs-assignment" 2>/dev/null || true

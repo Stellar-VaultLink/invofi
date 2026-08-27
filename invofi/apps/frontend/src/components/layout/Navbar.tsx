@@ -23,6 +23,7 @@ import { useWallet } from "@/components/auth/WalletProvider";
 import { supabase } from "@/lib/supabase";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { NavbarEventIndicator } from "@/components/NavbarEventIndicator";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 import { useTranslations } from 'next-intl';
@@ -191,6 +192,7 @@ export function Navbar() {
           {/* Right side */}
           <div className="flex items-center gap-3">
             <NavbarEventIndicator />
+            <NotificationBell />
 
             {/* Keyboard shortcuts help */}
             <div className="relative">

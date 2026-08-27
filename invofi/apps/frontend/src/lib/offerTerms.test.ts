@@ -18,8 +18,8 @@ describe('computeOfferTerms', () => {
     expect(terms!.totalRepayment).toBeCloseTo(10500, 8);
     // Annualized simple rate: 5% * 365/30
     expect(terms!.annualizedApr).toBeCloseTo(60.833_333, 4);
-    // Annualized compounded rate over the term
-    expect(terms!.annualizedApy).toBeCloseTo(79.585_6, 2);
+    // Annualized compounded rate over the term: (1.05)^(365/30)-1 ≈ 81.05%
+    expect(terms!.annualizedApy).toBeCloseTo(81.051_9, 2);
     expect(terms!.rateOutOfRange).toBe(false);
     expect(terms!.durationOutOfRange).toBe(false);
   });
@@ -35,12 +35,11 @@ describe('computeOfferTerms', () => {
 
   it('uses simple (non-compounded) contract math for repayment', () => {
     // 2,000 XLM at 400 bps over 90 days -> 4% simple interest
-    // (400 bps = 4%; interest = principal * rateBps / 10_000 = 2000 * 0.04 = 80)
     const terms = computeOfferTerms('2000', 400, 90);
     expect(terms!.interest).toBeCloseTo(80, 8);
     expect(terms!.totalRepayment).toBeCloseTo(2080, 8);
-    // Contract math never compounds within the term
-    expect(terms!.totalRepayment).toBeLessThan(2000 * Math.pow(1.08, 1));
+    // Contract math never compounds within the term — compare against annualized APY
+    expect(terms!.totalRepayment).toBeLessThan(2000 * (1 + terms!.annualizedApy / 100));
   });
 
   it('returns null for unparseable or non-positive principal', () => {

@@ -121,6 +121,62 @@ component built against `client.contracts.*` works unchanged in offline demo
 mode. See the header comment in `src/types/contract-abi.ts` for how to
 regenerate the ABI after a contract build.
 
+## Typed error envelope — `client.send()` (#188)
+
+`client.send()` is a single-call convenience over the contract-invocation
+path that returns a **typed result envelope** instead of throwing. Decoded
+contract failures (auth, insufficient balance, paused, not-found, …) surface
+as `{ ok: false, error }` where `error` is an `InvofiError` — a
+`ContractError` carrying a machine-readable `errorType`/`rawCode`, a
+human-readable `message`, and an optional `recovery`. This lets UI layers
+render a toast and branch on the typed variant without a try/catch or
+regex-matching raw Soroban error text. Network/validation failures are still
+thrown (they are not decoded domain errors).
+
+```ts
+import { createInvofiClient, scValToNative, Networks } from '@invofi/sdk';
+
+const client = createInvofiClient(cfg);
+
+const result = await client.send(
+  { contractId: cfg.financingId, method: 'accept_offer', args: [scValToScvSymbol(offerId)] },
+  originatorAddress,
+  scValToNative, // optional decode of the return ScVal
+);
+
+if (result.ok) {
+  // result.value — decoded return
+} else {
+  // result.error.errorType  → 'UNAUTHORIZED' | 'NOT_FOUND' | 'PAUSED' | …
+  // result.error.message    → human-readable, safe to surface in a toast
+  // result.error.recovery   → optional recovery hint
+  toast({ title: 'Could not accept offer', description: result.error.message });
+}
+```
+
+The same envelope contract is implemented by `createMockClient`, so UI code
+written against `send()` is testable offline.
+
+### Contract error mapping table
+
+The SDK decodes the canonical Soroban error discriminants from
+`invofi-contracts` `common/src/errors.rs` (via `parseContractError`). The
+table below documents the mapping; frontends that previously regex-matched
+raw panic strings should branch on `error.errorType` / use `error.message`
+instead. Codes not in this table fall back to `UNKNOWN` with the raw code
+preserved on `error.rawCode`.
+
+| Code | Panic string (examples) | `InvofiError.errorType` | Human message | Recovery |
+|------|--------------------------|--------------------------|---------------|----------|
+| 1 | not authorized / unauthorized | `UNAUTHORIZED` | The calling address is not authorized to perform this action. | Sign with the address that owns/originated this resource. |
+| 2 | invoice not found / does not exist | `NOT_FOUND` | No resource was found with the given ID. | Double-check the ID and that it was created successfully. |
+| 3 | invalid transition | `INVALID_TRANSITION` | This action is not valid for the resource in its current status. | Refresh the resource status and confirm the action still applies. |
+| 4 | contract paused | `PAUSED` | This contract is currently paused and not accepting this action. | Try again later, or check protocol announcements. |
+| 5 | insufficient balance | `INSUFFICIENT_BALANCE` | The account does not have sufficient balance to complete this transaction. | Add funds to your wallet and try again. |
+| 6 | invalid input | `INVALID_INPUT` | One or more input values were invalid. | Check the submitted values and try again. |
+| 7 | already exists | `ALREADY_EXISTS` | A resource with this ID already exists. | Use a different ID, or look up the existing resource. |
+| 8 | blacklisted | `BLACKLISTED` | This address has been blacklisted and cannot perform this action. | Contact support if you believe this is a mistake. |
+
 ## Event stream — `listenToEvents`
 
 `listenToEvents` polls the Stellar Soroban RPC for on-chain protocol events and

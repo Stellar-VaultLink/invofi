@@ -276,6 +276,40 @@ It runs against the live Stellar testnet contracts and stubs Supabase + the
 on-chain invoice read with fixtures, so no Supabase credentials are needed.
 There is no unit test suite yet — if you add one, use Vitest.
 
+### Bundle-size budget & route smoke check
+
+CI enforces a **per-route JavaScript budget** and a **route smoke check** on
+every PR and on `main` (job `frontend-bundle-and-smoke`):
+
+- **Bundle budget** — after `next build`, `scripts/check-bundle-budget.mjs`
+  parses the per-route *First Load JS* table and compares it against the
+  committed baseline in `scripts/bundle-budget.json`. Any route that grows more
+  than **10%** over its committed budget fails the job.
+- **Route smoke check** — `scripts/route-smoke-check.mjs` boots the production
+  server and requests every page route, failing if any returns HTTP ≥ 500 (a
+  page that throws only when rendered).
+
+Run them locally:
+
+```bash
+cd invofi/apps/frontend
+npm run build 2>&1 | tee next-build.log
+node ../../../scripts/check-bundle-budget.mjs --log next-build.log
+node ../../../scripts/route-smoke-check.mjs --port 3100 < next-build.log
+```
+
+**Raising the budget deliberately** — when a feature legitimately adds
+client-side JS (and you've reviewed that it isn't accidental bloat), regenerate
+the baseline with `--update` and commit it:
+
+```bash
+node ../../../scripts/check-bundle-budget.mjs --log next-build.log --update
+```
+
+The regeneration writes the current build's *First Load JS* figures as the new
+committed baseline, so include the `bundle-budget.json` diff in the same PR and
+explain why the route grew in the PR description.
+
 ### Scripted on-chain flow
 
 A scripted `register → offer → accept` flow runs against testnet with two

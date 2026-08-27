@@ -9,6 +9,7 @@ import type { FinancingOffer, Invoice } from '@/types';
 const mockToast = vi.fn();
 const mockCreateOffer = vi.fn();
 const mockAcceptOffer = vi.fn();
+const mockRepayInvoice = vi.fn();
 const mockSupabaseInsert = vi.fn();
 const mockSupabaseUpdate = vi.fn();
 const mockSupabaseSelect = vi.fn();
@@ -26,7 +27,7 @@ vi.mock('@/lib/contract', () => ({
   createOffer: (...args: unknown[]) => mockCreateOffer(...args),
   acceptOffer: (...args: unknown[]) => mockAcceptOffer(...args),
   rejectOffer: vi.fn(),
-  repayInvoice: vi.fn(),
+  repayInvoice: (...args: unknown[]) => mockRepayInvoice(...args),
   markOverdue: vi.fn(),
   reclaimInvoice: vi.fn(),
 }));
@@ -368,6 +369,79 @@ describe('OfferList — optimistic UI', () => {
           el.closest('[class*="animate-pulse"]'),
         );
         expect(pulsing).toBeDefined();
+      });
+    });
+  });
+
+  // ── Optimistic repayment (issue #178) ──────────────────────────────────────
+
+  describe('optimistic repayment', () => {
+    /** Fills the repayment amount, opens the preview, and confirms it. */
+    async function repayThroughPreview() {
+      const amountInput = document.querySelector('input[class*="w-28"]') as HTMLInputElement;
+      fireEvent.change(amountInput, { target: { value: '100' } });
+      fireEvent.click(screen.getByRole('button', { name: /^repay$/i }));
+      const confirm = await screen.findByRole('button', { name: /submit repayment/i });
+      await waitFor(() => expect(confirm).toBeEnabled());
+      fireEvent.click(confirm);
+    }
+
+    it('updates the repaid amount and status immediately, before the contract resolves', async () => {
+      // Accepted offer on a Financed invoice — the row shows the Repay control.
+      const existingOffer = makeOffer({ id: 'off_repay', status: 'Financed', funded_at: Math.floor(Date.now() / 1000) });
+      mockSupabaseSelect.mockResolvedValue({ data: [existingOffer] });
+      mockRepayInvoice.mockImplementation(() => new Promise(() => {})); // never resolves
+
+      render(<OfferListWrapper initialInvoice={makeInvoice({ status: 'Financed' })} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Financing Offers \(1\)/)).toBeInTheDocument();
+      });
+
+      // No "repaid" line yet — amount_repaid is 0n so the row is compact.
+      expect(screen.queryByText(/repaid/i)).not.toBeInTheDocument();
+
+      await repayThroughPreview();
+
+      // The optimistic update should surface immediately: a repaid-amount line,
+      // and the pulsing pending badge on the row.
+      await waitFor(() => {
+        expect(screen.queryAllByText(/repaid/i).length).toBeGreaterThanOrEqual(1);
+      });
+      await waitFor(() => {
+        const badges = screen.getAllByText(/Financed/);
+        const pulsing = badges.find(el => el.closest('[class*="animate-pulse"]'));
+        expect(pulsing).toBeDefined();
+      });
+      expect(screen.queryAllByText(/repaid/i).length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('rolls the repayment back and shows a destructive toast on failure', async () => {
+      const existingOffer = makeOffer({ id: 'off_repay_fail', status: 'Financed', funded_at: Math.floor(Date.now() / 1000) });
+      mockSupabaseSelect.mockResolvedValue({ data: [existingOffer] });
+      mockRepayInvoice.mockRejectedValue(new Error('Transaction failed'));
+
+      render(<OfferListWrapper initialInvoice={makeInvoice({ status: 'Financed' })} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Financing Offers \(1\)/)).toBeInTheDocument();
+      });
+
+      await repayThroughPreview();
+
+      // Failure toast.
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'Failed to repay',
+            variant: 'destructive',
+          }),
+        );
+      });
+
+      // The repaid line must be gone — the optimistic state rolled back.
+      await waitFor(() => {
+        expect(screen.queryAllByText(/repaid/i).length).toBe(0);
       });
     });
   });

@@ -326,26 +326,52 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         toast({ title: 'Amount must be greater than zero', variant: 'destructive' });
         return;
       }
-      const updatedInvoice = await repayInvoice(invoiceId, offer.id, publicKey, amountStroops);
-      // A repayment that clears the full balance flips the invoice to Repaid;
-      // anything less keeps it Financed (offer → Financed for the remainder).
-      const fullyRepaid = updatedInvoice.status === 'Repaid';
-      const nextOfferStatus: FinancingOffer['status'] = fullyRepaid ? 'Repaid' : 'Financed';
-      const nextInvoiceStatus: Invoice['status'] = fullyRepaid ? 'Repaid' : 'Financed';
-      const newRepaid = toStroopsBigInt(offer.amount_repaid) + amountStroops;
-      setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: nextOfferStatus, amount_repaid: newRepaid } : o));
-      // Mirror stores human-decimal strings (same format as its amount column).
-      await supabase.from('financing_offers').update({ status: nextOfferStatus, amount_repaid: formatUnits(newRepaid) }).eq('id', offer.id);
-      await supabase.from('invoices').update({ status: nextInvoiceStatus }).eq('id', invoiceId);
-      onUpdate(updatedInvoice);
-      toast({
-        title: fullyRepaid ? 'Invoice fully repaid' : 'Repayment sent',
-        description: fullyRepaid
-          ? 'Principal + yield transferred to the lender. The invoice is now Repaid.'
-          : 'Partial repayment recorded on-chain. Continue repaying until the balance clears.',
-      });
-    } catch (err: unknown) {
-      toast({ title: 'Failed to repay', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+
+      // ── Optimistic (issue #178): apply the expected post-payment state
+      //    immediately so the UI reflects the repayment while the wallet/RPC
+      //    round-trip confirms — no offline queueing, so a failed tx rolls back.
+      const previousOfferStatus = offer.status;
+      const previousInvoiceStatus = invoice.status;
+      const previousRepaid = toStroopsBigInt(offer.amount_repaid);
+      const optimisticRepaid = previousRepaid + amountStroops;
+      const optimisticFullyRepaid = optimisticRepaid >= totalDue(offer);
+      const optimisticOfferStatus: FinancingOffer['status'] = optimisticFullyRepaid ? 'Repaid' : 'Financed';
+      const optimisticInvoiceStatus: Invoice['status'] = optimisticFullyRepaid ? 'Repaid' : 'Financed';
+      setPendingIds(prev => new Set(prev).add(offer.id));
+      setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: optimisticOfferStatus, amount_repaid: optimisticRepaid } : o));
+      onUpdate({ ...invoice, status: optimisticInvoiceStatus });
+
+      try {
+        const updatedInvoice = await repayInvoice(invoiceId, offer.id, publicKey, amountStroops);
+        // A repayment that clears the full balance flips the invoice to Repaid;
+        // anything less keeps it Financed (offer → Financed for the remainder).
+        const fullyRepaid = updatedInvoice.status === 'Repaid';
+        const nextOfferStatus: FinancingOffer['status'] = fullyRepaid ? 'Repaid' : 'Financed';
+        const nextInvoiceStatus: Invoice['status'] = fullyRepaid ? 'Repaid' : 'Financed';
+        const newRepaid = previousRepaid + amountStroops;
+        setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: nextOfferStatus, amount_repaid: newRepaid } : o));
+        // Mirror stores human-decimal strings (same format as its amount column).
+        await supabase.from('financing_offers').update({ status: nextOfferStatus, amount_repaid: formatUnits(newRepaid) }).eq('id', offer.id);
+        await supabase.from('invoices').update({ status: nextInvoiceStatus }).eq('id', invoiceId);
+        onUpdate(updatedInvoice);
+        toast({
+          title: fullyRepaid ? 'Invoice fully repaid' : 'Repayment sent',
+          description: fullyRepaid
+            ? 'Principal + yield transferred to the lender. The invoice is now Repaid.'
+            : 'Partial repayment recorded on-chain. Continue repaying until the balance clears.',
+        });
+      } catch (err: unknown) {
+        // Rollback: revert the optimistic state on failure.
+        setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, status: previousOfferStatus, amount_repaid: previousRepaid } : o));
+        onUpdate({ ...invoice, status: previousInvoiceStatus });
+        toast({ title: 'Failed to repay', description: toErrorMessage(err, 'Error'), variant: 'destructive' });
+      } finally {
+        setPendingIds(prev => {
+          const next = new Set(prev);
+          next.delete(offer.id);
+          return next;
+        });
+      }
     } finally {
       setActionId(null);
     }

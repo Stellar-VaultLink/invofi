@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Loader2, Printer } from 'lucide-react';
@@ -13,15 +13,22 @@ import { OfferList } from '@/components/invoices/OfferList';
 import { InvoiceDocuments } from '@/components/invoices/documents/InvoiceDocuments';
 import { MessagingPanel } from '@/components/invoices/MessagingPanel';
 import { EventTimeline } from '@/components/invoices/EventTimeline';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { SimulateConfirm } from '@/components/common/SimulateConfirm';
 import { getInvoice, cancelInvoice, registerInvoice } from '@/lib/contract';
+import {
+  simulateContractCall,
+  encodeSymbol,
+  encodeAddress,
+} from '@/lib/simulate';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { toErrorMessage } from '@/lib/errors';
 import { formatAmount } from '@/lib/formatters';
 import { formatDate, formatAddress, INVOICE_STATUS_COLORS, generateInvoiceId } from '@/lib/utils';
+import { REGISTRY_CONTRACT_ID } from '@/lib/constants';
 import type { Invoice, FinancingOffer } from '@/types';
+import type { SimulationResult } from '@/lib/simulate';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,12 +37,35 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [simCancel, setSimCancel] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
   // Counterparty address for the messaging panel.  Derived from the accepted
   // offer once offers are loaded: originator ↔ accepted lender.
   const [counterpartyAddress, setCounterpartyAddress] = useState<string>('');
+
+  // Previews `cancel_invoice` against the current ledger. A missing invoice or
+  // wallet is reported as a failed simulation so the dialog blocks submission
+  // rather than silently broadcasting an unbuildable call.
+  const simulateCancel = useCallback(async (): Promise<SimulationResult> => {
+    if (!invoice || !publicKey) {
+      return {
+        success: false,
+        error: 'Connect a wallet and load the invoice before cancelling.',
+        tokenMovements: [],
+        stateChanges: [],
+        events: [],
+        resourceFee: '0',
+        latestLedger: 0,
+      };
+    }
+    return simulateContractCall(
+      REGISTRY_CONTRACT_ID,
+      'cancel_invoice',
+      [encodeSymbol(invoice.id), encodeAddress(publicKey)],
+      publicKey,
+    );
+  }, [invoice, publicKey]);
 
   const handleCancel = async () => {
     if (!invoice || !publicKey) return;
@@ -208,7 +238,7 @@ export default function InvoiceDetailPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setConfirmCancel(true)}
+                      onClick={() => setSimCancel(true)}
                       disabled={cancelling}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                     >
@@ -254,17 +284,21 @@ export default function InvoiceDetailPage() {
           </div>
         )}
 
-        <ConfirmDialog
-          open={confirmCancel}
-          onOpenChange={open => { if (!open) setConfirmCancel(false); }}
-          title="Cancel this invoice?"
-          description="The invoice will be cancelled on-chain and can no longer receive financing offers. This cannot be undone."
-          confirmLabel="Cancel Invoice"
+        {/* ── Simulation confirmation for cancel ──────────────────────── */}
+        <SimulateConfirm
+          open={simCancel}
+          onOpenChange={open => { if (!open) setSimCancel(false); }}
+          title="Preview: Cancel Invoice"
+          description="Review the expected effects before cancelling this invoice on-chain."
+          onSimulate={simulateCancel}
           variant="destructive"
+          confirmLabel="Cancel Invoice"
           holdToConfirm
+          // Returned so `SimulateConfirm` can await the submission and keep
+          // its "Submitting…" state up while the wallet signs.
           onConfirm={() => {
-            setConfirmCancel(false);
-            handleCancel();
+            setSimCancel(false);
+            return handleCancel();
           }}
         />
       </div>

@@ -31,6 +31,25 @@ vi.mock('@/lib/contract', () => ({
   reclaimInvoice: vi.fn(),
 }));
 
+// Accepting an offer now passes through a simulation preview (issue #216).
+// These tests are about the optimistic update that follows confirmation, so
+// the preview is stubbed to succeed immediately.
+vi.mock('@/lib/simulate', () => ({
+  simulateContractCall: vi.fn(async () => ({
+    success: true,
+    tokenMovements: [],
+    stateChanges: [],
+    events: [],
+    resourceFee: '100',
+    latestLedger: 1,
+  })),
+  encodeSymbol: vi.fn(),
+  encodeAddress: vi.fn(),
+  encodeI128: vi.fn(),
+  encodeU32: vi.fn(),
+  encodeU64: vi.fn(),
+}));
+
 vi.mock('@/lib/supabase', () => {
   const fromFn = (table: string) => {
     if (table === 'financing_offers') {
@@ -124,6 +143,20 @@ function OfferListWrapper({ initialInvoice }: WrapperProps) {
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
+
+/**
+ * Clicks the row's Accept and confirms the simulation preview.
+ *
+ * The optimistic update fires on confirmation, not on the raw click — the
+ * preview is the gate that decides whether anything is submitted at all. The
+ * row button is labelled "Accept"; the dialog's is "Accept Offer".
+ */
+async function acceptThroughPreview() {
+  fireEvent.click(screen.getByRole('button', { name: /^accept$/i }));
+  const confirm = await screen.findByRole('button', { name: /accept offer/i });
+  await waitFor(() => expect(confirm).toBeEnabled());
+  fireEvent.click(confirm);
+}
 
 describe('OfferList — optimistic UI', () => {
   beforeEach(() => {
@@ -263,11 +296,11 @@ describe('OfferList — optimistic UI', () => {
       });
 
       // The Accept button should be visible (originator matches wallet)
-      const acceptBtn = screen.getByRole('button', { name: /accept/i });
+      const acceptBtn = screen.getByRole('button', { name: /^accept$/i });
       expect(acceptBtn).toBeInTheDocument();
 
-      // Click Accept
-      fireEvent.click(acceptBtn);
+      // Click Accept, then confirm the simulation preview.
+      await acceptThroughPreview();
 
       // Immediately, the badge should show "Accepted"
       await waitFor(() => {
@@ -296,7 +329,7 @@ describe('OfferList — optimistic UI', () => {
         expect(screen.getByText(/Financing Offers \(1\)/)).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /accept/i }));
+      await acceptThroughPreview();
 
       // Wait for the error
       await waitFor(() => {
@@ -326,7 +359,7 @@ describe('OfferList — optimistic UI', () => {
         expect(screen.getByText(/Financing Offers \(1\)/)).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /accept/i }));
+      await acceptThroughPreview();
 
       // The badge should show "Accepted" (optimistic) with animate-pulse
       await waitFor(() => {
@@ -378,7 +411,7 @@ describe('OfferList — optimistic UI', () => {
         expect(screen.getByText(/Financing Offers \(1\)/)).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /accept/i }));
+      await acceptThroughPreview();
 
       await waitFor(() => {
         expect(mockToast).toHaveBeenCalledWith(

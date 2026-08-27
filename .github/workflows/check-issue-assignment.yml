@@ -1,0 +1,63 @@
+name: Check Issue Assignment
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+  issues: read
+
+jobs:
+  check-assignment:
+    name: Verify PR author is assigned to issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check issue assignment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+
+            // Extract issue numbers from common patterns: Closes #123, Fixes #123, Resolves #123
+            const issueMatches = body.match(/(?:closes|fixes|resolves)\s+#(\d+)/gi);
+            if (!issueMatches || issueMatches.length === 0) {
+              console.log('No linked issue found in PR body. Skipping assignment check.');
+              return;
+            }
+
+            const issueNumber = parseInt(issueMatches[0].match(/#(\d+)/)[1], 10);
+            console.log(`Linked issue: #${issueNumber}`);
+
+            // Fetch the issue
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+            });
+
+            // Check assignees
+            const assignees = issue.assignees.map(a => a.login);
+            console.log(`Issue #${issueNumber} assignees: ${assignees.length ? assignees.join(', ') : 'none'}`);
+
+            if (assignees.length === 0) {
+              core.setFailed(
+                `❌ Issue #${issueNumber} has no assignee. ` +
+                `Please ask a maintainer to assign the issue to you before opening a PR. ` +
+                `Comment on the issue to claim it, then wait for assignment.`
+              );
+              return;
+            }
+
+            const prAuthor = pr.user.login;
+            if (!assignees.includes(prAuthor)) {
+              core.setFailed(
+                `❌ You (${prAuthor}) are not assigned to issue #${issueNumber}. ` +
+                `Assigned contributors: ${assignees.join(', ')}. ` +
+                `Please get assigned before opening a PR. Comment on the issue to claim it.`
+              );
+              return;
+            }
+
+            console.log(`✅ ${prAuthor} is assigned to issue #${issueNumber}. Check passed.`);

@@ -23,6 +23,7 @@ import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
 import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
 import { PaginationControls } from '@/components/portfolio/PaginationControls';
+import { PositionTokensPanel } from '@/components/portfolio/PositionTokensPanel';
 import { paginate } from '@/lib/pagination';
 import type { LivePosition } from '@/lib/live/types';
 
@@ -634,6 +635,10 @@ export default function PortfolioPage() {
         <Suspense fallback={null}>
           <TransferPositionCard />
         </Suspense>
+
+        {/* Position token balance + transfer history (issue #127). The
+            transfer form lives in the card above; this panel links to it. */}
+        <PositionTokensPanel />
       </div>
     </AuthGuard>
   );

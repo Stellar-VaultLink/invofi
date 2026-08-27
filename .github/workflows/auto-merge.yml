@@ -424,6 +424,50 @@ jobs:
               fi
             fi
 
+            # ── assignment gate: only assignees may open PRs ──
+            # Prevents contributors from working on issues they haven't been
+            # assigned to. Extracts the linked issue number from the PR body
+            # and checks if the PR author is an assignee on that issue.
+            if [ "${SELF}" != "true" ]; then
+              LINKED_ISSUE="$(printf '%s' "${PR_BODY}" \
+                | grep -oE '(Closes|Fixes|close[s]?|fixes) #?[0-9]+' \
+                | head -1 | grep -oE '[0-9]+' || true)"
+              if [ -n "${LINKED_ISSUE}" ]; then
+                IS_ASSIGNED="$(gh issue view "${LINKED_ISSUE}" --repo "${REPO}" \
+                  --json assignees \
+                  --jq '[.assignees[] | select(.login == "'"${AUTHOR}"'")] | length' \
+                  2>/dev/null || echo 0)"
+                if [ "${IS_ASSIGNED}" -eq 0 ]; then
+                  echo "  ⚠️ ${AUTHOR} is not assigned to #${LINKED_ISSUE} — holding"
+                  MARKER_ASSIGN="<!-- BOT-ASSIGN-CHECK sha=${SHA} -->"
+                  ALREADY_ASSIGN="$(gh pr view "${PR}" --repo "${REPO}" \
+                    --json reviews \
+                    --jq "[.reviews[] | select(.author.login == \"${BOT_LOGIN}\")
+                      | select(.body | contains(\"${MARKER_ASSIGN}\"))] | length" \
+                    2>/dev/null || echo 0)"
+                  if [ "${ALREADY_ASSIGN}" -eq 0 ]; then
+                    ASSIGN_MSG="🤖 **Auto-merge bot** — ⚠️ You are not assigned"
+                    ASSIGN_MSG+=" to issue #${LINKED_ISSUE}."
+                    ASSIGN_MSG+=$'\n\n'
+                    ASSIGN_MSG+="**Please request assignment** before opening a PR."
+                    ASSIGN_MSG+=" Maintainers assign issues to avoid duplicate work"
+                    ASSIGN_MSG+=" and ensure quality review."
+                    ASSIGN_MSG+=$'\n\n'
+                    ASSIGN_MSG+="Once assigned, this PR will be re-evaluated"
+                    ASSIGN_MSG+=" automatically."
+                    ASSIGN_MSG+=$'\n\n'
+                    ASSIGN_MSG+="${MARKER_ASSIGN}"
+                    gh pr review "${PR}" --repo "${REPO}" --comment \
+                      --body "${ASSIGN_MSG}" 2>/dev/null || true
+                  fi
+                  continue
+                fi
+                echo "  ✅ ${AUTHOR} is assigned to #${LINKED_ISSUE}"
+              else
+                echo "  ℹ️ No linked issue found in PR body — skipping assignment check"
+              fi
+            fi
+
             # ── soft size limit: flag very large PRs for human review ──
             # PRs adding more than 1 000 lines are too large for automated
             # merge — they need at least one human review to verify nothing

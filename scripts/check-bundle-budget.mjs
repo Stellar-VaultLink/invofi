@@ -86,10 +86,11 @@ function main() {
   }
 
   if (args.update) {
+    const existing = loadBudget(args.budget);
     const budget = {
       description: 'Per-route First Load JS budgets for the invofi frontend (issue #108).',
       generatedFrom: 'next build',
-      threshold: THRESHOLD,
+      threshold: existing?.threshold ?? THRESHOLD,
       routes: Object.fromEntries(
         [...current.entries()].sort((a, b) => a[0].localeCompare(b[0])),
       ),

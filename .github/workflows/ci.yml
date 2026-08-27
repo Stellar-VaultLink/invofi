@@ -91,6 +91,10 @@ jobs:
       NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The workflow only reads the repository; do not leave the GitHub
+          # token in the runner's git config for the npm ci / build steps.
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 20

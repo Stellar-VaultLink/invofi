@@ -58,8 +58,9 @@ function collectRoutes(raw) {
   const out = [];
   for (const r of routes) {
     if (skip.has(r)) continue;
-    // Dynamic route segments get a placeholder value.
-    out.push(r.replace(/\[id\]/g, 'smoke-test'));
+    // Dynamic route segments (named, catch-all) get a placeholder value so the
+    // smoke check exercises a real path instead of the literal bracket text.
+    out.push(r.replace(/\[[^\]]+\]/g, 'smoke-test'));
   }
   return [...new Set(out)].sort();
 }
@@ -67,7 +68,7 @@ function collectRoutes(raw) {
 function request(port, route, timeoutMs) {
   return new Promise((resolve, reject) => {
     const req = http.request(
-      { host: '127.0.0.1', port, path: route, method: 'GET', timeout: 10000 },
+      { host: '127.0.0.1', port, path: route, method: 'GET', timeout: timeoutMs },
       (res) => {
         res.resume(); // drain so the socket can be reused
         res.on('end', () => resolve({ route, status: res.statusCode }));

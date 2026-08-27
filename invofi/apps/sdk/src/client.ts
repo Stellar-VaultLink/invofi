@@ -31,7 +31,7 @@ import {
   validateAssetString,
   validateConfigField,
 } from './validation';
-import { parseContractError } from './errors';
+import { parseContractError, ContractError, type InvofiError } from './errors';
 import { createCache, type CacheHandle } from './cache';
 import { createContractsNamespace } from './contracts';
 import { simulateOrThrow, simulateBatchOrThrow, SimulationError } from './simulation';
@@ -44,6 +44,26 @@ export interface BatchCall {
   method: string;
   args: xdr.ScVal[];
 }
+
+/** A single contract call to submit via `client.send()` — same shape as `batch()` entries. */
+export type SendCall = BatchCall;
+
+/**
+ * Typed result envelope returned by `client.send()` (#188).
+ *
+ * On success the decoded return value is carried under `{ ok: true, value }`;
+ * on a decoded contract failure the typed `InvofiError` is carried under
+ * `{ ok: false, error }`. This lets UI layers render a toast straight from
+ * `error.message` (human-readable) and branch on `error.errorType`
+ * (machine-readable) without a try/catch or regex-matching raw Soroban text.
+ *
+ * Network/validation failures are still thrown (they are not contract errors),
+ * so callers know a rejection is a transport/config problem, not a decoded
+ * domain failure.
+ */
+export type SendEnvelope<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: InvofiError };
 
 /**
  * The flat, hand-authored method surface `createInvofiClient` (and
@@ -82,6 +102,7 @@ export interface InvofiClientMethods {
   getTokenDecimals(tokenId: string): Promise<number>;
   transferPositionToken(tokenId: string, fromAddress: string, toAddress: string, amount: bigint): Promise<void>;
   batch(calls: BatchCall[], sourceAddress: string): Promise<xdr.ScVal[]>;
+  send<T = xdr.ScVal>(call: SendCall, sourceAddress: string, decode?: (val: xdr.ScVal) => T): Promise<SendEnvelope<T>>;
   hasPositionTrustline(address: string): Promise<boolean>;
   addPositionTrustline(address: string): Promise<void>;
 }
@@ -733,6 +754,47 @@ export function createInvofiClient(cfg: InvofiClientConfig) {
       }
 
       return collectBatchReturnValues(getResult, calls.length);
+    },
+
+    // ── Typed envelope wrapper (#188) ───────────────────────────────────────
+    // `send()` is a single-call convenience over the contract-invocation path
+    // that returns a typed `SendEnvelope` instead of throwing. Decoded
+    // contract failures (auth, insufficient balance, paused, not-found, …)
+    // surface as `{ ok: false, error: InvofiError }` so UI layers can render a
+    // toast from `error.message` and branch on `error.errorType` without
+    // try/catch or regex-matching raw Soroban text. Network/validation
+    // failures are still thrown — they are not decoded domain errors.
+
+    /**
+     * Submit a single contract call and return a typed result envelope.
+     *
+     * @param call          `{ contractId, method, args }` — one operation.
+     * @param sourceAddress The Stellar account that signs and pays.
+     * @param decode        Optional mapper from the raw `xdr.ScVal` return to
+     *                      a domain value (e.g. `scValToNative`). Defaults to
+     *                      the raw `ScVal`.
+     * @returns `{ ok: true, value }` on success, or
+     *          `{ ok: false, error: InvofiError }` on a decoded contract
+     *          failure. Network/validation failures still reject.
+     */
+    send: async <T = xdr.ScVal>(
+      call: SendCall,
+      sourceAddress: string,
+      decode?: (val: xdr.ScVal) => T,
+    ): Promise<SendEnvelope<T>> => {
+      validateStellarAddress(sourceAddress, 'sourceAddress');
+      try {
+        const val = await invokeContract(call.contractId, call.method, call.args, sourceAddress);
+        return { ok: true, value: decode ? decode(val) : (val as unknown as T) };
+      } catch (err) {
+        // Decoded domain failures go into the envelope; everything else
+        // (validation, transport) keeps rejecting so the caller knows it is
+        // not a decoded contract error.
+        if (err instanceof ContractError) {
+          return { ok: false, error: err };
+        }
+        throw err;
+      }
     },
 
     // ── Position-token trustline support ─────────────────────────────────────

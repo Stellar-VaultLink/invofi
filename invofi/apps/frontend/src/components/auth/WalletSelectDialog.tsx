@@ -46,10 +46,17 @@ const AlbedoLogo = () => (
   </div>
 );
 
+const XBullLogo = () => (
+  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-400 to-red-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+    X
+  </div>
+);
+
 const LOGOS: Record<string, React.ReactNode> = {
   [WALLET_IDS.freighter]: <FreighterLogo />,
   [WALLET_IDS.lobstr]: <LobstrLogo />,
   [WALLET_IDS.albedo]: <AlbedoLogo />,
+  [WALLET_IDS.xbull]: <XBullLogo />,
 };
 
 export function WalletSelectDialog({

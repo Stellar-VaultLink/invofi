@@ -8,6 +8,7 @@ Thank you for your interest in contributing to InvoFi. This document covers ever
 
 - [Code of Conduct](#code-of-conduct)
 - [What Can I Contribute?](#what-can-i-contribute)
+- [Issue Assignment Workflow](#issue-assignment-workflow)
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
 - [Making Changes](#making-changes)
@@ -47,6 +48,38 @@ Issues are labelled by **complexity** so contributors can gauge effort at a glan
 | `good-first-issue` | Onboarding-friendly tasks; usually also trivial or medium |
 
 Additional area labels (`frontend`, `contracts`, `sdk`, `docs`, `infra`) describe *where* the work lives, not its size — a `docs` issue can still be `trivial`, `medium`, or `high-complexity`.
+
+---
+
+## Issue Assignment Workflow
+
+**You must be assigned to an issue before opening a pull request for it.** This prevents duplicate efforts and ensures work is coordinated across contributors.
+
+### How to claim an issue
+
+1. Find an unassigned issue you'd like to work on
+2. Comment on the issue to claim it (e.g., "I'd like to work on this")
+3. Wait for a maintainer to **assign you** to the issue
+4. Once assigned, start working and open your PR
+
+### Why this matters
+
+- Without assignment, multiple contributors may work on the same issue simultaneously
+- Maintainers need to know who is working on what to coordinate reviews and avoid conflicts
+- Unassigned PRs may be closed without review
+
+### Automated enforcement
+
+A CI check (`check-issue-assignment`) verifies that the PR author is assigned to the linked issue. If the check fails:
+
+- The PR will not be mergeable until the issue is assigned to you
+- Comment on the issue asking to be assigned, and a maintainer will update it
+
+### Exceptions
+
+- **Documentation-only PRs** (typos, README updates) that don't reference an issue are exempt
+- **Dependabot PRs** are automatically exempt
+- If you're a **maintainer**, you can self-assign issues directly
 
 ---
 
@@ -166,6 +199,7 @@ git push origin feat/your-feature-name
 
 ## Pull Request Guidelines
 
+- **Be assigned first.** You must be assigned to the related issue before opening a PR. See [Issue Assignment Workflow](#issue-assignment-workflow).
 - **One concern per PR.** If you fix a bug and add a feature, open two PRs.
 - **Reference the issue.** Add `Fixes #123` or `Closes #123` in the PR description.
 - **Fill in the PR template.** It includes a checklist — tick every item before requesting review.

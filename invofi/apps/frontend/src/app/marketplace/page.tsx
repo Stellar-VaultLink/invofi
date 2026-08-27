@@ -14,6 +14,7 @@ import { MarketplaceTabs } from '@/components/marketplace/MarketplaceTabs';
 import { SuggestedMatches } from '@/components/marketplace/SuggestedMatches';
 import { LenderPreferencesForm } from '@/components/marketplace/LenderPreferencesForm';
 import { CardSkeleton } from '@/components/common/LoadingSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
 import { useLenderPreferences } from '@/hooks/useLenderPreferences';
 import { useMatchedInvoices } from '@/hooks/useMatchedInvoices';
 import { useMarketplace } from '@/hooks/useMarketplace';
@@ -307,10 +308,11 @@ function MarketplacePageInner() {
             )}
 
             {!allInvoicesQuery.isLoading && sortedAll.length === 0 && (
-              <div className="text-center py-20 text-muted-foreground">
-                <p className="text-lg font-medium">No invoices match your filters</p>
-                <p className="text-sm mt-1">Try adjusting the search query or filters.</p>
-              </div>
+              <EmptyState
+                variant="no-results"
+                title="No invoices match your filters"
+                description="Try adjusting the search query or filters."
+              />
             )}
 
             {!allInvoicesQuery.isLoading && sortedAll.length > 0 && (

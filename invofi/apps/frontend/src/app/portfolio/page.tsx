@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { TableSkeleton } from '@/components/common/LoadingSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
 import { useToast } from '@/components/ui/use-toast';
 import { toErrorMessage } from '@/lib/errors';
 import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken } from '@/lib/contract';
@@ -571,16 +572,19 @@ export default function PortfolioPage() {
 
         {/* Empty state */}
         {!loading && positions.length === 0 && (
-          <div className="text-center py-20 border-2 border-dashed border-border rounded-xl">
-            <TrendingUp className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground mb-4">No financing offers yet.</p>
-            <Link
-              href="/marketplace"
-              className="text-blue-600 hover:underline text-sm font-medium"
-            >
-              Browse the marketplace →
-            </Link>
-          </div>
+          <EmptyState
+            variant="no-positions"
+            title="No financing offers yet"
+            description="Browse the marketplace to find invoices to finance."
+            action={
+              <Link
+                href="/marketplace"
+                className="text-blue-600 hover:underline text-sm font-medium"
+              >
+                Browse the marketplace →
+              </Link>
+            }
+          />
         )}
 
         <div className="space-y-3">

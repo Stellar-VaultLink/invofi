@@ -11,6 +11,7 @@ import { InvoiceCard } from '@/components/invoices/InvoiceCard';
 import { InvoiceTable } from '@/components/invoices/InvoiceTable';
 import { WalletButton } from '@/components/auth/WalletButton';
 import { CardSkeleton, TableSkeleton } from '@/components/common/LoadingSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { UpcomingRepaymentsWidget } from '@/components/dashboard/UpcomingRepaymentsWidget';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
@@ -213,15 +214,18 @@ export default function DashboardPage() {
                 {[1, 2, 3, 4].map(i => <CardSkeleton key={i} />)}
               </div>
             ) : invoices.length === 0 ? (
-              <div className="text-center py-16 border-2 border-dashed border-border rounded-xl">
-                <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground mb-4">No invoices yet.</p>
-                <Button asChild>
-                  <Link href="/invoices/new">
-                    <Plus className="mr-2 h-4 w-4" /> Create your first invoice
-                  </Link>
-                </Button>
-              </div>
+              <EmptyState
+                variant="no-invoices"
+                title="No invoices yet"
+                description="Create your first invoice to start financing on-chain."
+                action={
+                  <Button asChild>
+                    <Link href="/invoices/new">
+                      <Plus className="mr-2 h-4 w-4" /> Create your first invoice
+                    </Link>
+                  </Button>
+                }
+              />
             ) : view === 'table' ? (
               <InvoiceTable
                 invoices={invoices}
@@ -251,13 +255,16 @@ export default function DashboardPage() {
         {!isBusiness && (
           <section>
             <h2 className="text-lg font-semibold text-foreground mb-4">Your Investments</h2>
-            <div className="text-center py-16 border-2 border-dashed border-border rounded-xl">
-              <TrendingUp className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-muted-foreground mb-4">No active investments yet.</p>
-              <Button asChild>
-                <Link href="/marketplace">Browse Marketplace</Link>
-              </Button>
-            </div>
+            <EmptyState
+              variant="no-offers"
+              title="No active investments yet"
+              description="Browse the marketplace to finance invoices and earn yield."
+              action={
+                <Button asChild>
+                  <Link href="/marketplace">Browse Marketplace</Link>
+                </Button>
+              }
+            />
           </section>
         )}
       </div>

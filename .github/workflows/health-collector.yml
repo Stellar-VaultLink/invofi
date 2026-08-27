@@ -1,0 +1,105 @@
+name: health-collector
+
+# InvoFi protocol health collector.
+#
+# Runs on an hourly schedule to:
+#   1. Poll Soroban RPC getEvents for the past hour across all five contracts
+#      and write aggregated success/failure counts + fee stats to
+#      Supabase `health_metrics`.
+#   2. Snapshot current contract state (invoice distribution, insurance pool,
+#      active lenders) to `contract_state_snapshots`.
+#   3. Evaluate threshold-based `alert_configs` and append breaches to
+#      `audit_log`.
+#
+# The /dashboard/health admin page reads all three tables to render the
+# real-time protocol health monitoring view.
+#
+# Required repo configuration (once):
+#   Secrets:
+#     SUPABASE_URL               — your Supabase project URL
+#     SUPABASE_SERVICE_ROLE_KEY  — service role key (bypasses RLS for writes)
+#   Variables (defaults point to the live testnet deployment):
+#     REGISTRY_CONTRACT_ID
+#     FINANCING_CONTRACT_ID
+#     REPAYMENT_CONTRACT_ID
+#     INSURANCE_CONTRACT_ID
+#     REPUTATION_CONTRACT_ID
+#
+# Optional secrets/variables:
+#     HEALTH_RPC_URL             — override the Soroban RPC endpoint
+#     HEALTH_LOOKBACK_HOURS      — hours to look back (default: 1)
+#
+# Enable/disable on demand:
+#   gh workflow enable  health-collector.yml -R Stellar-VaultLink/invofi
+#   gh workflow disable health-collector.yml -R Stellar-VaultLink/invofi
+
+on:
+  schedule:
+    # Every hour at minute 45 (UTC) — offset from the keeper (minute 0) and
+    # the indexer (minute 15) to spread load.
+    - cron: '45 * * * *'
+  workflow_dispatch:
+    inputs:
+      lookback_hours:
+        description: 'Hours to look back for events (default: 1)'
+        required: false
+        default: '1'
+      dry_run:
+        description: 'Print collected data but do not write to Supabase'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    name: Health collector / testnet
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: invofi/scripts
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+      # ── Node.js ───────────────────────────────────────────────────────────
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v4
+        with:
+          # Node 22+ required: @supabase/supabase-js@2.112+ and
+          # @stellar/stellar-sdk@16.2+ declare engines node >=22.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: invofi/scripts/package-lock.json
+
+      # ── Install dependencies ──────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Type-check ────────────────────────────────────────────────────────
+      - name: Type-check
+        run: npm run type-check
+
+      # ── Run unit tests ────────────────────────────────────────────────────
+      - name: Run unit tests
+        run: npm run test:health
+
+      # ── Run collector ─────────────────────────────────────────────────────
+      - name: Run health collector
+        env:
+          RPC_URL: ${{ vars.HEALTH_RPC_URL || 'https://soroban-testnet.stellar.org' }}
+          NETWORK_PASSPHRASE: Test SDF Network ; September 2015
+          REGISTRY_CONTRACT_ID: ${{ vars.REGISTRY_CONTRACT_ID || 'CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7' }}
+          FINANCING_CONTRACT_ID: ${{ vars.FINANCING_CONTRACT_ID || 'CBGRA3457ZFXYZNEQLO4YGUQ3OBEWOE6US6ZREHK6NF2DLZYBO73IFVW' }}
+          REPAYMENT_CONTRACT_ID: ${{ vars.REPAYMENT_CONTRACT_ID || 'CCDATW5GMVDOPK55Q4MLXV5SGA3VLXPD67ABLBNMHWFF6BLL2IZBUVEP' }}
+          INSURANCE_CONTRACT_ID: ${{ vars.INSURANCE_CONTRACT_ID || 'CAURQCGDZZ6PPCH6EKDVQP5W372CH3PQ62VQC2GKLIXNHB37VOMBMSU5' }}
+          REPUTATION_CONTRACT_ID: ${{ vars.REPUTATION_CONTRACT_ID || 'CCHKVUWGTQ56U53C5U7ZSOFDTTMGLMOFCL22DME5UMXIYWQNUYXOYPDN' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LOOKBACK_HOURS: ${{ github.event.inputs.lookback_hours || vars.HEALTH_LOOKBACK_HOURS || '1' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: npm run health-collector

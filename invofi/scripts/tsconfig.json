@@ -19,6 +19,8 @@
   "include": [
     "keeper.ts",
     "keeper.test.ts",
-    "e2e-onchain.ts"
+    "e2e-onchain.ts",
+    "health-collector.ts",
+    "health-collector.test.ts"
   ]
 }

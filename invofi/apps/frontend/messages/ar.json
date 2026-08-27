@@ -459,5 +459,17 @@
         "confirm": "استرداد"
       }
     }
+  },
+  "Notifications": {
+    "title": "الإشعارات",
+    "markAllRead": "تعليم الكل كمقروء",
+    "emptyTitle": "لا توجد إشعارات",
+    "emptyDesc": "ستظهر هنا الأحداث المتعلقة بفواتيرك وعروضك.",
+    "aria": "الإشعارات",
+    "ariaUnread": "الإشعارات ({count} غير مقروء)",
+    "justNow": "الآن",
+    "minutesAgo": "قبل {m} د",
+    "hoursAgo": "قبل {h} س",
+    "daysAgo": "قبل {d} ي"
   }
 }

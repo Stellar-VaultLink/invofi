@@ -374,5 +374,17 @@
         "confirm": "追索"
       }
     }
+  },
+  "Notifications": {
+    "title": "通知",
+    "markAllRead": "全部标为已读",
+    "emptyTitle": "暂无通知",
+    "emptyDesc": "你的发票和报价相关事件将显示在这里。",
+    "aria": "通知",
+    "ariaUnread": "通知（{count} 条未读）",
+    "justNow": "刚刚",
+    "minutesAgo": "{m} 分钟前",
+    "hoursAgo": "{h} 小时前",
+    "daysAgo": "{d} 天前"
   }
 }

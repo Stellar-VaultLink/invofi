@@ -374,5 +374,17 @@
         "confirm": "מימוש"
       }
     }
+  },
+  "Notifications": {
+    "title": "התראות",
+    "markAllRead": "סמן הכול כנקרא",
+    "emptyTitle": "אין התראות",
+    "emptyDesc": "אירועים מהחשבוניות וההצעות שלך יופיעו כאן.",
+    "aria": "התראות",
+    "ariaUnread": "התראות ({count} שלא נקראו)",
+    "justNow": "עכשיו",
+    "minutesAgo": "לפני {m} דק'",
+    "hoursAgo": "לפני {h} שע'",
+    "daysAgo": "לפני {d} ימ'"
   }
 }

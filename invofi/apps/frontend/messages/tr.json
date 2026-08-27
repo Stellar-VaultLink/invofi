@@ -374,5 +374,17 @@
         "confirm": "Geri al"
       }
     }
+  },
+  "Notifications": {
+    "title": "Bildirimler",
+    "markAllRead": "Tümünü okundu işaretle",
+    "emptyTitle": "Bildirim yok",
+    "emptyDesc": "Faturalarınız ve tekliflerinizle ilgili olaylar burada görünecek.",
+    "aria": "Bildirimler",
+    "ariaUnread": "Bildirimler ({count} okunmamış)",
+    "justNow": "az önce",
+    "minutesAgo": "{m} dk önce",
+    "hoursAgo": "{h} sa önce",
+    "daysAgo": "{d} g önce"
   }
 }

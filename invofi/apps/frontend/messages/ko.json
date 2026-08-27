@@ -374,5 +374,17 @@
         "confirm": "회수"
       }
     }
+  },
+  "Notifications": {
+    "title": "알림",
+    "markAllRead": "모두 읽음으로 표시",
+    "emptyTitle": "알림 없음",
+    "emptyDesc": "인보이스와 제안 관련 이벤트가 여기에 표시됩니다.",
+    "aria": "알림",
+    "ariaUnread": "알림 (읽지 않음 {count}개)",
+    "justNow": "방금",
+    "minutesAgo": "{m}분 전",
+    "hoursAgo": "{h}시간 전",
+    "daysAgo": "{d}일 전"
   }
 }

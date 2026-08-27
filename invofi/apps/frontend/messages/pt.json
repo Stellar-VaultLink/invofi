@@ -374,5 +374,17 @@
         "confirm": "Reivindicar"
       }
     }
+  },
+  "Notifications": {
+    "title": "Notificações",
+    "markAllRead": "Marcar tudo como lido",
+    "emptyTitle": "Sem notificações",
+    "emptyDesc": "Os eventos das suas faturas e ofertas aparecerão aqui.",
+    "aria": "Notificações",
+    "ariaUnread": "Notificações ({count} não lidas)",
+    "justNow": "agora mesmo",
+    "minutesAgo": "há {m} min",
+    "hoursAgo": "há {h} h",
+    "daysAgo": "há {d} d"
   }
 }

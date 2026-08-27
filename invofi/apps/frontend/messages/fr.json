@@ -374,5 +374,17 @@
         "confirm": "Récupérer"
       }
     }
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "emptyTitle": "Aucune notification",
+    "emptyDesc": "Les événements de vos factures et offres apparaîtront ici.",
+    "aria": "Notifications",
+    "ariaUnread": "Notifications ({count} non lues)",
+    "justNow": "à l’instant",
+    "minutesAgo": "il y a {m} min",
+    "hoursAgo": "il y a {h} h",
+    "daysAgo": "il y a {d} j"
   }
 }

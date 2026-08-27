@@ -374,5 +374,17 @@
         "confirm": "回収"
       }
     }
+  },
+  "Notifications": {
+    "title": "通知",
+    "markAllRead": "すべて既読にする",
+    "emptyTitle": "通知はありません",
+    "emptyDesc": "請求書とオファーのイベントがここに表示されます。",
+    "aria": "通知",
+    "ariaUnread": "通知 (未読 {count} 件)",
+    "justNow": "たった今",
+    "minutesAgo": "{m} 分前",
+    "hoursAgo": "{h} 時間前",
+    "daysAgo": "{d} 日前"
   }
 }

@@ -374,5 +374,17 @@
         "confirm": "Einfordern"
       }
     }
+  },
+  "Notifications": {
+    "title": "Benachrichtigungen",
+    "markAllRead": "Alle als gelesen markieren",
+    "emptyTitle": "Keine Benachrichtigungen",
+    "emptyDesc": "Ereignisse zu deinen Rechnungen und Angeboten erscheinen hier.",
+    "aria": "Benachrichtigungen",
+    "ariaUnread": "Benachrichtigungen ({count} ungelesen)",
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {m} Min.",
+    "hoursAgo": "vor {h} Std.",
+    "daysAgo": "vor {d} T."
   }
 }

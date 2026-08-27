@@ -374,5 +374,17 @@
         "confirm": "Reclamar"
       }
     }
+  },
+  "Notifications": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todo como leído",
+    "emptyTitle": "Sin notificaciones",
+    "emptyDesc": "Aquí aparecerán los eventos de tus facturas y ofertas.",
+    "aria": "Notificaciones",
+    "ariaUnread": "Notificaciones ({count} sin leer)",
+    "justNow": "ahora mismo",
+    "minutesAgo": "hace {m} min",
+    "hoursAgo": "hace {h} h",
+    "daysAgo": "hace {d} d"
   }
 }

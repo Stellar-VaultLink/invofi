@@ -1,0 +1,50 @@
+[
+  {
+    "ruleId": "color-contrast",
+    "page": "/",
+    "reason": "Landing page uses design-system tokens (text-muted-foreground on bg-muted) that fall below 4.5:1 in light mode. Color-contrast tuning is explicitly out of scope (issue #175 Stop section). Fix tracked in a follow-up.",
+    "issue": "#175"
+  },
+  {
+    "ruleId": "color-contrast",
+    "page": "/auth/login",
+    "reason": "Login page divider text (text-gray-400) has insufficient contrast against bg-gray-50. Color-contrast tuning is out of scope per issue #175.",
+    "issue": "#175"
+  },
+  {
+    "ruleId": "color-contrast",
+    "page": "/auth/register",
+    "reason": "Register page divider text and role-picker description text have insufficient contrast. Color-contrast tuning is out of scope per issue #175.",
+    "issue": "#175"
+  },
+  {
+    "ruleId": "color-contrast",
+    "page": "/dashboard",
+    "reason": "Dashboard uses design-system tokens with insufficient contrast ratios. Color-contrast tuning is out of scope per issue #175.",
+    "issue": "#175"
+  },
+  {
+    "ruleId": "color-contrast",
+    "page": "/marketplace",
+    "reason": "Marketplace uses design-system tokens with insufficient contrast ratios. Color-contrast tuning is out of scope per issue #175.",
+    "issue": "#175"
+  },
+  {
+    "ruleId": "color-contrast",
+    "page": "/invoices/",
+    "reason": "Invoice detail page uses design-system tokens with insufficient contrast ratios. Color-contrast tuning is out of scope per issue #175.",
+    "issue": "#175"
+  },
+  {
+    "ruleId": "color-contrast",
+    "page": "/portfolio",
+    "reason": "Portfolio page uses design-system tokens with insufficient contrast ratios. Color-contrast tuning is out of scope per issue #175.",
+    "issue": "#175"
+  },
+  {
+    "ruleId": "color-contrast",
+    "page": "/settings",
+    "reason": "Settings page sign-out button (bg-destructive #ef4444 with white text) has 3.59 contrast ratio. Color-contrast tuning is out of scope per issue #175.",
+    "issue": "#175"
+  }
+]

@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, Send, Tag } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/components/auth/WalletProvider';
@@ -28,6 +29,19 @@ export function PositionTokensPanel() {
   const [transfers, setTransfers] = useState<PositionTransfer[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Virtualize the transfer history list (issue #180): with hundreds of
+  // transfers the DOM would balloon and scrolling would jank. Each row is
+  // measured with `measureElement` so variable-height (wrapped) content
+  // sizes correctly, mirroring the portfolio table.
+  const listRef = useRef<HTMLUListElement>(null);
+  const transferCount = transfers?.length ?? 0;
+  const virtualizer = useVirtualizer({
+    count: transferCount,
+    getScrollElement: () => listRef.current,
+    estimateSize: () => 56,
+    overscan: 6,
+  });
 
   const refresh = useCallback(async () => {
     if (!publicKey) {
@@ -115,37 +129,61 @@ export function PositionTokensPanel() {
                 will appear here.
               </p>
             ) : (
-              <ul className="divide-y divide-border rounded-xl border border-border">
-                {transfers.map(t => (
-                  <li key={t.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {t.direction === 'in' ? (
-                        <ArrowDownLeft className="h-4 w-4 text-green-500 shrink-0" />
-                      ) : (
-                        <ArrowUpRight className="h-4 w-4 text-orange-500 shrink-0" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-sm text-foreground">
-                          {t.direction === 'in' ? 'Received' : 'Sent'}{' '}
-                          <span className="font-mono">{t.amount}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {t.direction === 'in' ? 'from' : 'to'}{' '}
-                          {t.counterparty.slice(0, 6)}…{t.counterparty.slice(-4)} ·{' '}
-                          {formatDate(t.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <a
-                      href={explorerTxUrl(t.hash)}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="text-xs text-blue-500 hover:underline shrink-0"
-                    >
-                      ↗
-                    </a>
-                  </li>
-                ))}
+              <ul
+                ref={listRef}
+                className="max-h-[50vh] overflow-y-auto divide-y divide-border rounded-xl border border-border"
+                data-testid="position-token-transfer-list"
+                aria-label="Position token transfer history"
+              >
+                <div
+                  style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}
+                >
+                  {virtualizer.getVirtualItems().map(vi => {
+                    const t = transfers[vi.index];
+                    return (
+                      <li
+                        key={t.id}
+                        ref={virtualizer.measureElement}
+                        data-index={vi.index}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          transform: `translateY(${vi.start}px)`,
+                        }}
+                        className="flex items-center justify-between gap-3 px-3 py-2.5"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {t.direction === 'in' ? (
+                            <ArrowDownLeft className="h-4 w-4 text-green-500 shrink-0" />
+                          ) : (
+                            <ArrowUpRight className="h-4 w-4 text-orange-500 shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm text-foreground">
+                              {t.direction === 'in' ? 'Received' : 'Sent'}{' '}
+                              <span className="font-mono">{t.amount}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {t.direction === 'in' ? 'from' : 'to'}{' '}
+                              {t.counterparty.slice(0, 6)}…{t.counterparty.slice(-4)} ·{' '}
+                              {formatDate(t.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <a
+                          href={explorerTxUrl(t.hash)}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="text-xs text-blue-500 hover:underline shrink-0"
+                        >
+                          ↗
+                        </a>
+                      </li>
+                    );
+                  })}
+                </div>
               </ul>
             )}
           </>

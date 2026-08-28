@@ -8,6 +8,11 @@ import { STROOPS_PER_XLM } from '@/lib/constants';
 import type { FinancingOffer } from '@/types';
 import type { SupabaseUser } from '@/lib/types/supabase-auth';
 
+/** Offer joined with its parent invoice from Supabase. */
+interface FinancingOfferWithInvoice extends FinancingOffer {
+  invoice?: { status?: string } | null;
+}
+
 export type TimeRange = '30d' | '90d' | '1y' | 'all';
 
 export interface PortfolioMetrics {
@@ -45,6 +50,7 @@ export interface CurrencyBreakdown {
   count: number;
 }
 
+/** Derive aggregate portfolio KPIs from a list of financing offers. */
 function calculateMetrics(offers: FinancingOffer[]): PortfolioMetrics {
   const active = offers.filter(o => o.status === 'Accepted' || o.status === 'Financed');
   const repaid = offers.filter(o => o.status === 'Repaid');
@@ -104,8 +110,22 @@ function calculateMetrics(offers: FinancingOffer[]): PortfolioMetrics {
   };
 }
 
-function calculateYieldHistory(offers: FinancingOffer[], _range: TimeRange): YieldPoint[] {
-  const repaid = offers.filter(o => o.status === 'Repaid' && o.funded_at > 0);
+/** Build cumulative-yield curve, filtered by the selected time range. */
+function calculateYieldHistory(offers: FinancingOffer[], range: TimeRange): YieldPoint[] {
+  const now = Date.now();
+  const cutoffByRange: Partial<Record<TimeRange, number>> = {
+    '30d': now - 30 * 86_400_000,
+    '90d': now - 90 * 86_400_000,
+    '1y': now - 365 * 86_400_000,
+  };
+  const cutoff = cutoffByRange[range];
+
+  const repaid = offers.filter(
+    o =>
+      o.status === 'Repaid' &&
+      o.funded_at > 0 &&
+      (cutoff === undefined || o.funded_at * 1000 >= cutoff),
+  );
   if (repaid.length === 0) return [];
 
   const sorted = [...repaid].sort((a, b) => a.funded_at - b.funded_at);
@@ -126,13 +146,19 @@ function calculateYieldHistory(offers: FinancingOffer[], _range: TimeRange): Yie
   return points;
 }
 
-function calculateRiskExposure(offers: FinancingOffer[]): RiskExposure[] {
+/** Compute risk-exposure buckets using the joined invoice status.
+ * Offer and invoice statuses can diverge (e.g. invoice overdue while
+ * offer still Financed), so the invoice's status is the authoritative
+ * signal for risk classification.
+ */
+function calculateRiskExposure(offers: FinancingOfferWithInvoice[]): RiskExposure[] {
   const groups: Record<string, { count: number; amount: number }> = {};
   for (const o of offers) {
     if (o.status === 'Pending' || o.status === 'Rejected') continue;
-    if (!groups[o.status]) groups[o.status] = { count: 0, amount: 0 };
-    groups[o.status].count += 1;
-    groups[o.status].amount += Number(toStroopsBigInt(o.amount)) / STROOPS_PER_XLM;
+    const invoiceStatus = o.invoice?.status ?? o.status;
+    if (!groups[invoiceStatus]) groups[invoiceStatus] = { count: 0, amount: 0 };
+    groups[invoiceStatus].count += 1;
+    groups[invoiceStatus].amount += Number(toStroopsBigInt(o.amount)) / STROOPS_PER_XLM;
   }
   return Object.entries(groups).map(([status, data]) => ({
     status,
@@ -140,6 +166,7 @@ function calculateRiskExposure(offers: FinancingOffer[]): RiskExposure[] {
   }));
 }
 
+/** Aggregate portfolio exposure by currency. */
 function calculateCurrencyBreakdown(offers: FinancingOffer[]): CurrencyBreakdown[] {
   const groups: Record<string, { amount: number; count: number }> = {};
   for (const o of offers) {
@@ -153,6 +180,11 @@ function calculateCurrencyBreakdown(offers: FinancingOffer[]): CurrencyBreakdown
     .sort((a, b) => b.amount - a.amount);
 }
 
+/** Hook that fetches the authenticated lender's financing offers from
+ * Supabase and derives portfolio KPIs, yield history, risk exposure,
+ * and currency breakdown. Accepts a time-range selector for the
+ * yield-history chart.
+ */
 export function usePortfolioAnalytics(range: TimeRange = 'all') {
   const { data: user } = useQuery({
     queryKey: ['auth-user'],
@@ -167,12 +199,13 @@ export function usePortfolioAnalytics(range: TimeRange = 'all') {
     queryKey: ['portfolio-offers', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('financing_offers')
         .select('*, invoice:invoices(*)')
         .eq('lender_id', user.id)
         .order('created_at', { ascending: false });
-      return ((data as unknown as FinancingOffer[]) ?? []).map(o => ({
+      if (error) throw error;
+      return ((data as unknown as FinancingOfferWithInvoice[]) ?? []).map(o => ({
         ...o,
         amount: toStroopsBigInt(o.amount),
         amount_repaid: toStroopsBigInt(o.amount_repaid),
@@ -182,7 +215,7 @@ export function usePortfolioAnalytics(range: TimeRange = 'all') {
     staleTime: 30_000,
   });
 
-  const offers = offersQuery.data ?? [];
+  const offers = (offersQuery.data ?? []) as FinancingOfferWithInvoice[];
 
   const metrics = useMemo(() => calculateMetrics(offers), [offers]);
   const yieldHistory = useMemo(() => calculateYieldHistory(offers, range), [offers, range]);

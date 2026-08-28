@@ -68,12 +68,14 @@ const STATUS_COLORS: Record<string, string> = {
   Accepted: 'hsl(var(--chart-2))',
 };
 
+/** Format a number for compact display (e.g. 1.2M, 3.4K). */
 function formatNumber(n: number, decimals = 2): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return n.toFixed(decimals);
 }
 
+/** Convert a duration in seconds to a human-friendly string (e.g. 7d, 3mo). */
 function formatDuration(seconds: number): string {
   const days = Math.round(seconds / 86400);
   if (days < 30) return `${days}d`;
@@ -81,6 +83,7 @@ function formatDuration(seconds: number): string {
   return `${months}mo`;
 }
 
+/** Export the full portfolio as a downloadable CSV file. */
 function exportPortfolioCsv(offers: FinancingOffer[]) {
   const rows = offers.map(o => ({
     ...o,
@@ -101,13 +104,20 @@ function exportPortfolioCsv(offers: FinancingOffer[]) {
   downloadCsv(`invofi-portfolio-analytics-${new Date().toISOString().slice(0, 10)}.csv`, csv);
 }
 
-function buildShareableUrl(): string {
+/** Build a snapshot URL that encodes the current range and timestamp.
+ * The recipient sees the same time-range view at a fixed point in time.
+ * TODO: persist an immutable portfolio snapshot server-side for full
+ * fidelity (currently shows the recipient's own data after auth).
+ */
+function buildShareableUrl(range: TimeRange): string {
   if (typeof window === 'undefined') return '';
   const url = new URL(window.location.href);
   url.searchParams.set('snapshot', Date.now().toString(36));
+  url.searchParams.set('range', range);
   return url.toString();
 }
 
+/** Render the top-row KPI metric cards. */
 function MetricCards({ metrics }: { metrics: ReturnType<typeof usePortfolioAnalytics>['metrics'] }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -147,6 +157,7 @@ function MetricCards({ metrics }: { metrics: ReturnType<typeof usePortfolioAnaly
   );
 }
 
+/** Render the cumulative-yield area chart. */
 function YieldChart({ data }: { data: ReturnType<typeof usePortfolioAnalytics>['yieldHistory'] }) {
   if (data.length === 0) {
     return (
@@ -202,6 +213,7 @@ function YieldChart({ data }: { data: ReturnType<typeof usePortfolioAnalytics>['
   );
 }
 
+/** Render the risk-exposure pie chart by invoice status. */
 function RiskChart({ data }: { data: ReturnType<typeof usePortfolioAnalytics>['riskExposure'] }) {
   if (data.length === 0) {
     return (
@@ -244,6 +256,7 @@ function RiskChart({ data }: { data: ReturnType<typeof usePortfolioAnalytics>['r
   );
 }
 
+/** Render the currency-breakdown bar chart. */
 function CurrencyChart({ data }: { data: ReturnType<typeof usePortfolioAnalytics>['currencyBreakdown'] }) {
   if (data.length === 0) {
     return (
@@ -283,6 +296,7 @@ function CurrencyChart({ data }: { data: ReturnType<typeof usePortfolioAnalytics
   );
 }
 
+/** Render the diversification metrics card. */
 function DiversificationCard({
   metrics,
 }: {
@@ -332,6 +346,7 @@ function DiversificationCard({
   );
 }
 
+/** Render the portfolio summary statistics. */
 function SummaryStats({
   metrics,
 }: {
@@ -371,11 +386,14 @@ function SummaryStats({
   );
 }
 
+/** Portfolio analytics dashboard showing performance metrics, yield history,
+ * risk exposure, and currency breakdown for authenticated lenders.
+ */
 export default function PortfolioAnalyticsPage() {
   const [range, setRange] = useState<TimeRange>('all');
   const { toast } = useToast();
 
-  const { offers, metrics, yieldHistory, riskExposure, currencyBreakdown, isLoading } =
+  const { offers, metrics, yieldHistory, riskExposure, currencyBreakdown, isLoading, isError, refetch } =
     usePortfolioAnalytics(range);
 
   const handleExportCsv = useCallback(() => {
@@ -389,20 +407,36 @@ export default function PortfolioAnalyticsPage() {
   }, []);
 
   const handleShare = useCallback(async () => {
-    const url = buildShareableUrl();
+    const url = buildShareableUrl(range);
     try {
       await navigator.clipboard.writeText(url);
       toast({ title: 'Link copied', description: 'Shareable snapshot link copied to clipboard.' });
     } catch {
       toast({ title: 'Copy failed', description: url, variant: 'destructive' });
     }
-  }, [toast]);
+  }, [range, toast]);
 
   if (isLoading) {
     return (
       <AuthGuard>
         <div className="max-w-6xl mx-auto px-4 py-8">
           <PageSkeleton />
+        </div>
+      </AuthGuard>
+    );
+  }
+
+  if (isError) {
+    return (
+      <AuthGuard>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="text-center py-16 border-2 border-dashed border-border rounded-xl">
+            <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-3" />
+            <p className="text-muted-foreground mb-4">Failed to load portfolio data.</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </div>
         </div>
       </AuthGuard>
     );

@@ -17,7 +17,7 @@
     "test:a11y": "playwright test e2e/a11y.spec.ts"
   },
   "dependencies": {
-    "@albedo-link/intent": "^0.12.0",
+    "@albedo-link/intent": "^0.13.0",
     "@creit.tech/stellar-wallets-kit": "^2.5.0",
     "@hookform/resolvers": "^3.9.0",
     "@lobstrco/signer-extension-api": "^2.0.0",

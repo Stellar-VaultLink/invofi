@@ -99,7 +99,21 @@ function MarketplacePageInner() {
     currency: filters.currency !== 'ALL' ? filters.currency : undefined,
   });
 
-  const allInvoices = allInvoicesQuery.data ?? [];
+  // Flatten paginated pages and de-duplicate by id so that appended pages
+  // never repeat entries when rows shift the offset-based cursor between fetches.
+  const allInvoices = useMemo(() => {
+    const pages = allInvoicesQuery.data?.pages ?? [];
+    const seen = new Set<string>();
+    const merged: Invoice[] = [];
+    for (const page of pages) {
+      for (const inv of page.invoices) {
+        if (inv.id && seen.has(inv.id)) continue;
+        if (inv.id) seen.add(inv.id);
+        merged.push(inv);
+      }
+    }
+    return merged;
+  }, [allInvoicesQuery.data]);
 
   const filteredBySearch = useMemo(() => {
     if (!debouncedSearch) return allInvoices;
@@ -333,6 +347,27 @@ function MarketplacePageInner() {
                   </div>
                 )}
               </>
+            )}
+
+            {/* Load more (pagination) */}
+            {!allInvoicesQuery.isLoading && allInvoicesQuery.hasNextPage && (
+              <div className="flex justify-center mt-8">
+                <button
+                  type="button"
+                  onClick={() => allInvoicesQuery.fetchNextPage()}
+                  disabled={allInvoicesQuery.isFetchingNextPage}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {allInvoicesQuery.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                </button>
+              </div>
+            )}
+
+            {/* Next-page loading skeleton */}
+            {allInvoicesQuery.isFetchingNextPage && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                {[1, 2, 3].map(i => <CardSkeleton key={i} />)}
+              </div>
             )}
           </>
         )}

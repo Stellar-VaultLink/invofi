@@ -5,8 +5,8 @@ import { Loader2, Wallet, LogOut, Copy, Check, ExternalLink, AlertTriangle } fro
 import { Button } from '@/components/ui/button';
 import { useWallet } from './WalletProvider';
 import { WalletSelectDialog } from './WalletSelectDialog';
-import { formatAddress } from '@/lib/utils';
-import { formatUnits } from '@/lib/formatters';
+import { amountToStroops, formatAddress } from '@/lib/utils';
+import { useFormat } from '@/hooks/useFormat';
 import { useToast } from '@/components/ui/use-toast';
 import { getXlmBalance } from '@/lib/horizon';
 import { explorerAccountUrl } from '@/lib/constants';
@@ -25,12 +25,13 @@ export function WalletButton({ onConnected }: WalletButtonProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const format = useFormat();
   const [xlmBalance, setXlmBalance] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isConnected || !publicKey) { setXlmBalance(null); return; }
     getXlmBalance(publicKey)
-      .then(b => setXlmBalance(formatUnits(b, 'XLM')))
+      .then(setXlmBalance)
       .catch(() => setXlmBalance(null));
   }, [isConnected, publicKey]);
 
@@ -93,14 +94,14 @@ export function WalletButton({ onConnected }: WalletButtonProps) {
               <ExternalLink className="h-3 w-3 text-green-500 opacity-60 shrink-0" />
             </a>
             {xlmBalance !== null && (
-              <span className="text-xs text-green-700 dark:text-green-300 font-medium border-l border-green-200 dark:border-green-800 px-2 py-1.5">
-                {xlmBalance}
+              <span className="text-xs text-green-700 dark:text-green-300 font-medium border-s border-green-200 dark:border-green-800 px-2 py-1.5">
+                {format.currency(amountToStroops(xlmBalance), 'XLM', { maximumFractionDigits: 2 })}
               </span>
             )}
             <button
               onClick={handleCopy}
               title={copied ? 'Copied!' : 'Copy full address'}
-              className="px-2 py-1.5 text-sm transition-colors border-l border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900"
+              className="px-2 py-1.5 text-sm transition-colors border-s border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900"
             >
               {copied
                 ? <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />

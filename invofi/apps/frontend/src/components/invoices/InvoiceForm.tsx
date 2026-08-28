@@ -304,8 +304,8 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
                   disabled={funding}
                 >
                   {funding
-                    ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Funding…</>
-                    : <><Zap className="mr-1.5 h-3.5 w-3.5" /> Fund with Friendbot</>
+                    ? <><Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" /> Funding…</>
+                    : <><Zap className="me-1.5 h-3.5 w-3.5" /> Fund with Friendbot</>
                   }
                 </Button>
               </div>
@@ -317,7 +317,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
             className="w-full"
             disabled={submitting || !isConnected || (CONTRACT_OK && IS_TESTNET && accountFunded === false)}
           >
-            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {submitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {submitting
               ? (CONTRACT_OK ? 'Registering on-chain…' : 'Saving invoice…')
               : (CONTRACT_OK ? 'Register Invoice' : 'Save Invoice')}

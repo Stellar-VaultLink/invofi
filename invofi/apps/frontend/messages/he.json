@@ -1,0 +1,390 @@
+{
+  "Navbar": {
+    "dashboard": "לוח בקרה",
+    "marketplace": "שוק",
+    "portfolio": "תיק",
+    "approvals": "אישורים",
+    "wrongNetwork": "רשת שגויה",
+    "toggleTheme": "החלפת ערכת נושא",
+    "testnet": "רשת בדיקות",
+    "viewContracts": "הצגת כתובות החוזים החכמים",
+    "settings": "הגדרות",
+    "signOut": "התנתקות"
+  },
+  "Footer": {
+    "tagline": "מימון חשבוניות מבוזר על Stellar Soroban",
+    "stats": "סטטיסטיקה",
+    "github": "GitHub",
+    "docs": "תיעוד",
+    "issues": "תקלות",
+    "contractOnStellar": "חוזה ב-Stellar {network}:",
+    "viewOnStellarExpert": "הצגת חוזה InvoFi ב-Stellar Expert",
+    "openSource": "קוד פתוח"
+  },
+  "DashboardLayout": {
+    "title": "לוח בקרה",
+    "description": "ניהול החשבוניות הרשומות, מעקב אחר הצעות מימון ובקרה על מצב ההחזר."
+  },
+  "Settings": {
+    "title": "הגדרות",
+    "description": "ניהול העדפות החשבון",
+    "profile": {
+      "label": "פרופיל",
+      "hint": "עריכת שם התצוגה וצפייה בפרטי החשבון"
+    },
+    "language": {
+      "title": "שפה",
+      "label": "שפת תצוגה",
+      "hint": "משנה את שפת הממשק, את תבניות המספרים והתאריכים ואת כיוון הטקסט."
+    },
+    "network": {
+      "title": "רשת וחוזים",
+      "label": "רשת Stellar",
+      "connected": "מחובר"
+    },
+    "account": {
+      "title": "חשבון",
+      "signOut": "התנתקות",
+      "signingOut": "מתנתק…",
+      "signedOut": "ההתנתקות הושלמה"
+    },
+    "contracts": {
+      "title": "חוזים",
+      "rpcUrl": "כתובת RPC",
+      "horizonUrl": "כתובת Horizon",
+      "registry": "רישום",
+      "financing": "מימון",
+      "repayment": "החזר",
+      "notConfigured": "לא מוגדר",
+      "copy": "העתקה",
+      "copied": "הועתק",
+      "explorer": "סייר",
+      "copyAria": "העתקת מזהה החוזה {label}",
+      "explorerAria": "פתיחת החוזה {label} ב-Stellar Expert",
+      "copyFailed": "ההעתקה נכשלה",
+      "copyFailedHint": "לא ניתן לגשת ללוח."
+    }
+  },
+  "Errors": {
+    "forbidden": {
+      "title": "הגישה נדחתה",
+      "description": "אין לך הרשאה לגשת למשאב הזה.",
+      "backHome": "חזרה לדף הבית"
+    },
+    "notFound": {
+      "title": "הדף לא נמצא",
+      "description": "הדף שחיפשת אינו קיים או שהועבר.",
+      "backHome": "חזרה לדף הבית"
+    },
+    "unexpected": {
+      "title": "משהו השתבש",
+      "description": "אירעה שגיאה בלתי צפויה. נסה שוב.",
+      "retry": "נסה שוב",
+      "reload": "ניסיון חוזר"
+    }
+  },
+  "Status": {
+    "Pending": "ממתין",
+    "Financed": "ממומן",
+    "Repaid": "נפרע",
+    "Overdue": "באיחור",
+    "Cancelled": "בוטל",
+    "Accepted": "התקבל",
+    "Rejected": "נדחה",
+    "Defaulted": "בכשל פירעון"
+  },
+  "Common": {
+    "confirm": "אישור",
+    "cancel": "ביטול",
+    "close": "סגירה",
+    "save": "שמירה",
+    "saving": "שומר…",
+    "loading": "טוען…",
+    "retry": "נסה שוב",
+    "back": "חזרה",
+    "next": "הבא",
+    "submit": "שליחה",
+    "submitting": "שולח…",
+    "copy": "העתקה",
+    "copied": "הועתק",
+    "export": "ייצוא",
+    "search": "חיפוש",
+    "filter": "סינון",
+    "all": "הכול",
+    "none": "ללא",
+    "optional": "רשות",
+    "hold": {
+      "start": "לחץ והחזק לאישור",
+      "almost": "החזק עוד רגע לאישור",
+      "cancelled": "האישור בוטל"
+    }
+  },
+  "Dashboard": {
+    "titleBusiness": "לוח החשבוניות",
+    "titleLender": "תיק המממן",
+    "welcomeBack": "ברוך שובך",
+    "newInvoice": "חשבונית חדשה",
+    "yourInvoices": "החשבוניות שלך",
+    "yourInvestments": "ההשקעות שלך",
+    "browseMarketplace": "עיון בשוק",
+    "exportCsv": "ייצוא CSV",
+    "role": {
+      "business": "עסק",
+      "lender": "מממן",
+      "admin": "מנהל"
+    },
+    "wallet": {
+      "title": "ארנק Stellar",
+      "connected": "הארנק מחובר. אפשר לחתום על עסקאות.",
+      "disconnected": "חבר ארנק Stellar כדי לפעול מול החוזים."
+    },
+    "stats": {
+      "totalInvoices": "סך החשבוניות",
+      "pending": "ממתינות",
+      "financed": "ממומנות",
+      "repaid": "נפרעו",
+      "activeInvestments": "השקעות פעילות",
+      "pendingOffers": "הצעות ממתינות",
+      "totalYield": "סך התשואה"
+    },
+    "view": {
+      "grid": "תצוגת רשת",
+      "table": "תצוגת טבלה"
+    },
+    "empty": {
+      "invoices": "אין עדיין חשבוניות.",
+      "createFirst": "צור את החשבונית הראשונה",
+      "investments": "אין עדיין השקעות פעילות."
+    },
+    "cancel": {
+      "action": "ביטול חשבונית",
+      "title": "לבטל את החשבונית?",
+      "description": "החשבונית {id} תסומן כמבוטלת. לא ניתן לבטל פעולה זו.",
+      "confirm": "כן, בטל"
+    }
+  },
+  "Marketplace": {
+    "title": "שוק החשבוניות",
+    "description": "עיין בחשבוניות הזמינות למימון והגש הצעות כדי להרוויח תשואה.",
+    "searchPlaceholder": "חיפוש לפי מזהה חשבונית, שם החייב או היוצר…",
+    "view": {
+      "suggested": "מומלץ עבורי",
+      "browseAll": "עיון בהכול"
+    },
+    "filters": {
+      "allStatuses": "כל הסטטוסים",
+      "allCurrencies": "כל המטבעות"
+    },
+    "sort": {
+      "label": "מיון חשבוניות",
+      "newest": "החדשות ביותר",
+      "oldest": "הישנות ביותר",
+      "amount_desc": "סכום: מהגבוה לנמוך",
+      "amount_asc": "סכום: מהנמוך לגבוה",
+      "due_soonest": "מועד פירעון: הקרוב ביותר"
+    },
+    "empty": {
+      "title": "אין חשבוניות התואמות את הסינון",
+      "hint": "נסה לשנות את החיפוש או את הסינון."
+    },
+    "clearSearch": "ניקוי החיפוש"
+  },
+  "Portfolio": {
+    "title": "התיק שלך",
+    "description": "מעקב אחר הצעות מימון ותשואות — העדכונים זורמים בזמן אמת",
+    "refresh": "רענון",
+    "exportCsv": "ייצוא CSV",
+    "stats": {
+      "active": "השקעות פעילות",
+      "pending": "הצעות ממתינות",
+      "completed": "הושלמו",
+      "value": "שווי התיק (דולר)",
+      "priceNote": "XLM/USD {price} {source}{asOf} — משוער",
+      "priceAsOf": " · נכון ל-{time}",
+      "priceSource": {
+        "coingecko": "(CoinGecko)",
+        "env": "(עקיפה בסביבה)",
+        "default": "(ברירת מחדל)"
+      }
+    },
+    "yield": {
+      "estimated": "תשואה משוערת עד כה: {amount}",
+      "accruing": "נצברת בזמן אמת על פני {count, plural, one {פוזיציה פעילה אחת} two {שתי פוזיציות פעילות} other {# פוזיציות פעילות}}",
+      "realized": "תשואה שמומשה: {amount}",
+      "acrossRepaid": "על פני {count, plural, one {הצעה אחת שנפרעה} two {שתי הצעות שנפרעו} other {# הצעות שנפרעו}}"
+    },
+    "empty": {
+      "title": "אין עדיין הצעות מימון.",
+      "browse": "עיון בשוק"
+    },
+    "position": {
+      "days": "{count, plural, one {יום אחד} two {יומיים} other {# ימים}}",
+      "funded": "מומן ב-{date}",
+      "apy": "תשואה שנתית",
+      "earnedToDate": "נצבר עד כה",
+      "repayment": "החזר",
+      "percentRepaid": "{percent} נפרעו",
+      "progressLabel": "{percent} מסך החוב נפרעו",
+      "repaidRemaining": "{repaid} נפרעו · {remaining} נותרו",
+      "updated": "עודכן {when}"
+    },
+    "transfer": {
+      "title": "העברת פוזיציה",
+      "description": "אסימוני פוזיציה מייצגים את זכותך בחשבוניות ממומנות (אסימון אחד = יחידת בסיס אחת של הקרן). שלח אותם לארנק Stellar אחר כדי להעביר את הפוזיציה.",
+      "secondaryBoard": "מחפש קונה? <link>פרסם את הפוזיציה בלוח המשני</link> — הסליקה עדיין מתבצעת כאן, בהעברה הזו.",
+      "prefilled": "הסכום מולא מתוך הפרסום שלך ({amount} אסימונים). הזן את כתובת הקונה כדי לסלוק.",
+      "refreshBalance": "רענון יתרה",
+      "connectWallet": "חבר ארנק כדי לצפות בפוזיציות ולהעביר אותן.",
+      "notConfigured": "אסימוני פוזיציה אינם מוגדרים בפריסה הזו עדיין.",
+      "needsTrustline": "אסימוני פוזיציה הם נכסי Stellar — הוסף קו אמון POS פעם אחת כדי לקבל ולהעביר אותם.",
+      "addTrustline": "הוספת קו אמון POS",
+      "adding": "מוסיף…",
+      "trustlineAdded": "קו האמון נוסף",
+      "trustlineAddedHint": "הארנק שלך יכול כעת להחזיק אסימוני פוזיציה POS.",
+      "trustlineFailed": "קו האמון נכשל",
+      "trustlineFailedHint": "הגדרת קו האמון נכשלה",
+      "recipientLabel": "כתובת הנמען",
+      "amountLabel": "סכום",
+      "available": "(זמין: {balance})",
+      "transfer": "העברה",
+      "transferring": "מעביר…",
+      "invalidAddress": "כתובת לא חוקית",
+      "invalidAddressHint": "הזן כתובת Stellar חוקית (G…).",
+      "invalidAmount": "סכום לא חוקי",
+      "invalidAmountHint": "הזן סכום עם {decimals} ספרות עשרוניות לכל היותר.",
+      "insufficient": "יתרה לא מספיקה",
+      "insufficientHint": "אין ברשותך מספיק אסימוני פוזיציה להעברה הזו.",
+      "recipientTrustline": "הנמען זקוק לקו אמון",
+      "recipientTrustlineHint": "לארנק הנמען אין עדיין קו אמון POS. בקש ממנו להוסיף אחד (בכל ארנק או באפליקציה הזו) לפני ההעברה.",
+      "transferred": "הפוזיציה הועברה",
+      "transferredHint": "נשלחו {amount} אסימוני פוזיציה אל {recipient}.",
+      "transferFailed": "ההעברה נכשלה",
+      "transferFailedHint": "העסקה נכשלה"
+    }
+  },
+  "Invoice": {
+    "title": "חשבונית",
+    "backToDashboard": "חזרה ללוח הבקרה",
+    "print": "הדפסה / ייצוא PDF",
+    "notFound": "החשבונית לא נמצאה",
+    "fields": {
+      "amount": "סכום",
+      "currency": "מטבע",
+      "dueDate": "מועד פירעון",
+      "originator": "יוצר"
+    },
+    "counterparty": {
+      "lender": "מממן",
+      "business": "עסק"
+    },
+    "cancel": {
+      "action": "ביטול",
+      "title": "לבטל את החשבונית?",
+      "description": "החשבונית תבוטל על השרשרת ולא תוכל לקבל עוד הצעות מימון. לא ניתן לבטל פעולה זו.",
+      "confirm": "ביטול החשבונית",
+      "done": "החשבונית בוטלה",
+      "doneHint": "החשבונית מבוטלת כעת על השרשרת.",
+      "failed": "ביטול החשבונית נכשל",
+      "undo": "ביטול פעולה",
+      "undoAlt": "ביטול הביטול",
+      "restored": "החשבונית שוחזרה",
+      "restoredHint": "נוצרה חשבונית חדשה באותם תנאים.",
+      "restoreFailed": "שחזור החשבונית נכשל",
+      "previewTitle": "תצוגה מקדימה: ביטול חשבונית",
+      "previewDescription": "עיין בהשפעות הצפויות לפני ביטול החשבונית על השרשרת."
+    }
+  },
+  "Offers": {
+    "title": "הצעות מימון ({count})",
+    "empty": "אין עדיין הצעות.",
+    "makeOffer": "הגשת הצעה",
+    "markOverdue": "סימון כבאיחור",
+    "exportHint": "ייצוא הצעות כ-CSV",
+    "exportEmpty": "אין הצעות לייצוא",
+    "accept": "קבלה",
+    "reject": "דחייה",
+    "repay": "פירעון",
+    "reclaim": "מימוש",
+    "repayAmount": "סכום פירעון",
+    "days": "{count, plural, one {יום אחד} two {יומיים} other {# ימים}}",
+    "repaid": "{amount} נפרעו",
+    "remaining": "{amount} נותרו",
+    "remainingBalance": "יתרה: {remaining} (סך חוב {total} פחות {repaid})",
+    "form": {
+      "title": "הצעת מימון חדשה",
+      "amount": "סכום",
+      "currency": "מטבע",
+      "interest": "ריבית (נקודות בסיס)",
+      "interestHint": "500 = {example}",
+      "duration": "משך (ימים)",
+      "submit": "שליחת הצעה"
+    },
+    "confirm": {
+      "rejectTitle": "לדחות את ההצעה?",
+      "rejectDescription": "המממן יקבל הודעה שההצעה נדחתה. לא ניתן לבטל פעולה זו.",
+      "reclaimTitle": "לממש את ההצעה?",
+      "reclaimDescription": "פעולה זו מסמנת את ההצעה כבכשל פירעון על השרשרת. הקרן כבר שולמה לעסק בעת הקבלה — הפעולה אינה מחזירה כספים ואינה ניתנת לביטול."
+    },
+    "toast": {
+      "submitted": "ההצעה נשלחה!",
+      "submittedHint": "יוצר החשבונית יקבל הודעה.",
+      "submitFailed": "שליחת ההצעה נכשלה",
+      "accepted": "ההצעה התקבלה!",
+      "acceptedHint": "החשבונית מסומנת כעת כממומנת.",
+      "acceptFailed": "קבלת ההצעה נכשלה",
+      "rejected": "ההצעה נדחתה.",
+      "rejectFailed": "דחיית ההצעה נכשלה",
+      "invalidAmount": "הזן סכום חוקי",
+      "amountTooSmall": "הסכום חייב להיות גדול מאפס",
+      "repaidFull": "החשבונית נפרעה במלואה",
+      "repaidFullHint": "הקרן והתשואה הועברו למממן. החשבונית נפרעה.",
+      "repaidPartial": "הפירעון נשלח",
+      "repaidPartialHint": "פירעון חלקי נרשם על השרשרת. המשך לפרוע עד לסגירת היתרה.",
+      "repayFailed": "הפירעון נכשל",
+      "markedOverdue": "החשבונית סומנה כבאיחור.",
+      "overdueFailed": "הסימון כבאיחור נכשל",
+      "reclaimed": "ההצעה סומנה בכשל פירעון.",
+      "reclaimedHint": "זהו רישום על השרשרת — המשך בגבייה מחוץ לשרשרת.",
+      "reclaimFailed": "המימוש נכשל",
+      "undo": "ביטול פעולה",
+      "undoRejectAlt": "ביטול הדחייה",
+      "rejectUndone": "הדחייה בוטלה",
+      "rejectUndoneHint": "ההצעה ממתינה שוב.",
+      "undoRejectFailed": "ביטול הדחייה נכשל"
+    },
+    "preview": {
+      "accept": {
+        "title": "תצוגה מקדימה: קבלת הצעה",
+        "description": "עיין בהשפעות הצפויות לפני קבלת הצעת המימון.",
+        "confirm": "קבלת ההצעה"
+      },
+      "reject": {
+        "title": "תצוגה מקדימה: דחיית הצעה",
+        "description": "עיין בהשפעות הצפויות לפני דחיית ההצעה. המממן יקבל הודעה ולא ניתן לבטל פעולה זו.",
+        "confirm": "דחיית ההצעה"
+      },
+      "repay": {
+        "title": "תצוגה מקדימה: פירעון חשבונית",
+        "description": "עיין בהעברה הצפויה לפני שליחת הפירעון.",
+        "confirm": "שליחת פירעון"
+      },
+      "reclaim": {
+        "title": "תצוגה מקדימה: מימוש הצעה",
+        "description": "עיין בהשפעות הצפויות לפני סימון ההצעה כבכשל פירעון על השרשרת. הקרן כבר שולמה בעת הקבלה — הפעולה אינה מחזירה כספים ואינה ניתנת לביטול.",
+        "confirm": "מימוש"
+      }
+    }
+  },
+  "Notifications": {
+    "title": "התראות",
+    "markAllRead": "סמן הכול כנקרא",
+    "emptyTitle": "אין התראות",
+    "emptyDesc": "אירועים מהחשבוניות וההצעות שלך יופיעו כאן.",
+    "aria": "התראות",
+    "ariaUnread": "התראות ({count} שלא נקראו)",
+    "justNow": "עכשיו",
+    "minutesAgo": "לפני {m} דק'",
+    "hoursAgo": "לפני {h} שע'",
+    "daysAgo": "לפני {d} ימ'"
+  }
+}

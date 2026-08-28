@@ -82,7 +82,7 @@ export function PositionListingCard({ listing, isOwn, onStatusChange, busy }: Po
           </p>
 
           {listing.note && (
-            <p className="text-xs text-muted-foreground border-l-2 border-border pl-2">{listing.note}</p>
+            <p className="text-xs text-muted-foreground border-s-2 border-border ps-2">{listing.note}</p>
           )}
         </div>
 
@@ -92,7 +92,7 @@ export function PositionListingCard({ listing, isOwn, onStatusChange, busy }: Po
               <>
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/portfolio?amount=${encodeURIComponent(listing.token_amount)}#transfer`}>
-                    <Send className="mr-1.5 h-3.5 w-3.5" /> Settle: transfer
+                    <Send className="me-1.5 h-3.5 w-3.5" /> Settle: transfer
                   </Link>
                 </Button>
                 <Button
@@ -124,11 +124,11 @@ export function PositionListingCard({ listing, isOwn, onStatusChange, busy }: Po
             <Button size="sm" variant="outline" className="w-full" onClick={copySeller}>
               {copied ? (
                 <>
-                  <Check className="mr-1.5 h-3.5 w-3.5 text-green-500" /> Address copied
+                  <Check className="me-1.5 h-3.5 w-3.5 text-green-500" /> Address copied
                 </>
               ) : (
                 <>
-                  <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy seller address
+                  <Copy className="me-1.5 h-3.5 w-3.5" /> Copy seller address
                 </>
               )}
             </Button>

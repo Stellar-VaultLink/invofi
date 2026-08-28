@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 const HOLD_DURATION_DEFAULT = 1500;
@@ -33,6 +34,7 @@ export function HoldToConfirmButton({
 }: HoldToConfirmButtonProps) {
   const [holdProgress, setHoldProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
+  const t = useTranslations('Common.hold');
   const [announcement, setAnnouncement] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressRef = useRef(0);
@@ -58,7 +60,7 @@ export function HoldToConfirmButton({
     setIsHolding(true);
     progressRef.current = 0;
     announcedRef.current = false;
-    setAnnouncement('Hold to confirm');
+    setAnnouncement(t('start'));
 
     const step = (TICK_MS / holdDuration) * 100;
     timerRef.current = setInterval(() => {
@@ -67,7 +69,7 @@ export function HoldToConfirmButton({
 
       if (progressRef.current >= 50 && !announcedRef.current) {
         announcedRef.current = true;
-        setAnnouncement('Hold a little longer to confirm');
+        setAnnouncement(t('almost'));
       }
 
       if (progressRef.current >= 100) {
@@ -75,14 +77,14 @@ export function HoldToConfirmButton({
         onConfirm();
       }
     }, TICK_MS);
-  }, [disabled, holdDuration, clearHold, onConfirm]);
+  }, [disabled, holdDuration, clearHold, onConfirm, t]);
 
   const abortHold = useCallback(() => {
     if (isHolding && progressRef.current < 100) {
       clearHold();
-      setAnnouncement('Confirmation cancelled');
+      setAnnouncement(t('cancelled'));
     }
-  }, [isHolding, clearHold]);
+  }, [isHolding, clearHold, t]);
 
   const radius = 18;
   const circumference = 2 * Math.PI * radius;

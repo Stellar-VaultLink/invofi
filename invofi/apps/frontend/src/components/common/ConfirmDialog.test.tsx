@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { screen, fireEvent, act } from '@testing-library/react';
+// `render` wraps in NextIntlClientProvider — ConfirmDialog now takes its
+// default labels and hold announcements from the message catalogue.
+import { render } from '@/test/intl';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfirmDialog } from './ConfirmDialog';
 

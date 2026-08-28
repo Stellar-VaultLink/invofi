@@ -91,7 +91,7 @@ export const MarketplaceCard = memo(function MarketplaceCard({ invoice }: Market
 
         <Button asChild size="sm" className="w-full">
           <Link href={`/invoices/${invoice.id}`}>
-            Make Offer <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            Make Offer <ArrowRight className="ms-1.5 h-3.5 w-3.5 rtl:rotate-180" />
           </Link>
         </Button>
       </CardContent>

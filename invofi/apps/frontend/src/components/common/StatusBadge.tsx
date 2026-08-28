@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -18,12 +21,17 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
+  // `status` is the contract's own identifier (`Pending`, `Financed`, …); the
+  // catalogue turns it into display text. An unknown status falls through to
+  // the raw identifier rather than rendering an empty badge.
+  const t = useTranslations('Status');
+
   return (
     <Badge
       variant="outline"
       className={cn('font-medium text-xs', STATUS_STYLES[status] ?? 'bg-gray-50 text-gray-500', className)}
     >
-      {status}
+      {status in STATUS_STYLES ? t(status as keyof typeof STATUS_STYLES) : status}
     </Badge>
   );
 }

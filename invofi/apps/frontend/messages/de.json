@@ -1,0 +1,390 @@
+{
+  "Navbar": {
+    "dashboard": "Übersicht",
+    "marketplace": "Marktplatz",
+    "portfolio": "Portfolio",
+    "approvals": "Freigaben",
+    "wrongNetwork": "falsches Netzwerk",
+    "toggleTheme": "Design wechseln",
+    "testnet": "Testnet",
+    "viewContracts": "Adressen der Smart Contracts anzeigen",
+    "settings": "Einstellungen",
+    "signOut": "Abmelden"
+  },
+  "Footer": {
+    "tagline": "Dezentrale Rechnungsfinanzierung auf Stellar Soroban",
+    "stats": "Statistiken",
+    "github": "GitHub",
+    "docs": "Dokumentation",
+    "issues": "Issues",
+    "contractOnStellar": "Contract auf Stellar {network}:",
+    "viewOnStellarExpert": "InvoFi-Contract in Stellar Expert ansehen",
+    "openSource": "Open Source"
+  },
+  "DashboardLayout": {
+    "title": "Übersicht",
+    "description": "Verwalte deine erfassten Rechnungen, verfolge Finanzierungsangebote und behalte den Rückzahlungsstatus im Blick."
+  },
+  "Settings": {
+    "title": "Einstellungen",
+    "description": "Verwalte deine Kontoeinstellungen",
+    "profile": {
+      "label": "Profil",
+      "hint": "Anzeigenamen bearbeiten und Kontodaten ansehen"
+    },
+    "language": {
+      "title": "Sprache",
+      "label": "Anzeigesprache",
+      "hint": "Ändert Oberflächensprache, Zahlen- und Datumsformat sowie die Textrichtung."
+    },
+    "network": {
+      "title": "Netzwerk & Contracts",
+      "label": "Stellar-Netzwerk",
+      "connected": "Verbunden"
+    },
+    "account": {
+      "title": "Konto",
+      "signOut": "Abmelden",
+      "signingOut": "Wird abgemeldet…",
+      "signedOut": "Erfolgreich abgemeldet"
+    },
+    "contracts": {
+      "title": "Contracts",
+      "rpcUrl": "RPC-URL",
+      "horizonUrl": "Horizon-URL",
+      "registry": "Registry",
+      "financing": "Finanzierung",
+      "repayment": "Rückzahlung",
+      "notConfigured": "nicht konfiguriert",
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "explorer": "Explorer",
+      "copyAria": "Contract-ID {label} kopieren",
+      "explorerAria": "Contract {label} in Stellar Expert öffnen",
+      "copyFailed": "Kopieren fehlgeschlagen",
+      "copyFailedHint": "Zugriff auf die Zwischenablage nicht möglich."
+    }
+  },
+  "Errors": {
+    "forbidden": {
+      "title": "Zugriff verweigert",
+      "description": "Du hast keine Berechtigung für diese Ressource.",
+      "backHome": "Zurück zur Startseite"
+    },
+    "notFound": {
+      "title": "Seite nicht gefunden",
+      "description": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+      "backHome": "Zurück zur Startseite"
+    },
+    "unexpected": {
+      "title": "Etwas ist schiefgelaufen",
+      "description": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
+      "retry": "Erneut versuchen",
+      "reload": "Erneut versuchen"
+    }
+  },
+  "Status": {
+    "Pending": "Ausstehend",
+    "Financed": "Finanziert",
+    "Repaid": "Zurückgezahlt",
+    "Overdue": "Überfällig",
+    "Cancelled": "Storniert",
+    "Accepted": "Angenommen",
+    "Rejected": "Abgelehnt",
+    "Defaulted": "Ausgefallen"
+  },
+  "Common": {
+    "confirm": "Bestätigen",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "save": "Speichern",
+    "saving": "Wird gespeichert…",
+    "loading": "Wird geladen…",
+    "retry": "Erneut versuchen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "submit": "Absenden",
+    "submitting": "Wird gesendet…",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "export": "Exportieren",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "all": "Alle",
+    "none": "Keine",
+    "optional": "Optional",
+    "hold": {
+      "start": "Zum Bestätigen gedrückt halten",
+      "almost": "Noch etwas länger halten zum Bestätigen",
+      "cancelled": "Bestätigung abgebrochen"
+    }
+  },
+  "Dashboard": {
+    "titleBusiness": "Rechnungsübersicht",
+    "titleLender": "Portfolio des Kapitalgebers",
+    "welcomeBack": "Willkommen zurück",
+    "newInvoice": "Neue Rechnung",
+    "yourInvoices": "Deine Rechnungen",
+    "yourInvestments": "Deine Investitionen",
+    "browseMarketplace": "Marktplatz durchsuchen",
+    "exportCsv": "CSV exportieren",
+    "role": {
+      "business": "Unternehmen",
+      "lender": "Kapitalgeber",
+      "admin": "Administrator"
+    },
+    "wallet": {
+      "title": "Stellar-Wallet",
+      "connected": "Wallet verbunden. Du kannst Transaktionen signieren.",
+      "disconnected": "Verbinde deine Stellar-Wallet, um mit den Contracts zu interagieren."
+    },
+    "stats": {
+      "totalInvoices": "Rechnungen gesamt",
+      "pending": "Ausstehend",
+      "financed": "Finanziert",
+      "repaid": "Zurückgezahlt",
+      "activeInvestments": "Aktive Investitionen",
+      "pendingOffers": "Offene Angebote",
+      "totalYield": "Gesamtrendite"
+    },
+    "view": {
+      "grid": "Kachelansicht",
+      "table": "Tabellenansicht"
+    },
+    "empty": {
+      "invoices": "Noch keine Rechnungen.",
+      "createFirst": "Erstelle deine erste Rechnung",
+      "investments": "Noch keine aktiven Investitionen."
+    },
+    "cancel": {
+      "action": "Rechnung stornieren",
+      "title": "Rechnung stornieren?",
+      "description": "Rechnung {id} wird als storniert markiert. Das lässt sich nicht rückgängig machen.",
+      "confirm": "Ja, stornieren"
+    }
+  },
+  "Marketplace": {
+    "title": "Rechnungsmarktplatz",
+    "description": "Durchsuche finanzierbare Rechnungen und gib Angebote ab, um Rendite zu erzielen.",
+    "searchPlaceholder": "Nach Rechnungs-ID, Schuldnername oder Aussteller suchen…",
+    "view": {
+      "suggested": "Für mich vorgeschlagen",
+      "browseAll": "Alle durchsuchen"
+    },
+    "filters": {
+      "allStatuses": "Alle Status",
+      "allCurrencies": "Alle Währungen"
+    },
+    "sort": {
+      "label": "Rechnungen sortieren",
+      "newest": "Neueste zuerst",
+      "oldest": "Älteste zuerst",
+      "amount_desc": "Betrag: absteigend",
+      "amount_asc": "Betrag: aufsteigend",
+      "due_soonest": "Fälligkeit: am frühesten"
+    },
+    "empty": {
+      "title": "Keine Rechnung passt zu deinen Filtern",
+      "hint": "Passe die Suche oder die Filter an."
+    },
+    "clearSearch": "Suche zurücksetzen"
+  },
+  "Portfolio": {
+    "title": "Dein Portfolio",
+    "description": "Verfolge deine Finanzierungsangebote und Erträge — Aktualisierungen laufen live ein",
+    "refresh": "Aktualisieren",
+    "exportCsv": "CSV exportieren",
+    "stats": {
+      "active": "Aktive Investitionen",
+      "pending": "Offene Angebote",
+      "completed": "Abgeschlossen",
+      "value": "Portfoliowert (USD)",
+      "priceNote": "XLM/USD {price} {source}{asOf} — ungefähr",
+      "priceAsOf": " · Stand {time}",
+      "priceSource": {
+        "coingecko": "(CoinGecko)",
+        "env": "(Env-Override)",
+        "default": "(Standard)"
+      }
+    },
+    "yield": {
+      "estimated": "Geschätzter Ertrag bis heute: {amount}",
+      "accruing": "Wächst in Echtzeit über {count, plural, =0 {keine aktive Position} one {# aktive Position} other {# aktive Positionen}}",
+      "realized": "Realisierter Ertrag: {amount}",
+      "acrossRepaid": "Über {count, plural, one {# zurückgezahltes Angebot} other {# zurückgezahlte Angebote}}"
+    },
+    "empty": {
+      "title": "Noch keine Finanzierungsangebote.",
+      "browse": "Marktplatz durchsuchen"
+    },
+    "position": {
+      "days": "{count, plural, one {# Tag} other {# Tage}}",
+      "funded": "Finanziert am {date}",
+      "apy": "Jahresrendite",
+      "earnedToDate": "Bisher verdient",
+      "repayment": "Rückzahlung",
+      "percentRepaid": "{percent} zurückgezahlt",
+      "progressLabel": "{percent} der Gesamtschuld zurückgezahlt",
+      "repaidRemaining": "{repaid} zurückgezahlt · {remaining} offen",
+      "updated": "aktualisiert {when}"
+    },
+    "transfer": {
+      "title": "Position übertragen",
+      "description": "Positions-Token verbriefen deinen Anspruch auf finanzierte Rechnungen (1 Token = 1 Basiseinheit des Kapitals). Sende sie an eine andere Stellar-Wallet, um die Position zu übertragen.",
+      "secondaryBoard": "Auf Käufersuche? <link>Stelle die Position auf das Sekundärboard</link> — die Abwicklung läuft weiterhin hier, über diese Übertragung.",
+      "prefilled": "Betrag aus deinem Inserat übernommen ({amount} Token). Gib die Adresse des Käufers ein, um abzuwickeln.",
+      "refreshBalance": "Guthaben aktualisieren",
+      "connectWallet": "Verbinde eine Wallet, um Positionen zu sehen und zu übertragen.",
+      "notConfigured": "Positions-Token sind in diesem Deployment noch nicht konfiguriert.",
+      "needsTrustline": "Positions-Token sind Stellar-Assets — füge einmalig eine POS-Trustline hinzu, um sie zu empfangen und zu übertragen.",
+      "addTrustline": "POS-Trustline hinzufügen",
+      "adding": "Wird hinzugefügt…",
+      "trustlineAdded": "Trustline hinzugefügt",
+      "trustlineAddedHint": "Deine Wallet kann jetzt POS-Positions-Token halten.",
+      "trustlineFailed": "Trustline fehlgeschlagen",
+      "trustlineFailedHint": "Einrichtung der Trustline fehlgeschlagen",
+      "recipientLabel": "Empfängeradresse",
+      "amountLabel": "Betrag",
+      "available": "(verfügbar: {balance})",
+      "transfer": "Übertragen",
+      "transferring": "Wird übertragen…",
+      "invalidAddress": "Ungültige Adresse",
+      "invalidAddressHint": "Gib eine gültige Stellar-Adresse ein (G…).",
+      "invalidAmount": "Ungültiger Betrag",
+      "invalidAmountHint": "Gib einen Betrag mit höchstens {decimals} Nachkommastellen ein.",
+      "insufficient": "Guthaben reicht nicht",
+      "insufficientHint": "Du hältst nicht genug Positions-Token für diese Übertragung.",
+      "recipientTrustline": "Empfänger braucht eine Trustline",
+      "recipientTrustlineHint": "Die Wallet des Empfängers hat noch keine POS-Trustline. Bitte ihn, vor der Übertragung eine hinzuzufügen (in einer beliebigen Wallet oder in dieser App).",
+      "transferred": "Position übertragen",
+      "transferredHint": "{amount} Positions-Token an {recipient} gesendet.",
+      "transferFailed": "Übertragung fehlgeschlagen",
+      "transferFailedHint": "Transaktion fehlgeschlagen"
+    }
+  },
+  "Invoice": {
+    "title": "Rechnung",
+    "backToDashboard": "Zurück zur Übersicht",
+    "print": "Drucken / als PDF exportieren",
+    "notFound": "Rechnung nicht gefunden",
+    "fields": {
+      "amount": "Betrag",
+      "currency": "Währung",
+      "dueDate": "Fälligkeit",
+      "originator": "Aussteller"
+    },
+    "counterparty": {
+      "lender": "Kapitalgeber",
+      "business": "Unternehmen"
+    },
+    "cancel": {
+      "action": "Stornieren",
+      "title": "Diese Rechnung stornieren?",
+      "description": "Die Rechnung wird on-chain storniert und kann keine Finanzierungsangebote mehr erhalten. Das lässt sich nicht rückgängig machen.",
+      "confirm": "Rechnung stornieren",
+      "done": "Rechnung storniert",
+      "doneHint": "Die Rechnung ist jetzt on-chain storniert.",
+      "failed": "Stornierung der Rechnung fehlgeschlagen",
+      "undo": "Rückgängig",
+      "undoAlt": "Stornierung rückgängig machen",
+      "restored": "Rechnung wiederhergestellt",
+      "restoredHint": "Eine neue Rechnung mit denselben Konditionen wurde angelegt.",
+      "restoreFailed": "Wiederherstellung der Rechnung fehlgeschlagen",
+      "previewTitle": "Vorschau: Rechnung stornieren",
+      "previewDescription": "Prüfe die erwarteten Auswirkungen, bevor du diese Rechnung on-chain stornierst."
+    }
+  },
+  "Offers": {
+    "title": "Finanzierungsangebote ({count})",
+    "empty": "Noch keine Angebote.",
+    "makeOffer": "Angebot abgeben",
+    "markOverdue": "Als überfällig markieren",
+    "exportHint": "Angebote als CSV exportieren",
+    "exportEmpty": "Keine Angebote zum Exportieren",
+    "accept": "Annehmen",
+    "reject": "Ablehnen",
+    "repay": "Zurückzahlen",
+    "reclaim": "Einfordern",
+    "repayAmount": "Rückzahlungsbetrag",
+    "days": "{count, plural, one {# Tag} other {# Tage}}",
+    "repaid": "{amount} zurückgezahlt",
+    "remaining": "{amount} offen",
+    "remainingBalance": "Offener Betrag: {remaining} (Gesamtschuld {total} abzüglich {repaid})",
+    "form": {
+      "title": "Neues Finanzierungsangebot",
+      "amount": "Betrag",
+      "currency": "Währung",
+      "interest": "Zins (Basispunkte)",
+      "interestHint": "500 = {example}",
+      "duration": "Laufzeit (Tage)",
+      "submit": "Angebot absenden"
+    },
+    "confirm": {
+      "rejectTitle": "Dieses Angebot ablehnen?",
+      "rejectDescription": "Der Kapitalgeber wird über die Ablehnung informiert. Das lässt sich nicht rückgängig machen.",
+      "reclaimTitle": "Dieses Angebot einfordern?",
+      "reclaimDescription": "Damit wird das Angebot on-chain als ausgefallen markiert. Das Kapital wurde bei der Annahme bereits an das Unternehmen ausgezahlt — das gibt keine Mittel zurück und lässt sich nicht rückgängig machen."
+    },
+    "toast": {
+      "submitted": "Angebot abgegeben!",
+      "submittedHint": "Der Rechnungsaussteller wird benachrichtigt.",
+      "submitFailed": "Angebot konnte nicht abgegeben werden",
+      "accepted": "Angebot angenommen!",
+      "acceptedHint": "Die Rechnung ist jetzt als finanziert markiert.",
+      "acceptFailed": "Angebot konnte nicht angenommen werden",
+      "rejected": "Angebot abgelehnt.",
+      "rejectFailed": "Angebot konnte nicht abgelehnt werden",
+      "invalidAmount": "Gib einen gültigen Betrag ein",
+      "amountTooSmall": "Der Betrag muss größer als null sein",
+      "repaidFull": "Rechnung vollständig zurückgezahlt",
+      "repaidFullHint": "Kapital + Ertrag an den Kapitalgeber überwiesen. Die Rechnung ist zurückgezahlt.",
+      "repaidPartial": "Rückzahlung gesendet",
+      "repaidPartialHint": "Teilrückzahlung on-chain erfasst. Zahle weiter, bis der Saldo ausgeglichen ist.",
+      "repayFailed": "Rückzahlung fehlgeschlagen",
+      "markedOverdue": "Rechnung als überfällig markiert.",
+      "overdueFailed": "Markierung als überfällig fehlgeschlagen",
+      "reclaimed": "Angebot als ausgefallen markiert.",
+      "reclaimedHint": "Das ist ein On-Chain-Eintrag — die Beitreibung läuft off-chain.",
+      "reclaimFailed": "Einfordern fehlgeschlagen",
+      "undo": "Rückgängig",
+      "undoRejectAlt": "Ablehnung rückgängig machen",
+      "rejectUndone": "Ablehnung rückgängig gemacht",
+      "rejectUndoneHint": "Das Angebot ist wieder ausstehend.",
+      "undoRejectFailed": "Ablehnung konnte nicht rückgängig gemacht werden"
+    },
+    "preview": {
+      "accept": {
+        "title": "Vorschau: Angebot annehmen",
+        "description": "Prüfe die erwarteten Auswirkungen, bevor du dieses Finanzierungsangebot annimmst.",
+        "confirm": "Angebot annehmen"
+      },
+      "reject": {
+        "title": "Vorschau: Angebot ablehnen",
+        "description": "Prüfe die erwarteten Auswirkungen, bevor du dieses Angebot ablehnst. Der Kapitalgeber wird benachrichtigt, und das lässt sich nicht rückgängig machen.",
+        "confirm": "Angebot ablehnen"
+      },
+      "repay": {
+        "title": "Vorschau: Rechnung zurückzahlen",
+        "description": "Prüfe die erwartete Überweisung, bevor du die Rückzahlung absendest.",
+        "confirm": "Rückzahlung absenden"
+      },
+      "reclaim": {
+        "title": "Vorschau: Angebot einfordern",
+        "description": "Prüfe die erwarteten Auswirkungen, bevor du dieses Angebot on-chain als ausgefallen markierst. Das Kapital wurde bei der Annahme bereits ausgezahlt — das gibt keine Mittel zurück und lässt sich nicht rückgängig machen.",
+        "confirm": "Einfordern"
+      }
+    }
+  },
+  "Notifications": {
+    "title": "Benachrichtigungen",
+    "markAllRead": "Alle als gelesen markieren",
+    "emptyTitle": "Keine Benachrichtigungen",
+    "emptyDesc": "Ereignisse zu deinen Rechnungen und Angeboten erscheinen hier.",
+    "aria": "Benachrichtigungen",
+    "ariaUnread": "Benachrichtigungen ({count} ungelesen)",
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {m} Min.",
+    "hoursAgo": "vor {h} Std.",
+    "daysAgo": "vor {d} T."
+  }
+}

@@ -1,4 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { cleanup, screen, fireEvent, waitFor } from '@testing-library/react';
+// `render` wraps in NextIntlClientProvider — the settings page reads its copy
+// from the message catalogue (issue #227).
+import { render } from '@/test/intl';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ComponentType } from 'react';
 
@@ -30,6 +33,11 @@ async function renderSettingsPage() {
 // ── Tests ────────────────────────────────────────────────────────────────────
 describe('SettingsPage — Network & Contracts panel (issue #163)', () => {
   afterEach(() => {
+    // `renderSettingsPage` calls `vi.resetModules()` and re-imports the page,
+    // so the global teardown in src/test/setup.ts can end up holding a stale
+    // module instance and leave the previous render mounted. Unmount here,
+    // where the instance is the one this file rendered with.
+    cleanup();
     vi.restoreAllMocks();
     delete process.env.NEXT_PUBLIC_RPC_URL;
     delete process.env.NEXT_PUBLIC_HORIZON_URL;

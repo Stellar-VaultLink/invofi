@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Plus, FileText, TrendingUp, Wallet, Download, LayoutGrid, List, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,13 +19,16 @@ import { getUserProfile, supabase } from '@/lib/supabase';
 import { getXlmBalance } from '@/lib/horizon';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useFormat } from '@/hooks/useFormat';
+import { amountToStroops } from '@/lib/utils';
 import { STROOPS_PER_XLM } from '@/lib/constants';
-import { formatUnits } from '@/lib/formatters';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import type { UserProfile, Invoice } from '@/types';
 import { SupabaseUser } from '@/lib/types/supabase-auth';
 
 export default function DashboardPage() {
+  const t = useTranslations('Dashboard');
+  const format = useFormat();
   const router = useRouter();
   const { publicKey } = useWallet();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -103,13 +107,13 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              {isBusiness ? 'Invoice Dashboard' : 'Lender Portfolio'}
+              {isBusiness ? t('titleBusiness') : t('titleLender')}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              {profile?.display_name ?? 'Welcome back'}
+              {profile?.display_name ?? t('welcomeBack')}
               {profile?.role && (
-                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 capitalize">
-                  {profile.role}
+                <span className="ms-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                  {t(`role.${profile.role}`)}
                 </span>
               )}
             </p>
@@ -117,7 +121,7 @@ export default function DashboardPage() {
           {isBusiness && (
             <Button asChild className="w-full sm:w-auto">
               <Link href="/invoices/new">
-                <Plus className="mr-2 h-4 w-4" /> New Invoice
+                <Plus className="me-2 h-4 w-4" /> {t('newInvoice')}
               </Link>
             </Button>
           )}
@@ -127,19 +131,19 @@ export default function DashboardPage() {
         <Card className="mb-6 border-dashed">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Wallet className="h-4 w-4" /> Stellar Wallet
+              <Wallet className="h-4 w-4" /> {t('wallet.title')}
             </CardTitle>
             <CardDescription>
               {publicKey
-                ? 'Wallet connected. You can sign transactions.'
-                : 'Connect your Stellar wallet to interact with contracts.'}
+                ? t('wallet.connected')
+                : t('wallet.disconnected')}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4">
             <WalletButton />
             {xlmBalance !== null && (
               <span className="text-sm text-muted-foreground font-mono">
-                {formatUnits(xlmBalance)}
+                {format.currency(amountToStroops(xlmBalance), 'XLM', { maximumFractionDigits: 2 })}
               </span>
             )}
           </CardContent>
@@ -149,17 +153,17 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {isBusiness ? (
             <>
-              <StatCard icon={FileText} label="Total Invoices" value={invoices.length} />
-              <StatCard icon={FileText} label="Pending" value={invoices.filter(i => i.status === 'Pending').length} />
-              <StatCard icon={TrendingUp} label="Financed" value={invoices.filter(i => i.status === 'Financed').length} />
-              <StatCard icon={FileText} label="Repaid" value={invoices.filter(i => i.status === 'Repaid').length} />
+              <StatCard icon={FileText} label={t('stats.totalInvoices')} value={format.number(invoices.length)} />
+              <StatCard icon={FileText} label={t('stats.pending')} value={format.number(invoices.filter(i => i.status === 'Pending').length)} />
+              <StatCard icon={TrendingUp} label={t('stats.financed')} value={format.number(invoices.filter(i => i.status === 'Financed').length)} />
+              <StatCard icon={FileText} label={t('stats.repaid')} value={format.number(invoices.filter(i => i.status === 'Repaid').length)} />
             </>
           ) : (
             <>
-              <StatCard icon={TrendingUp} label="Active Investments" value={0} />
-              <StatCard icon={TrendingUp} label="Pending Offers" value={0} />
-              <StatCard icon={FileText} label="Repaid" value={0} />
-              <StatCard icon={TrendingUp} label="Total Yield" value="—" />
+              <StatCard icon={TrendingUp} label={t('stats.activeInvestments')} value={format.number(0)} />
+              <StatCard icon={TrendingUp} label={t('stats.pendingOffers')} value={format.number(0)} />
+              <StatCard icon={FileText} label={t('stats.repaid')} value={format.number(0)} />
+              <StatCard icon={TrendingUp} label={t('stats.totalYield')} value="—" />
             </>
           )}
         </div>
@@ -176,24 +180,24 @@ export default function DashboardPage() {
         {isBusiness && (
           <section>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Your Invoices</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t('yourInvoices')}</h2>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 {invoices.length > 0 && !loading && (
                   <div className="flex items-center rounded-md border border-border">
                     <button
                       onClick={() => setView('grid')}
-                      className={`p-2 rounded-l-md ${view === 'grid' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                      title="Grid view"
-                      aria-label="Grid view"
+                      className={`p-2 rounded-s-md ${view === 'grid' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      title={t('view.grid')}
+                      aria-label={t('view.grid')}
                       aria-pressed={view === 'grid'}
                     >
                       <LayoutGrid className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setView('table')}
-                      className={`p-2 rounded-r-md border-l border-border ${view === 'table' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                      title="Table view"
-                      aria-label="Table view"
+                      className={`p-2 rounded-e-md border-s border-border ${view === 'table' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      title={t('view.table')}
+                      aria-label={t('view.table')}
                       aria-pressed={view === 'table'}
                     >
                       <List className="h-4 w-4" />
@@ -202,7 +206,7 @@ export default function DashboardPage() {
                 )}
                 {invoices.length > 0 && !loading && (
                   <Button variant="outline" size="sm" onClick={exportInvoicesCsv} className="whitespace-nowrap">
-                    <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
+                    <Download className="me-1.5 h-3.5 w-3.5" /> {t('exportCsv')}
                   </Button>
                 )}
               </div>
@@ -215,10 +219,10 @@ export default function DashboardPage() {
             ) : invoices.length === 0 ? (
               <div className="text-center py-16 border-2 border-dashed border-border rounded-xl">
                 <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground mb-4">No invoices yet.</p>
+                <p className="text-muted-foreground mb-4">{t('empty.invoices')}</p>
                 <Button asChild>
                   <Link href="/invoices/new">
-                    <Plus className="mr-2 h-4 w-4" /> Create your first invoice
+                    <Plus className="me-2 h-4 w-4" /> {t('empty.createFirst')}
                   </Link>
                 </Button>
               </div>
@@ -235,8 +239,8 @@ export default function DashboardPage() {
                     {inv.status === 'Pending' && (
                       <button
                         onClick={() => setCancelTarget(inv)}
-                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-red-50 dark:bg-red-950 text-red-500 hover:bg-red-100 dark:hover:bg-red-900"
-                        title="Cancel invoice"
+                        className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-red-50 dark:bg-red-950 text-red-500 hover:bg-red-100 dark:hover:bg-red-900"
+                        title={t('cancel.action')}
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -250,12 +254,12 @@ export default function DashboardPage() {
 
         {!isBusiness && (
           <section>
-            <h2 className="text-lg font-semibold text-foreground mb-4">Your Investments</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">{t('yourInvestments')}</h2>
             <div className="text-center py-16 border-2 border-dashed border-border rounded-xl">
               <TrendingUp className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-muted-foreground mb-4">No active investments yet.</p>
+              <p className="text-muted-foreground mb-4">{t('empty.investments')}</p>
               <Button asChild>
-                <Link href="/marketplace">Browse Marketplace</Link>
+                <Link href="/marketplace">{t('browseMarketplace')}</Link>
               </Button>
             </div>
           </section>
@@ -266,9 +270,9 @@ export default function DashboardPage() {
       <ConfirmDialog
         open={cancelTarget !== null}
         onOpenChange={open => { if (!open) setCancelTarget(null); }}
-        title="Cancel invoice?"
-        description={`Invoice ${cancelTarget?.id ?? ''} will be marked as Cancelled. This cannot be undone.`}
-        confirmLabel="Yes, cancel"
+        title={t('cancel.title')}
+        description={t('cancel.description', { id: cancelTarget?.id ?? '' })}
+        confirmLabel={t('cancel.confirm')}
         variant="destructive"
         holdToConfirm
         onConfirm={handleCancelInvoice}

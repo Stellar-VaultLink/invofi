@@ -107,7 +107,7 @@ interface ScoreBreakdownPanelProps {
 
 function ScoreBreakdownPanel({ breakdown, score }: ScoreBreakdownPanelProps) {
   return (
-    <div className="absolute z-10 top-full mt-1 right-0 w-56 rounded-lg border bg-popover p-3 shadow-lg text-popover-foreground space-y-2">
+    <div className="absolute z-10 top-full mt-1 end-0 w-56 rounded-lg border bg-popover p-3 shadow-lg text-popover-foreground space-y-2">
       <p className="text-xs font-semibold">Score breakdown ({score}/100)</p>
       <ScoreBar label="Risk"     value={breakdown.riskScore} />
       <ScoreBar label="Currency" value={breakdown.currencyScore} />
@@ -207,7 +207,7 @@ function MatchedInvoiceCard({ result }: MatchedInvoiceCardProps) {
 
         <Button asChild size="sm" className="w-full">
           <Link href={`/invoices/${invoice.id}`}>
-            Make Offer <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            Make Offer <ArrowRight className="ms-1.5 h-3.5 w-3.5 rtl:rotate-180" />
           </Link>
         </Button>
       </CardContent>
@@ -274,7 +274,7 @@ export function SuggestedMatches({
           <h2 className="text-sm font-semibold text-foreground">
             Suggested for you
             {!isLoading && matches.length > 0 && (
-              <span className="ml-1.5 text-muted-foreground font-normal">
+              <span className="ms-1.5 text-muted-foreground font-normal">
                 ({matches.length} match{matches.length !== 1 ? 'es' : ''})
               </span>
             )}

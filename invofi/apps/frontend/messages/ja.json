@@ -1,0 +1,390 @@
+{
+  "Navbar": {
+    "dashboard": "ダッシュボード",
+    "marketplace": "マーケット",
+    "portfolio": "ポートフォリオ",
+    "approvals": "承認",
+    "wrongNetwork": "ネットワークが違います",
+    "toggleTheme": "テーマを切り替え",
+    "testnet": "テストネット",
+    "viewContracts": "スマートコントラクトのアドレスを表示",
+    "settings": "設定",
+    "signOut": "ログアウト"
+  },
+  "Footer": {
+    "tagline": "Stellar Soroban 上の分散型請求書ファイナンス",
+    "stats": "統計",
+    "github": "GitHub",
+    "docs": "ドキュメント",
+    "issues": "課題",
+    "contractOnStellar": "Stellar {network} のコントラクト:",
+    "viewOnStellarExpert": "InvoFi のコントラクトを Stellar Expert で表示",
+    "openSource": "オープンソース"
+  },
+  "DashboardLayout": {
+    "title": "ダッシュボード",
+    "description": "登録済みの請求書を管理し、ファイナンス条件を追跡し、返済状況を確認します。"
+  },
+  "Settings": {
+    "title": "設定",
+    "description": "アカウントの設定を管理します",
+    "profile": {
+      "label": "プロフィール",
+      "hint": "表示名を編集し、アカウント情報を確認します"
+    },
+    "language": {
+      "title": "言語",
+      "label": "表示言語",
+      "hint": "画面の言語、数値と日付の書式、文字の方向を変更します。"
+    },
+    "network": {
+      "title": "ネットワークとコントラクト",
+      "label": "Stellar ネットワーク",
+      "connected": "接続済み"
+    },
+    "account": {
+      "title": "アカウント",
+      "signOut": "ログアウト",
+      "signingOut": "ログアウトしています…",
+      "signedOut": "ログアウトしました"
+    },
+    "contracts": {
+      "title": "コントラクト",
+      "rpcUrl": "RPC の URL",
+      "horizonUrl": "Horizon の URL",
+      "registry": "レジストリ",
+      "financing": "ファイナンス",
+      "repayment": "返済",
+      "notConfigured": "未設定",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "explorer": "エクスプローラー",
+      "copyAria": "{label} のコントラクト ID をコピー",
+      "explorerAria": "{label} のコントラクトを Stellar Expert で開く",
+      "copyFailed": "コピーできませんでした",
+      "copyFailedHint": "クリップボードにアクセスできませんでした。"
+    }
+  },
+  "Errors": {
+    "forbidden": {
+      "title": "アクセスが拒否されました",
+      "description": "このリソースにアクセスする権限がありません。",
+      "backHome": "ホームに戻る"
+    },
+    "notFound": {
+      "title": "ページが見つかりません",
+      "description": "お探しのページは存在しないか、移動されました。",
+      "backHome": "ホームに戻る"
+    },
+    "unexpected": {
+      "title": "問題が発生しました",
+      "description": "予期しないエラーが発生しました。もう一度お試しください。",
+      "retry": "再試行",
+      "reload": "再試行"
+    }
+  },
+  "Status": {
+    "Pending": "保留中",
+    "Financed": "ファイナンス済み",
+    "Repaid": "返済済み",
+    "Overdue": "期限超過",
+    "Cancelled": "キャンセル済み",
+    "Accepted": "承諾済み",
+    "Rejected": "却下",
+    "Defaulted": "デフォルト"
+  },
+  "Common": {
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "save": "保存",
+    "saving": "保存しています…",
+    "loading": "読み込んでいます…",
+    "retry": "再試行",
+    "back": "戻る",
+    "next": "次へ",
+    "submit": "送信",
+    "submitting": "送信しています…",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "export": "エクスポート",
+    "search": "検索",
+    "filter": "絞り込み",
+    "all": "すべて",
+    "none": "なし",
+    "optional": "任意",
+    "hold": {
+      "start": "長押しで確定",
+      "almost": "もう少し長押しすると確定します",
+      "cancelled": "確定を取り消しました"
+    }
+  },
+  "Dashboard": {
+    "titleBusiness": "請求書ダッシュボード",
+    "titleLender": "レンダーのポートフォリオ",
+    "welcomeBack": "おかえりなさい",
+    "newInvoice": "新しい請求書",
+    "yourInvoices": "あなたの請求書",
+    "yourInvestments": "あなたの投資",
+    "browseMarketplace": "マーケットを見る",
+    "exportCsv": "CSV をエクスポート",
+    "role": {
+      "business": "事業者",
+      "lender": "レンダー",
+      "admin": "管理者"
+    },
+    "wallet": {
+      "title": "Stellar ウォレット",
+      "connected": "ウォレットに接続しました。取引に署名できます。",
+      "disconnected": "コントラクトを利用するには Stellar ウォレットを接続してください。"
+    },
+    "stats": {
+      "totalInvoices": "請求書の合計",
+      "pending": "保留中",
+      "financed": "ファイナンス済み",
+      "repaid": "返済済み",
+      "activeInvestments": "進行中の投資",
+      "pendingOffers": "保留中のオファー",
+      "totalYield": "合計利回り"
+    },
+    "view": {
+      "grid": "グリッド表示",
+      "table": "テーブル表示"
+    },
+    "empty": {
+      "invoices": "請求書はまだありません。",
+      "createFirst": "最初の請求書を作成する",
+      "investments": "進行中の投資はまだありません。"
+    },
+    "cancel": {
+      "action": "請求書をキャンセル",
+      "title": "請求書をキャンセルしますか？",
+      "description": "請求書 {id} はキャンセル済みになります。この操作は取り消せません。",
+      "confirm": "はい、キャンセルします"
+    }
+  },
+  "Marketplace": {
+    "title": "請求書マーケット",
+    "description": "ファイナンス可能な請求書を見て、利回りを得るためにオファーを出します。",
+    "searchPlaceholder": "請求書 ID、債務者名、発行者で検索…",
+    "view": {
+      "suggested": "あなたへのおすすめ",
+      "browseAll": "すべて見る"
+    },
+    "filters": {
+      "allStatuses": "すべてのステータス",
+      "allCurrencies": "すべての通貨"
+    },
+    "sort": {
+      "label": "請求書を並べ替え",
+      "newest": "新しい順",
+      "oldest": "古い順",
+      "amount_desc": "金額: 高い順",
+      "amount_asc": "金額: 低い順",
+      "due_soonest": "支払期日: 近い順"
+    },
+    "empty": {
+      "title": "条件に一致する請求書はありません",
+      "hint": "検索条件や絞り込みを変えてみてください。"
+    },
+    "clearSearch": "検索をクリア"
+  },
+  "Portfolio": {
+    "title": "あなたのポートフォリオ",
+    "description": "ファイナンスのオファーとリターンを追跡します。更新はリアルタイムで届きます",
+    "refresh": "更新",
+    "exportCsv": "CSV をエクスポート",
+    "stats": {
+      "active": "進行中の投資",
+      "pending": "保留中のオファー",
+      "completed": "完了",
+      "value": "ポートフォリオ評価額 (USD)",
+      "priceNote": "XLM/USD {price} {source}{asOf} — 概算",
+      "priceAsOf": " · {time} 時点",
+      "priceSource": {
+        "coingecko": "(CoinGecko)",
+        "env": "(環境変数による上書き)",
+        "default": "(既定)"
+      }
+    },
+    "yield": {
+      "estimated": "現時点の推定利回り: {amount}",
+      "accruing": "{count, plural, =0 {進行中のポジションはありません} other {# 件の進行中ポジション}}でリアルタイムに積み上がっています",
+      "realized": "実現利回り: {amount}",
+      "acrossRepaid": "{count, plural, other {# 件の返済済みオファー}}にわたって"
+    },
+    "empty": {
+      "title": "ファイナンスのオファーはまだありません。",
+      "browse": "マーケットを見る"
+    },
+    "position": {
+      "days": "{count, plural, other {# 日}}",
+      "funded": "{date} にファイナンス",
+      "apy": "年利",
+      "earnedToDate": "現時点の獲得額",
+      "repayment": "返済",
+      "percentRepaid": "{percent} 返済済み",
+      "progressLabel": "支払総額の {percent} を返済済み",
+      "repaidRemaining": "{repaid} 返済済み・残り {remaining}",
+      "updated": "更新 {when}"
+    },
+    "transfer": {
+      "title": "ポジションを譲渡",
+      "description": "ポジショントークンはファイナンス済み請求書に対するあなたの請求権を表します (1 トークン = 元本の 1 基本単位)。別の Stellar ウォレットに送るとポジションを譲渡できます。",
+      "secondaryBoard": "買い手をお探しですか？<link>セカンダリーボードにポジションを掲載</link>——決済は引き続きここで、この送付によって行われます。",
+      "prefilled": "金額は掲載内容から自動入力されました ({amount} トークン)。決済するには買い手のアドレスを入力してください。",
+      "refreshBalance": "残高を更新",
+      "connectWallet": "ポジションを表示・譲渡するにはウォレットを接続してください。",
+      "notConfigured": "このデプロイではポジショントークンがまだ設定されていません。",
+      "needsTrustline": "ポジショントークンは Stellar のアセットです。受け取りと譲渡には POS のトラストラインを一度追加してください。",
+      "addTrustline": "POS のトラストラインを追加",
+      "adding": "追加しています…",
+      "trustlineAdded": "トラストラインを追加しました",
+      "trustlineAddedHint": "ウォレットで POS ポジショントークンを保有できるようになりました。",
+      "trustlineFailed": "トラストラインに失敗しました",
+      "trustlineFailedHint": "トラストラインの設定に失敗しました",
+      "recipientLabel": "送付先アドレス",
+      "amountLabel": "金額",
+      "available": "(利用可能: {balance})",
+      "transfer": "譲渡",
+      "transferring": "譲渡しています…",
+      "invalidAddress": "アドレスが正しくありません",
+      "invalidAddressHint": "有効な Stellar アドレス (G…) を入力してください。",
+      "invalidAmount": "金額が正しくありません",
+      "invalidAmountHint": "小数点以下 {decimals} 桁までの金額を入力してください。",
+      "insufficient": "残高が不足しています",
+      "insufficientHint": "この譲渡に必要なポジショントークンが足りません。",
+      "recipientTrustline": "送付先にトラストラインが必要です",
+      "recipientTrustlineHint": "送付先ウォレットにはまだ POS のトラストラインがありません。譲渡の前に追加してもらってください (どのウォレットでも、またはこのアプリでも可能です)。",
+      "transferred": "ポジションを譲渡しました",
+      "transferredHint": "{recipient} に {amount} のポジショントークンを送りました。",
+      "transferFailed": "譲渡に失敗しました",
+      "transferFailedHint": "取引に失敗しました"
+    }
+  },
+  "Invoice": {
+    "title": "請求書",
+    "backToDashboard": "ダッシュボードに戻る",
+    "print": "印刷 / PDF 出力",
+    "notFound": "請求書が見つかりません",
+    "fields": {
+      "amount": "金額",
+      "currency": "通貨",
+      "dueDate": "支払期日",
+      "originator": "発行者"
+    },
+    "counterparty": {
+      "lender": "レンダー",
+      "business": "事業者"
+    },
+    "cancel": {
+      "action": "キャンセル",
+      "title": "この請求書をキャンセルしますか？",
+      "description": "請求書はオンチェーンでキャンセルされ、以後ファイナンスのオファーを受け取れなくなります。この操作は取り消せません。",
+      "confirm": "請求書をキャンセル",
+      "done": "請求書をキャンセルしました",
+      "doneHint": "請求書はオンチェーンでキャンセルされました。",
+      "failed": "請求書のキャンセルに失敗しました",
+      "undo": "元に戻す",
+      "undoAlt": "キャンセルを元に戻す",
+      "restored": "請求書を復元しました",
+      "restoredHint": "同じ条件で新しい請求書を作成しました。",
+      "restoreFailed": "請求書の復元に失敗しました",
+      "previewTitle": "プレビュー: 請求書のキャンセル",
+      "previewDescription": "この請求書をオンチェーンでキャンセルする前に、想定される影響を確認してください。"
+    }
+  },
+  "Offers": {
+    "title": "ファイナンスのオファー ({count})",
+    "empty": "オファーはまだありません。",
+    "makeOffer": "オファーを出す",
+    "markOverdue": "期限超過にする",
+    "exportHint": "オファーを CSV でエクスポート",
+    "exportEmpty": "エクスポートするオファーがありません",
+    "accept": "承諾",
+    "reject": "却下",
+    "repay": "返済",
+    "reclaim": "回収",
+    "repayAmount": "返済額",
+    "days": "{count, plural, other {# 日}}",
+    "repaid": "{amount} 返済済み",
+    "remaining": "残り {amount}",
+    "remainingBalance": "残高: {remaining} (支払総額 {total} から {repaid} を差し引き)",
+    "form": {
+      "title": "新しいファイナンスのオファー",
+      "amount": "金額",
+      "currency": "通貨",
+      "interest": "金利 (ベーシスポイント)",
+      "interestHint": "500 = {example}",
+      "duration": "期間 (日)",
+      "submit": "オファーを送信"
+    },
+    "confirm": {
+      "rejectTitle": "このオファーを却下しますか？",
+      "rejectDescription": "オファーが却下されたことがレンダーに通知されます。この操作は取り消せません。",
+      "reclaimTitle": "このオファーを回収しますか？",
+      "reclaimDescription": "オファーをオンチェーンでデフォルトとして記録します。元本は承諾時にすでに事業者へ支払われています——資金は戻らず、取り消しもできません。"
+    },
+    "toast": {
+      "submitted": "オファーを送信しました。",
+      "submittedHint": "請求書の発行者に通知されます。",
+      "submitFailed": "オファーの送信に失敗しました",
+      "accepted": "オファーを承諾しました。",
+      "acceptedHint": "請求書はファイナンス済みになりました。",
+      "acceptFailed": "オファーの承諾に失敗しました",
+      "rejected": "オファーを却下しました。",
+      "rejectFailed": "オファーの却下に失敗しました",
+      "invalidAmount": "有効な金額を入力してください",
+      "amountTooSmall": "金額は 0 より大きい必要があります",
+      "repaidFull": "請求書を全額返済しました",
+      "repaidFullHint": "元本と利回りをレンダーへ送金しました。請求書は返済済みです。",
+      "repaidPartial": "返済を送信しました",
+      "repaidPartialHint": "一部返済をオンチェーンに記録しました。残高が解消するまで返済を続けてください。",
+      "repayFailed": "返済に失敗しました",
+      "markedOverdue": "請求書を期限超過にしました。",
+      "overdueFailed": "期限超過にできませんでした",
+      "reclaimed": "オファーをデフォルトとして記録しました。",
+      "reclaimedHint": "これはオンチェーンの記録です——回収はオフチェーンで進めてください。",
+      "reclaimFailed": "回収に失敗しました",
+      "undo": "元に戻す",
+      "undoRejectAlt": "却下を元に戻す",
+      "rejectUndone": "却下を元に戻しました",
+      "rejectUndoneHint": "オファーは再び保留中です。",
+      "undoRejectFailed": "却下を元に戻せませんでした"
+    },
+    "preview": {
+      "accept": {
+        "title": "プレビュー: オファーの承諾",
+        "description": "このファイナンスのオファーを承諾する前に、想定される影響を確認してください。",
+        "confirm": "オファーを承諾"
+      },
+      "reject": {
+        "title": "プレビュー: オファーの却下",
+        "description": "このオファーを却下する前に、想定される影響を確認してください。レンダーに通知され、取り消せません。",
+        "confirm": "オファーを却下"
+      },
+      "repay": {
+        "title": "プレビュー: 請求書の返済",
+        "description": "返済を送信する前に、想定される送金を確認してください。",
+        "confirm": "返済を送信"
+      },
+      "reclaim": {
+        "title": "プレビュー: オファーの回収",
+        "description": "このオファーをオンチェーンでデフォルトとして記録する前に、想定される影響を確認してください。元本は承諾時にすでに支払われています——資金は戻らず、取り消しもできません。",
+        "confirm": "回収"
+      }
+    }
+  },
+  "Notifications": {
+    "title": "通知",
+    "markAllRead": "すべて既読にする",
+    "emptyTitle": "通知はありません",
+    "emptyDesc": "請求書とオファーのイベントがここに表示されます。",
+    "aria": "通知",
+    "ariaUnread": "通知 (未読 {count} 件)",
+    "justNow": "たった今",
+    "minutesAgo": "{m} 分前",
+    "hoursAgo": "{h} 時間前",
+    "daysAgo": "{d} 日前"
+  }
+}

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
+// `render` wraps in NextIntlClientProvider — the error boundary reads its
+// copy from the message catalogue (issue #227).
+import { render } from '@/test/intl';
 import type { ComponentType } from 'react';
 
 const { mockRefresh } = vi.hoisted(() => ({ mockRefresh: vi.fn() }));

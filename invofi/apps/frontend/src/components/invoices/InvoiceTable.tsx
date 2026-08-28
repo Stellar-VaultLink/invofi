@@ -47,10 +47,10 @@ export function InvoiceTable({ invoices, onRowClick, loading }: InvoiceTableProp
   });
 
   function SortIcon({ field }: { field: SortField }) {
-    if (sortField !== field) return <ChevronsUpDown className="ml-1 h-3 w-3 opacity-40" />;
+    if (sortField !== field) return <ChevronsUpDown className="ms-1 h-3 w-3 opacity-40" />;
     return sortDir === 'asc'
-      ? <ChevronUp className="ml-1 h-3 w-3" />
-      : <ChevronDown className="ml-1 h-3 w-3" />;
+      ? <ChevronUp className="ms-1 h-3 w-3" />
+      : <ChevronDown className="ms-1 h-3 w-3" />;
   }
 
   function SortableHead({ field, label }: { field: SortField; label: string }) {

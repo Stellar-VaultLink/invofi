@@ -163,7 +163,7 @@ export function InitiateTransactionForm({
             <Button type="submit" disabled={submitting}>
               {submitting ? (
                 <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Queuing…
+                  <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" /> Queuing…
                 </>
               ) : (
                 'Queue for approval'

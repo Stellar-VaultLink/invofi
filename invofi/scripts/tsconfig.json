@@ -21,6 +21,8 @@
     "keeper.test.ts",
     "e2e-onchain.ts",
     "health-collector.ts",
-    "health-collector.test.ts"
+    "health-collector.test.ts",
+    "invoice-reminders.ts",
+    "invoice-reminders.test.ts"
   ]
 }

@@ -23,6 +23,17 @@ jobs:
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # PR-controlled fields are passed as env vars rather than interpolated
+      # directly into the script below. `${{ }}` substitution happens as a
+      # raw text splice into the YAML *before* bash ever sees it, so a body
+      # containing backticks or `$(...)` would otherwise be executed as
+      # commands in this pull_request_target context (which holds a
+      # write-scoped token). Env vars are passed as opaque string values
+      # instead, so bash only ever sees "$BODY" as data.
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_DRAFT: ${{ github.event.pull_request.draft }}
     steps:
       - name: Verify PR author is assigned to linked issue
         shell: bash
@@ -30,9 +41,9 @@ jobs:
           set -euo pipefail
 
           REPO="${GITHUB_REPOSITORY}"
-          PR="${{ github.event.pull_request.number }}"
-          AUTHOR="${{ github.event.pull_request.user.login }}"
-          BODY="${{ github.event.pull_request.body }}"
+          PR="${PR_NUMBER}"
+          AUTHOR="${PR_AUTHOR}"
+          BODY="${PR_BODY}"
 
           # Bot-authored PRs are exempt (contributors bot, dependabot)
           if [[ "${AUTHOR}" == "github-actions[bot]" ]] || [[ "${AUTHOR}" == "app/dependabot" ]] || [[ "${AUTHOR}" == "@dependabot" ]] || [[ "${AUTHOR}" == *"[bot]" ]]; then
@@ -41,7 +52,7 @@ jobs:
           fi
 
           # Draft PRs are exempt (not ready for merge anyway)
-          IS_DRAFT="${{ github.event.pull_request.draft }}"
+          IS_DRAFT="${PR_DRAFT}"
           if [ "${IS_DRAFT}" = "true" ]; then
             echo "Draft PR — skipping assignment check"
             exit 0
@@ -68,17 +79,18 @@ jobs:
           if [ "${IS_ASSIGNED}" -eq 0 ]; then
             echo "❌ ${AUTHOR} is NOT assigned to #${LINKED_ISSUE}"
 
-            gh pr comment "${PR}" --repo "${REPO}" --body "$(cat <<'MSG'
-            🤖 **Assignment check** — ⚠️ You are not assigned to the linked issue.
+            COMMENT_BODY="$(cat <<'MSG'
+          🤖 **Assignment check** — ⚠️ You are not assigned to the linked issue.
 
-            **To get your PR reviewed and merged:**
-            1. Comment on the issue requesting assignment
-            2. Wait for a maintainer to assign you
-            3. The auto-merge bot will then evaluate your PR
+          **To get your PR reviewed and merged:**
+          1. Comment on the issue requesting assignment
+          2. Wait for a maintainer to assign you
+          3. The auto-merge bot will then evaluate your PR
 
-            Maintainers assign issues to avoid duplicate work and ensure quality review. Unassigned PRs will not be auto-merged.
-            MSG
-            )" 2>/dev/null || true
+          Maintainers assign issues to avoid duplicate work and ensure quality review. Unassigned PRs will not be auto-merged.
+          MSG
+            )"
+            gh pr comment "${PR}" --repo "${REPO}" --body "${COMMENT_BODY}" 2>/dev/null || true
 
             # Add a label to mark the PR as unassigned
             gh pr edit "${PR}" --repo "${REPO}" --add-label "needs-assignment" 2>/dev/null || true

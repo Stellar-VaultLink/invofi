@@ -32,7 +32,9 @@
       "titlePart2": "On-Chain.",
       "description": "Businesses tokenize unpaid invoices as Soroban assets and get immediate liquidity. Investors earn yield by financing real-world receivables — trustlessly.",
       "getStarted": "Get Started",
-      "browseMarketplace": "Browse Marketplace"
+      "browseMarketplace": "Browse Marketplace",
+      "tryDemo": "Try the demo",
+      "demoTestnetOnly": "Testnet-only demo data"
     },
     "stats": {
       "totalInvoices": "Total Invoices Financed",
@@ -107,7 +109,8 @@
       "title": "Ready to get started?",
       "subtitle": "Connect your Stellar wallet or create an account — no bank, no broker, no wait.",
       "imBusinessBtn": "I'm a Business",
-      "imLenderBtn": "I'm a Lender"
+      "imLenderBtn": "I'm a Lender",
+      "tryDemo": "Try the demo — no wallet needed"
     }
   },
   "Notifications": {

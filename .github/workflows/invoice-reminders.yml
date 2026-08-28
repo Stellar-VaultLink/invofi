@@ -1,0 +1,86 @@
+name: invoice-reminders
+
+# InvoFi automated invoice reminder system (Closes #224).
+#
+# Runs once a day to:
+#   1. Read the `reminder_configs` singleton row (admin on/off + stage list).
+#   2. Query Financed/Overdue invoices and compute which ones match a
+#      schedule stage today (7/1 days before due, on due date, 1/7 days
+#      after) — skipping opted-out invoices and stages already sent.
+#   3. Email the originator via Resend and, if configured, POST a signed
+#      webhook payload with retry.
+#   4. Log every attempt to Supabase `invoice_reminders`.
+#
+# The /invoices/[id] page shows per-invoice history + an opt-out toggle;
+# /dashboard/reminders (admin-only) shows settings + cross-invoice activity.
+#
+# Required repo configuration (once):
+#   Secrets:
+#     SUPABASE_URL               — your Supabase project URL
+#     SUPABASE_SERVICE_ROLE_KEY  — service role key (bypasses RLS for writes)
+#     RESEND_API_KEY             — Resend transactional email API key
+#   Variables (optional):
+#     REMINDER_FROM_EMAIL        — default: reminders@invofi.app
+#
+# Enable/disable on demand:
+#   gh workflow enable  invoice-reminders.yml -R Stellar-VaultLink/invofi
+#   gh workflow disable invoice-reminders.yml -R Stellar-VaultLink/invofi
+
+on:
+  schedule:
+    # Once a day at 09:00 UTC — after the keeper (:00) and health collector
+    # (:45) so overdue status transitions have already landed.
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Compute and log but do not send emails/webhooks or write to Supabase'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    name: Invoice reminders / daily
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: invofi/scripts
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+      # ── Node.js ───────────────────────────────────────────────────────────
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: invofi/scripts/package-lock.json
+
+      # ── Install dependencies ──────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Type-check ────────────────────────────────────────────────────────
+      - name: Type-check
+        run: npm run type-check
+
+      # ── Run unit tests ────────────────────────────────────────────────────
+      - name: Run unit tests
+        run: npm run test:invoice-reminders
+
+      # ── Run collector ─────────────────────────────────────────────────────
+      - name: Send due-date reminders
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_FROM_EMAIL: ${{ vars.REMINDER_FROM_EMAIL || 'reminders@invofi.app' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: npm run invoice-reminders

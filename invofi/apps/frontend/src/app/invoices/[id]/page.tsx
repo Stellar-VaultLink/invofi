@@ -11,6 +11,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { OfferList } from '@/components/invoices/OfferList';
 import { InvoiceDocuments } from '@/components/invoices/documents/InvoiceDocuments';
+import { ReminderPanel } from '@/components/invoices/ReminderPanel';
 import { MessagingPanel } from '@/components/invoices/MessagingPanel';
 import { EventTimeline } from '@/components/invoices/EventTimeline';
 import { SimulateConfirm } from '@/components/common/SimulateConfirm';
@@ -263,6 +264,9 @@ export default function InvoiceDetailPage() {
 
             {/* Invoice proof documents */}
             <InvoiceDocuments invoice={invoice} />
+
+            {/* Due-date reminder history + opt-out (originator only, via RLS) */}
+            {publicKey === invoice.originator && <ReminderPanel invoice={invoice} />}
 
             {/* Financing offers */}
             <OfferList invoiceId={id} invoice={invoice} onUpdate={setInvoice} />

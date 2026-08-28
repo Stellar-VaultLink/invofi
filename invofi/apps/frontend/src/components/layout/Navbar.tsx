@@ -324,8 +324,8 @@ export function Navbar() {
       <div
         ref={drawerRef}
         className={cn(
-          "fixed top-16 right-0 bottom-0 z-40 w-72 bg-background border-l border-border shadow-xl flex flex-col transition-transform duration-200 md:hidden",
-          drawerOpen ? "translate-x-0" : "translate-x-full",
+          "fixed top-16 end-0 bottom-0 z-40 w-72 bg-background border-s border-border shadow-xl flex flex-col transition-transform duration-200 md:hidden",
+          drawerOpen ? "translate-x-0" : "translate-x-full rtl:-translate-x-full",
         )}
         role="dialog"
         aria-modal="true"

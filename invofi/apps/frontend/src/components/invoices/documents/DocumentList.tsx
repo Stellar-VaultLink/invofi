@@ -117,7 +117,7 @@ export function DocumentList({ documents, canVerify, onChanged }: DocumentListPr
                     disabled={busyId === doc.id}
                     onClick={() => setStatus(doc, 'verified')}
                   >
-                    {busyId === doc.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
+                    {busyId === doc.id ? <Loader2 className="h-3 w-3 me-1 animate-spin" /> : <Check className="h-3 w-3 me-1" />}
                     Verify
                   </Button>
                   <Button
@@ -127,7 +127,7 @@ export function DocumentList({ documents, canVerify, onChanged }: DocumentListPr
                     disabled={busyId === doc.id}
                     onClick={() => setStatus(doc, 'rejected')}
                   >
-                    <ShieldX className="h-3 w-3 mr-1" />
+                    <ShieldX className="h-3 w-3 me-1" />
                     Reject
                   </Button>
                 </div>

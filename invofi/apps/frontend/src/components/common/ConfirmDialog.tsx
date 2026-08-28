@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { HoldToConfirmButton } from './HoldToConfirmButton';
 
@@ -32,14 +33,18 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   variant = 'default',
   onConfirm,
   loading = false,
   holdToConfirm = false,
   holdDuration,
 }: ConfirmDialogProps) {
+  const t = useTranslations('Common');
+  const confirmText = confirmLabel ?? t('confirm');
+  const cancelText = cancelLabel ?? t('cancel');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -50,12 +55,12 @@ export function ConfirmDialog({
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {cancelLabel}
+            {cancelText}
           </Button>
 
           {holdToConfirm && !loading ? (
             <HoldToConfirmButton
-              label={confirmLabel}
+              label={confirmText}
               variant={variant}
               holdDuration={holdDuration}
               onConfirm={onConfirm}
@@ -66,7 +71,7 @@ export function ConfirmDialog({
               onClick={onConfirm}
               disabled={loading}
             >
-              {loading ? 'Processing...' : confirmLabel}
+              {loading ? t('submitting') : confirmText}
             </Button>
           )}
         </DialogFooter>

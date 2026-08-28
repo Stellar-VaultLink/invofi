@@ -84,9 +84,9 @@ function EventRow({ entry }: { entry: InvoiceTimelineEntry }) {
   const accent = EVENT_STYLES[entry.type] ?? FALLBACK_STYLE;
 
   return (
-    <li className="relative pl-8 pb-5 last:pb-0">
+    <li className="relative ps-8 pb-5 last:pb-0">
       <span
-        className={`absolute left-[-5px] top-1 flex h-2.5 w-2.5 items-center justify-center rounded-full ${accent.dot}`}
+        className={`absolute start-[-5px] top-1 flex h-2.5 w-2.5 items-center justify-center rounded-full ${accent.dot}`}
         aria-hidden="true"
       />
       <div className="flex items-center gap-2">
@@ -159,7 +159,7 @@ export function EventTimeline({ invoiceId }: { invoiceId: string }) {
         )}
 
         {!loading && !error && entries.length > 0 && (
-          <ol className="relative ml-[5px] border-l border-gray-200">
+          <ol className="relative ms-[5px] border-s border-gray-200">
             {entries.map((entry, i) => (
               <EventRow key={`${entry.txHash}:${entry.type}:${entry.ledger}:${i}`} entry={entry} />
             ))}

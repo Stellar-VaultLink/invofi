@@ -196,7 +196,7 @@ export function ListPositionForm({ sellerAddress, sellerId, onCreated }: ListPos
             <Button type="submit" disabled={submitting}>
               {submitting ? (
                 <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Publishing…
+                  <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" /> Publishing…
                 </>
               ) : (
                 'Publish listing'

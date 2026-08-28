@@ -35,7 +35,7 @@ jobs:
           BODY="${{ github.event.pull_request.body }}"
 
           # Bot-authored PRs are exempt (contributors bot, dependabot)
-          if [[ "${AUTHOR}" == "github-actions[bot]" ]] || [[ "${AUTHOR}" == "app/dependabot" ]]; then
+          if [[ "${AUTHOR}" == "github-actions[bot]" ]] || [[ "${AUTHOR}" == "app/dependabot" ]] || [[ "${AUTHOR}" == "@dependabot" ]] || [[ "${AUTHOR}" == *"[bot]" ]]; then
             echo "Bot PR — skipping assignment check"
             exit 0
           fi

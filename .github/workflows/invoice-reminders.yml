@@ -72,8 +72,11 @@ jobs:
         run: npm run type-check
 
       # ── Run unit tests ────────────────────────────────────────────────────
+      # Invoked directly via tsx (not an npm script) so this workflow doesn't
+      # require touching package.json — keeps it out of the path filter for
+      # the "Verify package-lock.json is in sync" check.
       - name: Run unit tests
-        run: npm run test:invoice-reminders
+        run: npx tsx --test invoice-reminders.test.ts
 
       # ── Run collector ─────────────────────────────────────────────────────
       - name: Send due-date reminders
@@ -83,4 +86,4 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REMINDER_FROM_EMAIL: ${{ vars.REMINDER_FROM_EMAIL || 'reminders@invofi.app' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-        run: npm run invoice-reminders
+        run: npx tsx invoice-reminders.ts

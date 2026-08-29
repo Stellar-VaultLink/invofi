@@ -687,12 +687,21 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/retkatmun">
+                    <img src="https://avatars.githubusercontent.com/u/153809730?v=4" width="100;" alt="retkatmun"/>
+                    <br />
+                    <sub><b>scholar</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/Fury03">
                     <img src="https://avatars.githubusercontent.com/u/98775983?v=4" width="100;" alt="Fury03"/>
                     <br />
                     <sub><b>Damilola Ogunrotimi</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/JinadJay">
                     <img src="https://avatars.githubusercontent.com/u/103272555?v=4" width="100;" alt="JinadJay"/>
@@ -700,8 +709,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>JinadJay</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/Abdulrasaq1515">
                     <img src="https://avatars.githubusercontent.com/u/209874744?v=4" width="100;" alt="Abdulrasaq1515"/>
@@ -721,13 +728,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <img src="https://avatars.githubusercontent.com/u/122823433?v=4" width="100;" alt="Unclebaffa"/>
                     <br />
                     <sub><b>Alhassan Nuhu Idris</b></sub>
-                </a>
-            </td>
-            <td align="center">
-                <a href="https://github.com/retkatmun">
-                    <img src="https://avatars.githubusercontent.com/u/153809730?v=4" width="100;" alt="retkatmun"/>
-                    <br />
-                    <sub><b>scholar</b></sub>
                 </a>
             </td>
             <td align="center">
@@ -791,6 +791,13 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
 		</tr>
 		<tr>
             <td align="center">
+                <a href="https://github.com/playmaker410">
+                    <img src="https://avatars.githubusercontent.com/u/247983253?v=4" width="100;" alt="playmaker410"/>
+                    <br />
+                    <sub><b>playmaker410</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/AbuJulaybeeb">
                     <img src="https://avatars.githubusercontent.com/u/178188157?v=4" width="100;" alt="AbuJulaybeeb"/>
                     <br />
@@ -825,6 +832,8 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Raw_Nuke</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/Jah-yee">
                     <img src="https://avatars.githubusercontent.com/u/166608075?v=4" width="100;" alt="Jah-yee"/>
@@ -832,8 +841,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>RoomWithOutRoof</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/wagmiiii">
                     <img src="https://avatars.githubusercontent.com/u/130152505?v=4" width="100;" alt="wagmiiii"/>
@@ -846,13 +853,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <img src="https://avatars.githubusercontent.com/u/114710463?v=4" width="100;" alt="mansur-codes"/>
                     <br />
                     <sub><b>levi</b></sub>
-                </a>
-            </td>
-            <td align="center">
-                <a href="https://github.com/playmaker410">
-                    <img src="https://avatars.githubusercontent.com/u/247983253?v=4" width="100;" alt="playmaker410"/>
-                    <br />
-                    <sub><b>playmaker410</b></sub>
                 </a>
             </td>
             <td align="center">

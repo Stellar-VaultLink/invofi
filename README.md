@@ -678,17 +678,17 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/Fury03">
-                    <img src="https://avatars.githubusercontent.com/u/98775983?v=4" width="100;" alt="Fury03"/>
-                    <br />
-                    <sub><b>Damilola Ogunrotimi</b></sub>
-                </a>
-            </td>
-            <td align="center">
                 <a href="https://github.com/fadesany">
                     <img src="https://avatars.githubusercontent.com/u/285033142?v=4" width="100;" alt="fadesany"/>
                     <br />
                     <sub><b>fadesany</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Fury03">
+                    <img src="https://avatars.githubusercontent.com/u/98775983?v=4" width="100;" alt="Fury03"/>
+                    <br />
+                    <sub><b>Damilola Ogunrotimi</b></sub>
                 </a>
             </td>
             <td align="center">
@@ -844,6 +844,13 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <img src="https://avatars.githubusercontent.com/u/114710463?v=4" width="100;" alt="mansur-codes"/>
                     <br />
                     <sub><b>levi</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/playmaker410">
+                    <img src="https://avatars.githubusercontent.com/u/247983253?v=4" width="100;" alt="playmaker410"/>
+                    <br />
+                    <sub><b>playmaker410</b></sub>
                 </a>
             </td>
             <td align="center">

@@ -44,10 +44,12 @@ InvoFi lives across **two repositories**, split so the fast-moving app layer and
 
 | Repo | Contains | Why separate |
 |---|---|---|
-| **[invofi](https://github.com/Stellar-VaultLink/invofi)** (this repo) | Next.js frontend (`invofi/apps/frontend`), docs, scripts, roadmap | App-layer changes constantly; Node/npm CI; no audit dependency |
+| **[invofi](https://github.com/Stellar-VaultLink/invofi)** (this repo) | Next.js frontend (`invofi/apps/frontend`), `@invofi/sdk` (`apps/sdk`), docs, scripts, roadmap | App-layer changes constantly; Node/npm CI; no audit dependency |
 | **[invofi-contracts](https://github.com/Stellar-VaultLink/invofi-contracts)** | All Soroban Rust contracts — registry, financing, repayment, insurance, reputation, common | Stable, auditable, slow-moving history; Rust-only CI; the repo that goes through the SCF Audit Bank |
 
 **Smart contracts now live in a dedicated repo: [invofi-contracts](https://github.com/Stellar-VaultLink/invofi-contracts).**
+
+See [ADR-0007: Repository topology and SDK location](./docs/adr/0007-repo-topology-and-sdk.md) for the decision, rationale, and tradeoffs behind this project map.
 
 ---
 

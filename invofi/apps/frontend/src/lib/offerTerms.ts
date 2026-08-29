@@ -28,7 +28,7 @@ export interface OfferTerms {
   totalRepayment: number;
   /** Annualized simple rate: simpleRatePct * 365 / durationDays. */
   annualizedApr: number;
-  /** Annualized compounded rate over the term. */
+  /** Annualized compounded rate using a 360-day banker's year (360/durationDays periods). */
   annualizedApy: number;
   /** True when rateBps is outside the contract-allowed range. */
   rateOutOfRange: boolean;
@@ -67,8 +67,10 @@ export function computeOfferTerms(
 
   let annualizedApy = 0;
   if (durationDays > 0) {
+    // Annualise by compounding the per-term rate using a 360-day banker's year
+    // (360 / durationDays periods), matching standard APY convention.
     annualizedApy =
-      (Math.pow(1 + rateBps / 10_000, DAYS_PER_YEAR / durationDays) - 1) * 100;
+      (Math.pow(1 + rateBps / 10_000, 360 / durationDays) - 1) * 100;
   }
 
   return {

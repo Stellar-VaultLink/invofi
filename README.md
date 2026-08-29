@@ -44,10 +44,12 @@ InvoFi lives across **two repositories**, split so the fast-moving app layer and
 
 | Repo | Contains | Why separate |
 |---|---|---|
-| **[invofi](https://github.com/Stellar-VaultLink/invofi)** (this repo) | Next.js frontend (`invofi/apps/frontend`), docs, scripts, roadmap | App-layer changes constantly; Node/npm CI; no audit dependency |
+| **[invofi](https://github.com/Stellar-VaultLink/invofi)** (this repo) | Next.js frontend (`invofi/apps/frontend`), `@invofi/sdk` (`apps/sdk`), docs, scripts, roadmap | App-layer changes constantly; Node/npm CI; no audit dependency |
 | **[invofi-contracts](https://github.com/Stellar-VaultLink/invofi-contracts)** | All Soroban Rust contracts — registry, financing, repayment, insurance, reputation, common | Stable, auditable, slow-moving history; Rust-only CI; the repo that goes through the SCF Audit Bank |
 
 **Smart contracts now live in a dedicated repo: [invofi-contracts](https://github.com/Stellar-VaultLink/invofi-contracts).**
+
+See [ADR-0007: Repository topology and SDK location](./docs/adr/0007-repo-topology-and-sdk.md) for the decision, rationale, and tradeoffs behind this project map.
 
 ---
 
@@ -678,13 +680,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/Fury03">
-                    <img src="https://avatars.githubusercontent.com/u/98775983?v=4" width="100;" alt="Fury03"/>
-                    <br />
-                    <sub><b>Damilola Ogunrotimi</b></sub>
-                </a>
-            </td>
-            <td align="center">
                 <a href="https://github.com/fadesany">
                     <img src="https://avatars.githubusercontent.com/u/285033142?v=4" width="100;" alt="fadesany"/>
                     <br />
@@ -692,14 +687,28 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/retkatmun">
+                    <img src="https://avatars.githubusercontent.com/u/153809730?v=4" width="100;" alt="retkatmun"/>
+                    <br />
+                    <sub><b>scholar</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Fury03">
+                    <img src="https://avatars.githubusercontent.com/u/98775983?v=4" width="100;" alt="Fury03"/>
+                    <br />
+                    <sub><b>Damilola Ogunrotimi</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
                 <a href="https://github.com/JinadJay">
                     <img src="https://avatars.githubusercontent.com/u/103272555?v=4" width="100;" alt="JinadJay"/>
                     <br />
                     <sub><b>JinadJay</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/Abdulrasaq1515">
                     <img src="https://avatars.githubusercontent.com/u/209874744?v=4" width="100;" alt="Abdulrasaq1515"/>
@@ -719,13 +728,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <img src="https://avatars.githubusercontent.com/u/122823433?v=4" width="100;" alt="Unclebaffa"/>
                     <br />
                     <sub><b>Alhassan Nuhu Idris</b></sub>
-                </a>
-            </td>
-            <td align="center">
-                <a href="https://github.com/retkatmun">
-                    <img src="https://avatars.githubusercontent.com/u/153809730?v=4" width="100;" alt="retkatmun"/>
-                    <br />
-                    <sub><b>scholar</b></sub>
                 </a>
             </td>
             <td align="center">
@@ -789,6 +791,13 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
 		</tr>
 		<tr>
             <td align="center">
+                <a href="https://github.com/playmaker410">
+                    <img src="https://avatars.githubusercontent.com/u/247983253?v=4" width="100;" alt="playmaker410"/>
+                    <br />
+                    <sub><b>playmaker410</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/AbuJulaybeeb">
                     <img src="https://avatars.githubusercontent.com/u/178188157?v=4" width="100;" alt="AbuJulaybeeb"/>
                     <br />
@@ -823,6 +832,8 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Raw_Nuke</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/Jah-yee">
                     <img src="https://avatars.githubusercontent.com/u/166608075?v=4" width="100;" alt="Jah-yee"/>
@@ -830,8 +841,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>RoomWithOutRoof</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/wagmiiii">
                     <img src="https://avatars.githubusercontent.com/u/130152505?v=4" width="100;" alt="wagmiiii"/>

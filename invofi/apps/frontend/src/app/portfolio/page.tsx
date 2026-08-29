@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/button';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { TableSkeleton } from '@/components/common/LoadingSkeleton';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
-import { toErrorMessage } from '@/lib/errors';
 import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken } from '@/lib/contract';
 import { OFFER_STATUS_COLORS } from '@/lib/utils';
 import { useFormat } from '@/hooks/useFormat';
@@ -39,6 +39,11 @@ const STATUS_ICONS = {
   Repaid:    CheckCircle2,
   Defaulted: AlertCircle,
 } as const;
+
+/** Total repayment due in stroops: principal + simple yield (matches the contract). */
+function offerTotalDue(offer: FinancingOffer): bigint {
+  return toStroopsBigInt(offer.amount) + (toStroopsBigInt(offer.amount) * BigInt(offer.interest_rate)) / 10_000n;
+}
 
 /** Parse a decimal string (e.g. "12.5") into base units for `decimals` places. */
 function toBaseUnits(amount: string, decimals: number): bigint | null {
@@ -415,66 +420,51 @@ export default function PortfolioPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Keep the current page valid when the stream shrinks (e.g. repayments move
-  // positions between buckets or the wallet changes).
-  const pageCount = Math.max(1, Math.ceil(positions.length / pageSize));
   useEffect(() => {
-    setPage(p => Math.min(p, pageCount));
-  }, [pageCount]);
-
-  const pageItems = useMemo(
-    () => paginate(positions, page, pageSize),
-    [positions, page, pageSize],
-  );
-
-  // Virtualize the current page's rows. Every card uses `measureElement` so
-  // rows with different heights (active vs repaid) size correctly.
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({
-    count: pageItems.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => 148,
-    overscan: 4,
-    // Placeholder height is overridden per-row by measureElement below.
+  supabase.auth.getUser().then(async ({ data }: { data: { user: SupabaseUser | null } }) => {
+    const { user } = data;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    const { data: offersData } = await supabase
+      .from('financing_offers')
+      .select('*, invoice:invoices(*)')
+      .eq('lender_id', user.id)
+      .order('created_at', { ascending: false });
+    const rows = (offersData as unknown as FinancingOffer[]) ?? [];
+    setOffers(rows.map(o => ({
+      ...o,
+      amount: toStroopsBigInt(o.amount),
+      amount_repaid: toStroopsBigInt(o.amount_repaid),
+    })));
+    // Fractional positions count — set to 0 on success, leave null on error
+    try {
+      const fp = await fetchFractionalPositions(user.id);
+      setFractionalCount(fp.length);
+    } catch { /* non-fatal — panel stays hidden while null */ }
+    setLoading(false);
   });
+}, []);
 
   // An offer is active while it is financing an invoice: from acceptance until
   // it is fully repaid. Partial repayments flip offers to Financed on-chain,
   // so both statuses count as deployed capital.
-  const active = positions.filter(o => o.status === 'Accepted' || o.status === 'Financed');
-  const repaid = positions.filter(o => o.status === 'Repaid');
-  const pending = positions.filter(o => o.status === 'Pending');
+  const active = offers.filter(o => o.status === 'Accepted' || o.status === 'Financed');
+  const repaid = offers.filter(o => o.status === 'Repaid');
+  const pending = offers.filter(o => o.status === 'Pending');
 
-  const totalValueUsd = active.reduce((sum, o) => sum + o.liveValueUsd, 0);
-
-  // Per-currency subtotals (issue #182): portfolios mix XLM and USDC, so show
-  // each currency's own total plus the USD-equivalent grand total above. All
-  // conversions use the cached reference rate — never a live oracle — so the
-  // card is labeled approximate with the rate source and as-of time.
-  const currencyTotalsUsd = useMemo(() => {
-    const buckets = new Map<string, number>();
-    for (const o of active) {
-      buckets.set(o.currency, (buckets.get(o.currency) ?? 0) + o.liveValueUsd);
-    }
-    return Array.from(buckets.entries()).sort((a, b) => b[1] - a[1]);
-  }, [active]);
-  const xlmUsdInfo = getXlmUsdInfo();
-  const totalEarnedToDateUsd = active.reduce(
-    (sum, o) => sum + stroopsToUsd(o.earnedToDate, o.currency),
-    0,
-  );
-  // Repaid positions may be in different currencies — never sum raw yields as
-  // if they were the same asset. Convert each to USD first.
+  const totalDeployed = active.reduce((sum, o) => sum + Number(o.amount) / STROOPS_PER_XLM, 0);
   const totalEarned = repaid.reduce((sum, o) => {
-    const yield_ = o.totalDue - o.amount;
-    return sum + stroopsToUsd(yield_, o.currency);
+    const principal = Number(o.amount) / STROOPS_PER_XLM;
+    const yield_ = principal * (o.interest_rate / 10000);
+    return sum + yield_;
   }, 0);
 
   const exportOffersCsv = () => {
-    const rows = positions.map(o => ({
+    const rows = offers.map(o => ({
       ...o,
       amount: Number(o.amount) / STROOPS_PER_XLM,
-      amount_repaid: Number(o.amount_repaid) / STROOPS_PER_XLM,
       funded_at: o.funded_at > 0 ? new Date(o.funded_at * 1000).toISOString().slice(0, 10) : '',
     }));
     const csv = toCsv(rows, [
@@ -493,7 +483,7 @@ export default function PortfolioPage() {
   return (
     <AuthGuard>
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
             <p className="text-muted-foreground text-sm mt-1">
@@ -520,15 +510,8 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
-            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
-          </div>
-        )}
-
         {/* Summary stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="pt-5">
               <TrendingUp className="h-4 w-4 text-blue-500 mb-2" />
@@ -586,11 +569,14 @@ export default function PortfolioPage() {
           </Card>
         </div>
 
-        {/* Live earnings strip */}
-        {(active.length > 0 || repaid.length > 0) && (
-          <div className="mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-            <div className="flex flex-wrap gap-x-8 gap-y-1">
+        {/* Fractional positions summary + link
+            Rendered only after a successful fetch (fractionalCount !== null).
+            While loading (null) the panel is hidden so the UI never shows a
+            misleading "0 fractional positions" count. */}
+        {fractionalCount !== null && (
+          <div className="mb-6 flex items-center justify-between rounded-xl border bg-card px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Layers className="h-5 w-5 text-primary shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-green-800 dark:text-green-300">
                   {t('yield.estimated', {
@@ -623,7 +609,7 @@ export default function PortfolioPage() {
         {loading && <TableSkeleton rows={4} />}
 
         {/* Empty state */}
-        {!loading && positions.length === 0 && (
+        {!loading && offers.length === 0 && (
           <div className="text-center py-20 border-2 border-dashed border-border rounded-xl">
             <TrendingUp className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-muted-foreground mb-4">{t('empty.title')}</p>
@@ -638,52 +624,51 @@ export default function PortfolioPage() {
         )}
 
         <div className="space-y-3">
-          {pageItems.length === 0 ? (
-            <div className="text-center py-10 text-sm text-muted-foreground">
-              No positions on this page.
-            </div>
-          ) : (
-            <div
-              ref={scrollRef}
-              className="max-h-[70vh] overflow-y-auto rounded-xl border border-border"
-              data-testid="virtualized-position-list"
-            >
-              <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-                {virtualizer.getVirtualItems().map(vi => (
-                  <div
-                    key={pageItems[vi.index].id}
-                    ref={virtualizer.measureElement}
-                    data-index={vi.index}
-                    className="pb-3"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${vi.start}px)`,
-                    }}
-                  >
-                    <PositionCard offer={pageItems[vi.index]} />
+          {offers.map(offer => {
+            const Icon = STATUS_ICONS[offer.status] ?? Clock;
+            return (
+              <Card key={offer.id}>
+                <CardContent className="flex items-center justify-between py-4">
+                  <div className="flex items-center gap-4">
+                    <Icon className="h-5 w-5 text-muted-foreground shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <CopyId id={offer.invoice_id} />
+                        <a
+                          href={`https://stellar.expert/explorer/${NETWORK}/contract/${offer.invoice_id}`}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="text-xs text-blue-500 hover:underline"
+                        >
+                          ↗
+                        </a>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {interestRateLabel(offer.interest_rate)} · {durationLabel(offer.duration)}
+                        {offer.funded_at > 0 && ` · Funded ${formatDate(offer.funded_at)}`}
+                      </p>
+                      {(offer.status === 'Accepted' || offer.status === 'Financed') &&
+                        toStroopsBigInt(offer.amount_repaid) > 0n && (
+                        <p className="text-xs mt-1 text-green-600">
+                          {formatAmount(toStroopsBigInt(offer.amount_repaid))} repaid ·{' '}
+                          {formatAmount(offerTotalDue(offer) - toStroopsBigInt(offer.amount_repaid))} remaining
+                        </p>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                  <div className="text-right flex items-center gap-3">
+                    <div>
+                      <p className="text-sm font-semibold font-mono text-foreground">
+                        {formatAmount(offer.amount)} {offer.currency}
+                      </p>
+                    </div>
+                    <Badge className={OFFER_STATUS_COLORS[offer.status]}>{offer.status}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
-
-        {/* Pagination controls (issue #190) */}
-        {!loading && positions.length > 0 && (
-          <PaginationControls
-            page={page}
-            total={positions.length}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={size => {
-              setPageSize(size);
-              setPage(1);
-            }}
-          />
-        )}
 
         {/* useSearchParams (the listing hand-off prefill) needs a Suspense boundary. */}
         <Suspense fallback={null}>

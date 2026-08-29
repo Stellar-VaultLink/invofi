@@ -1,0 +1,390 @@
+{
+  "Navbar": {
+    "dashboard": "대시보드",
+    "marketplace": "마켓",
+    "portfolio": "포트폴리오",
+    "approvals": "승인",
+    "wrongNetwork": "잘못된 네트워크",
+    "toggleTheme": "테마 전환",
+    "testnet": "테스트넷",
+    "viewContracts": "스마트 컨트랙트 주소 보기",
+    "settings": "설정",
+    "signOut": "로그아웃"
+  },
+  "Footer": {
+    "tagline": "Stellar Soroban 기반 탈중앙 인보이스 금융",
+    "stats": "통계",
+    "github": "GitHub",
+    "docs": "문서",
+    "issues": "이슈",
+    "contractOnStellar": "Stellar {network}의 컨트랙트:",
+    "viewOnStellarExpert": "Stellar Expert에서 InvoFi 컨트랙트 보기",
+    "openSource": "오픈 소스"
+  },
+  "DashboardLayout": {
+    "title": "대시보드",
+    "description": "등록한 인보이스를 관리하고, 금융 제안을 추적하며, 상환 상태를 확인하세요."
+  },
+  "Settings": {
+    "title": "설정",
+    "description": "계정 환경설정을 관리합니다",
+    "profile": {
+      "label": "프로필",
+      "hint": "표시 이름을 수정하고 계정 정보를 확인합니다"
+    },
+    "language": {
+      "title": "언어",
+      "label": "표시 언어",
+      "hint": "인터페이스 언어, 숫자와 날짜 형식, 글자 방향을 바꿉니다."
+    },
+    "network": {
+      "title": "네트워크 및 컨트랙트",
+      "label": "Stellar 네트워크",
+      "connected": "연결됨"
+    },
+    "account": {
+      "title": "계정",
+      "signOut": "로그아웃",
+      "signingOut": "로그아웃 중…",
+      "signedOut": "로그아웃되었습니다"
+    },
+    "contracts": {
+      "title": "컨트랙트",
+      "rpcUrl": "RPC 주소",
+      "horizonUrl": "Horizon 주소",
+      "registry": "레지스트리",
+      "financing": "금융",
+      "repayment": "상환",
+      "notConfigured": "설정되지 않음",
+      "copy": "복사",
+      "copied": "복사됨",
+      "explorer": "익스플로러",
+      "copyAria": "{label} 컨트랙트 ID 복사",
+      "explorerAria": "Stellar Expert에서 {label} 컨트랙트 열기",
+      "copyFailed": "복사 실패",
+      "copyFailedHint": "클립보드에 접근할 수 없습니다."
+    }
+  },
+  "Errors": {
+    "forbidden": {
+      "title": "접근이 거부되었습니다",
+      "description": "이 리소스에 접근할 권한이 없습니다.",
+      "backHome": "홈으로 돌아가기"
+    },
+    "notFound": {
+      "title": "페이지를 찾을 수 없습니다",
+      "description": "찾으시는 페이지가 없거나 이동되었습니다.",
+      "backHome": "홈으로 돌아가기"
+    },
+    "unexpected": {
+      "title": "문제가 발생했습니다",
+      "description": "예기치 못한 오류가 발생했습니다. 다시 시도해 주세요.",
+      "retry": "다시 시도",
+      "reload": "다시 시도"
+    }
+  },
+  "Status": {
+    "Pending": "대기 중",
+    "Financed": "금융 완료",
+    "Repaid": "상환 완료",
+    "Overdue": "연체",
+    "Cancelled": "취소됨",
+    "Accepted": "수락됨",
+    "Rejected": "거절됨",
+    "Defaulted": "부도"
+  },
+  "Common": {
+    "confirm": "확인",
+    "cancel": "취소",
+    "close": "닫기",
+    "save": "저장",
+    "saving": "저장 중…",
+    "loading": "불러오는 중…",
+    "retry": "다시 시도",
+    "back": "뒤로",
+    "next": "다음",
+    "submit": "제출",
+    "submitting": "제출 중…",
+    "copy": "복사",
+    "copied": "복사됨",
+    "export": "내보내기",
+    "search": "검색",
+    "filter": "필터",
+    "all": "전체",
+    "none": "없음",
+    "optional": "선택 사항",
+    "hold": {
+      "start": "길게 눌러 확인",
+      "almost": "조금만 더 누르면 확인됩니다",
+      "cancelled": "확인이 취소되었습니다"
+    }
+  },
+  "Dashboard": {
+    "titleBusiness": "인보이스 대시보드",
+    "titleLender": "대출자 포트폴리오",
+    "welcomeBack": "다시 오신 것을 환영합니다",
+    "newInvoice": "새 인보이스",
+    "yourInvoices": "내 인보이스",
+    "yourInvestments": "내 투자",
+    "browseMarketplace": "마켓 둘러보기",
+    "exportCsv": "CSV 내보내기",
+    "role": {
+      "business": "기업",
+      "lender": "대출자",
+      "admin": "관리자"
+    },
+    "wallet": {
+      "title": "Stellar 지갑",
+      "connected": "지갑이 연결되었습니다. 트랜잭션에 서명할 수 있습니다.",
+      "disconnected": "컨트랙트를 사용하려면 Stellar 지갑을 연결하세요."
+    },
+    "stats": {
+      "totalInvoices": "전체 인보이스",
+      "pending": "대기 중",
+      "financed": "금융 완료",
+      "repaid": "상환 완료",
+      "activeInvestments": "진행 중 투자",
+      "pendingOffers": "대기 중 제안",
+      "totalYield": "총 수익"
+    },
+    "view": {
+      "grid": "그리드 보기",
+      "table": "테이블 보기"
+    },
+    "empty": {
+      "invoices": "아직 인보이스가 없습니다.",
+      "createFirst": "첫 인보이스 만들기",
+      "investments": "아직 진행 중인 투자가 없습니다."
+    },
+    "cancel": {
+      "action": "인보이스 취소",
+      "title": "인보이스를 취소할까요?",
+      "description": "인보이스 {id}가 취소됨으로 표시됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "confirm": "예, 취소합니다"
+    }
+  },
+  "Marketplace": {
+    "title": "인보이스 마켓",
+    "description": "금융이 가능한 인보이스를 살펴보고 제안을 넣어 수익을 얻으세요.",
+    "searchPlaceholder": "인보이스 ID, 채무자 이름 또는 발행자로 검색…",
+    "view": {
+      "suggested": "추천 항목",
+      "browseAll": "전체 보기"
+    },
+    "filters": {
+      "allStatuses": "모든 상태",
+      "allCurrencies": "모든 통화"
+    },
+    "sort": {
+      "label": "인보이스 정렬",
+      "newest": "최신순",
+      "oldest": "오래된순",
+      "amount_desc": "금액: 높은순",
+      "amount_asc": "금액: 낮은순",
+      "due_soonest": "만기일: 가까운순"
+    },
+    "empty": {
+      "title": "필터와 일치하는 인보이스가 없습니다",
+      "hint": "검색어나 필터를 조정해 보세요."
+    },
+    "clearSearch": "검색 지우기"
+  },
+  "Portfolio": {
+    "title": "내 포트폴리오",
+    "description": "금융 제안과 수익을 추적하세요 — 업데이트가 실시간으로 도착합니다",
+    "refresh": "새로고침",
+    "exportCsv": "CSV 내보내기",
+    "stats": {
+      "active": "진행 중 투자",
+      "pending": "대기 중 제안",
+      "completed": "완료",
+      "value": "포트폴리오 가치 (USD)",
+      "priceNote": "XLM/USD {price} {source}{asOf} — 근사치",
+      "priceAsOf": " · {time} 기준",
+      "priceSource": {
+        "coingecko": "(CoinGecko)",
+        "env": "(환경 변수 재정의)",
+        "default": "(기본값)"
+      }
+    },
+    "yield": {
+      "estimated": "현재까지 예상 수익: {amount}",
+      "accruing": "{count, plural, =0 {진행 중인 포지션 없음} other {# 개의 진행 중 포지션}}에서 실시간으로 누적 중",
+      "realized": "실현 수익: {amount}",
+      "acrossRepaid": "{count, plural, other {# 건의 상환 완료 제안}} 기준"
+    },
+    "empty": {
+      "title": "아직 금융 제안이 없습니다.",
+      "browse": "마켓 둘러보기"
+    },
+    "position": {
+      "days": "{count, plural, other {# 일}}",
+      "funded": "{date}에 금융",
+      "apy": "연 수익률",
+      "earnedToDate": "현재까지 수익",
+      "repayment": "상환",
+      "percentRepaid": "{percent} 상환",
+      "progressLabel": "총 상환액의 {percent} 상환",
+      "repaidRemaining": "{repaid} 상환 · {remaining} 남음",
+      "updated": "{when} 업데이트"
+    },
+    "transfer": {
+      "title": "포지션 이전",
+      "description": "포지션 토큰은 금융된 인보이스에 대한 권리를 나타냅니다 (토큰 1개 = 원금 1 기본 단위). 다른 Stellar 지갑으로 보내 포지션을 이전하세요.",
+      "secondaryBoard": "매수자를 찾고 계신가요? <link>2차 게시판에 포지션을 등록하세요</link> — 정산은 여전히 여기에서, 이 이전으로 이뤄집니다.",
+      "prefilled": "등록 내용에서 금액이 채워졌습니다 ({amount} 토큰). 정산하려면 매수자 주소를 입력하세요.",
+      "refreshBalance": "잔액 새로고침",
+      "connectWallet": "포지션을 확인하고 이전하려면 지갑을 연결하세요.",
+      "notConfigured": "이 배포에는 아직 포지션 토큰이 설정되지 않았습니다.",
+      "needsTrustline": "포지션 토큰은 Stellar 자산입니다 — 수신과 이전을 위해 POS 신뢰선을 한 번 추가하세요.",
+      "addTrustline": "POS 신뢰선 추가",
+      "adding": "추가 중…",
+      "trustlineAdded": "신뢰선이 추가되었습니다",
+      "trustlineAddedHint": "이제 지갑에서 POS 포지션 토큰을 보유할 수 있습니다.",
+      "trustlineFailed": "신뢰선 실패",
+      "trustlineFailedHint": "신뢰선 설정에 실패했습니다",
+      "recipientLabel": "받는 주소",
+      "amountLabel": "금액",
+      "available": "(사용 가능: {balance})",
+      "transfer": "이전",
+      "transferring": "이전 중…",
+      "invalidAddress": "잘못된 주소",
+      "invalidAddressHint": "올바른 Stellar 주소(G…)를 입력하세요.",
+      "invalidAmount": "잘못된 금액",
+      "invalidAmountHint": "소수점 이하 최대 {decimals}자리까지 입력하세요.",
+      "insufficient": "잔액 부족",
+      "insufficientHint": "이 이전에 필요한 포지션 토큰이 부족합니다.",
+      "recipientTrustline": "받는 쪽에 신뢰선이 필요합니다",
+      "recipientTrustlineHint": "받는 지갑에 아직 POS 신뢰선이 없습니다. 이전하기 전에 추가해 달라고 요청하세요 (어떤 지갑에서도, 또는 이 앱에서도 가능합니다).",
+      "transferred": "포지션이 이전되었습니다",
+      "transferredHint": "{recipient}에게 포지션 토큰 {amount}개를 보냈습니다.",
+      "transferFailed": "이전 실패",
+      "transferFailedHint": "트랜잭션이 실패했습니다"
+    }
+  },
+  "Invoice": {
+    "title": "인보이스",
+    "backToDashboard": "대시보드로 돌아가기",
+    "print": "인쇄 / PDF 내보내기",
+    "notFound": "인보이스를 찾을 수 없습니다",
+    "fields": {
+      "amount": "금액",
+      "currency": "통화",
+      "dueDate": "만기일",
+      "originator": "발행자"
+    },
+    "counterparty": {
+      "lender": "대출자",
+      "business": "기업"
+    },
+    "cancel": {
+      "action": "취소",
+      "title": "이 인보이스를 취소할까요?",
+      "description": "인보이스가 온체인에서 취소되며 이후 금융 제안을 받을 수 없습니다. 이 작업은 되돌릴 수 없습니다.",
+      "confirm": "인보이스 취소",
+      "done": "인보이스가 취소되었습니다",
+      "doneHint": "인보이스가 이제 온체인에서 취소되었습니다.",
+      "failed": "인보이스 취소에 실패했습니다",
+      "undo": "실행 취소",
+      "undoAlt": "취소 되돌리기",
+      "restored": "인보이스가 복원되었습니다",
+      "restoredHint": "동일한 조건의 새 인보이스가 생성되었습니다.",
+      "restoreFailed": "인보이스 복원에 실패했습니다",
+      "previewTitle": "미리 보기: 인보이스 취소",
+      "previewDescription": "이 인보이스를 온체인에서 취소하기 전에 예상되는 영향을 확인하세요."
+    }
+  },
+  "Offers": {
+    "title": "금융 제안 ({count})",
+    "empty": "아직 제안이 없습니다.",
+    "makeOffer": "제안하기",
+    "markOverdue": "연체로 표시",
+    "exportHint": "제안을 CSV로 내보내기",
+    "exportEmpty": "내보낼 제안이 없습니다",
+    "accept": "수락",
+    "reject": "거절",
+    "repay": "상환",
+    "reclaim": "회수",
+    "repayAmount": "상환 금액",
+    "days": "{count, plural, other {# 일}}",
+    "repaid": "{amount} 상환",
+    "remaining": "{amount} 남음",
+    "remainingBalance": "남은 잔액: {remaining} (총 상환액 {total}에서 {repaid} 차감)",
+    "form": {
+      "title": "새 금융 제안",
+      "amount": "금액",
+      "currency": "통화",
+      "interest": "이자 (베이시스 포인트)",
+      "interestHint": "500 = {example}",
+      "duration": "기간 (일)",
+      "submit": "제안 보내기"
+    },
+    "confirm": {
+      "rejectTitle": "이 제안을 거절할까요?",
+      "rejectDescription": "대출자에게 제안이 거절되었음이 통보됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "reclaimTitle": "이 제안을 회수할까요?",
+      "reclaimDescription": "이 작업은 제안을 온체인에서 부도로 표시합니다. 원금은 수락 시 이미 기업에 지급되었습니다 — 자금이 반환되지 않으며 되돌릴 수 없습니다."
+    },
+    "toast": {
+      "submitted": "제안을 보냈습니다!",
+      "submittedHint": "인보이스 발행자에게 알림이 갑니다.",
+      "submitFailed": "제안 전송에 실패했습니다",
+      "accepted": "제안을 수락했습니다!",
+      "acceptedHint": "인보이스가 이제 금융 완료로 표시됩니다.",
+      "acceptFailed": "제안 수락에 실패했습니다",
+      "rejected": "제안을 거절했습니다.",
+      "rejectFailed": "제안 거절에 실패했습니다",
+      "invalidAmount": "유효한 금액을 입력하세요",
+      "amountTooSmall": "금액은 0보다 커야 합니다",
+      "repaidFull": "인보이스를 전액 상환했습니다",
+      "repaidFullHint": "원금과 수익이 대출자에게 이체되었습니다. 인보이스가 상환 완료되었습니다.",
+      "repaidPartial": "상환을 보냈습니다",
+      "repaidPartialHint": "부분 상환이 온체인에 기록되었습니다. 잔액이 정리될 때까지 계속 상환하세요.",
+      "repayFailed": "상환에 실패했습니다",
+      "markedOverdue": "인보이스를 연체로 표시했습니다.",
+      "overdueFailed": "연체 표시에 실패했습니다",
+      "reclaimed": "제안을 부도로 표시했습니다.",
+      "reclaimedHint": "온체인 기록입니다 — 회수는 오프체인에서 진행하세요.",
+      "reclaimFailed": "회수에 실패했습니다",
+      "undo": "실행 취소",
+      "undoRejectAlt": "거절 되돌리기",
+      "rejectUndone": "거절을 되돌렸습니다",
+      "rejectUndoneHint": "제안이 다시 대기 중입니다.",
+      "undoRejectFailed": "거절을 되돌리지 못했습니다"
+    },
+    "preview": {
+      "accept": {
+        "title": "미리 보기: 제안 수락",
+        "description": "이 금융 제안을 수락하기 전에 예상되는 영향을 확인하세요.",
+        "confirm": "제안 수락"
+      },
+      "reject": {
+        "title": "미리 보기: 제안 거절",
+        "description": "이 제안을 거절하기 전에 예상되는 영향을 확인하세요. 대출자에게 통보되며 되돌릴 수 없습니다.",
+        "confirm": "제안 거절"
+      },
+      "repay": {
+        "title": "미리 보기: 인보이스 상환",
+        "description": "상환을 제출하기 전에 예상되는 토큰 이체를 확인하세요.",
+        "confirm": "상환 제출"
+      },
+      "reclaim": {
+        "title": "미리 보기: 제안 회수",
+        "description": "이 제안을 온체인에서 부도로 표시하기 전에 예상되는 영향을 확인하세요. 원금은 수락 시 이미 지급되었습니다 — 자금이 반환되지 않으며 되돌릴 수 없습니다.",
+        "confirm": "회수"
+      }
+    }
+  },
+  "Notifications": {
+    "title": "알림",
+    "markAllRead": "모두 읽음으로 표시",
+    "emptyTitle": "알림 없음",
+    "emptyDesc": "인보이스와 제안 관련 이벤트가 여기에 표시됩니다.",
+    "aria": "알림",
+    "ariaUnread": "알림 (읽지 않음 {count}개)",
+    "justNow": "방금",
+    "minutesAgo": "{m}분 전",
+    "hoursAgo": "{h}시간 전",
+    "daysAgo": "{d}일 전"
+  }
+}

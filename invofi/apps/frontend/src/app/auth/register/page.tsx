@@ -130,7 +130,7 @@ function RegisterForm() {
               type="button"
               onClick={() => setRole(r.id)}
               className={cn(
-                'p-4 rounded-xl border-2 text-left transition-all',
+                'p-4 rounded-xl border-2 text-start transition-all',
                 role === r.id
                   ? 'border-blue-600 bg-blue-50 dark:bg-blue-950'
                   : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600',
@@ -173,7 +173,7 @@ function RegisterForm() {
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                 Create Account as {role === 'business' ? 'Business' : 'Lender'}
               </Button>
             </form>

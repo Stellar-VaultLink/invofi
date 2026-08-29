@@ -136,9 +136,9 @@ export function PendingTransactionCard({
             {canApprove && (
               <Button size="sm" onClick={() => onApprove(tx)} disabled={busy}>
                 {busy ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                  <CheckCircle2 className="me-1.5 h-3.5 w-3.5" />
                 )}
                 Approve
               </Button>
@@ -146,16 +146,16 @@ export function PendingTransactionCard({
             {canExecute && (
               <Button size="sm" onClick={() => onExecute(tx)} disabled={busy}>
                 {busy ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Send className="mr-1.5 h-3.5 w-3.5" />
+                  <Send className="me-1.5 h-3.5 w-3.5" />
                 )}
                 Execute
               </Button>
             )}
             {canReject && (
               <Button size="sm" variant="outline" onClick={() => onReject(tx)} disabled={busy}>
-                <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                <XCircle className="me-1.5 h-3.5 w-3.5" />
                 Reject
               </Button>
             )}

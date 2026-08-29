@@ -147,7 +147,7 @@ export default async function LandingPage() {
               className="bg-white text-blue-700 hover:bg-blue-50 font-semibold shadow-lg shadow-blue-900/30"
             >
               <Link href="/auth/register">
-                {t('hero.getStarted')} <ArrowRight className="ml-2 h-4 w-4" />
+                {t('hero.getStarted')} <ArrowRight className="ms-2 h-4 w-4 rtl:rotate-180" />
               </Link>
             </Button>
 
@@ -180,7 +180,7 @@ export default async function LandingPage() {
             {HOW_IT_WORKS.map((item, i) => (
               <div key={item.step} className="relative flex flex-col items-center text-center">
                 {i < HOW_IT_WORKS.length - 1 && (
-                  <div className="hidden md:block absolute top-8 left-[calc(50%+2.5rem)] w-[calc(100%-2.5rem)] h-px border-t-2 border-dashed border-blue-300 dark:border-blue-700" />
+                  <div className="hidden md:block absolute top-8 start-[calc(50%+2.5rem)] w-[calc(100%-2.5rem)] h-px border-t-2 border-dashed border-blue-300 dark:border-blue-700" />
                 )}
                 <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center mb-4 shrink-0 z-10">
                   <item.icon className="h-7 w-7 text-white" />
@@ -225,7 +225,7 @@ export default async function LandingPage() {
               </ul>
               <Button asChild className="mt-8 w-full">
                 <Link href="/auth/register?role=business">
-                  {t('features.registerInvoiceBtn')} <ArrowRight className="ml-2 h-4 w-4" />
+                  {t('features.registerInvoiceBtn')} <ArrowRight className="ms-2 h-4 w-4 rtl:rotate-180" />
                 </Link>
               </Button>
             </div>
@@ -248,7 +248,7 @@ export default async function LandingPage() {
               </ul>
               <Button asChild variant="outline" className="mt-8 w-full">
                 <Link href="/marketplace">
-                  {t('hero.browseMarketplace')} <ArrowRight className="ml-2 h-4 w-4" />
+                  {t('hero.browseMarketplace')} <ArrowRight className="ms-2 h-4 w-4 rtl:rotate-180" />
                 </Link>
               </Button>
             </div>
@@ -268,7 +268,7 @@ export default async function LandingPage() {
             {ASSETS.map((asset) => (
               <div
                 key={asset.symbol}
-                className="rounded-2xl border border-border bg-card p-8 flex gap-5 items-start text-left"
+                className="rounded-2xl border border-border bg-card p-8 flex gap-5 items-start text-start"
               >
                 <div
                   className={`w-14 h-14 rounded-full bg-gradient-to-br ${asset.gradient} flex items-center justify-center text-white font-bold text-lg shrink-0`}
@@ -301,7 +301,7 @@ export default async function LandingPage() {
             {STELLAR_PROPS.map((prop) => (
               <div
                 key={prop.title}
-                className="bg-white/10 border border-white/10 rounded-xl p-6 text-left hover:bg-white/15 transition-colors"
+                className="bg-white/10 border border-white/10 rounded-xl p-6 text-start hover:bg-white/15 transition-colors"
               >
                 <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center mb-4">
                   <prop.icon className="h-5 w-5 text-white" />

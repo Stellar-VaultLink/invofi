@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Loader2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { OfferList } from '@/components/invoices/OfferList';
 import { InvoiceDocuments } from '@/components/invoices/documents/InvoiceDocuments';
+import { ReminderPanel } from '@/components/invoices/ReminderPanel';
 import { MessagingPanel } from '@/components/invoices/MessagingPanel';
 import { EventTimeline } from '@/components/invoices/EventTimeline';
 import { SimulateConfirm } from '@/components/common/SimulateConfirm';
@@ -24,13 +26,16 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { toErrorMessage } from '@/lib/errors';
-import { formatAmount } from '@/lib/formatters';
-import { formatDate, formatAddress, INVOICE_STATUS_COLORS, generateInvoiceId } from '@/lib/utils';
+import { INVOICE_STATUS_COLORS, generateInvoiceId } from '@/lib/utils';
+import { useFormat } from '@/hooks/useFormat';
 import { REGISTRY_CONTRACT_ID } from '@/lib/constants';
 import type { Invoice, FinancingOffer } from '@/types';
 import type { SimulationResult } from '@/lib/simulate';
 
 export default function InvoiceDetailPage() {
+  const t = useTranslations('Invoice');
+  const tStatus = useTranslations('Status');
+  const format = useFormat();
   const { id } = useParams<{ id: string }>();
   const { publicKey } = useWallet();
   const { toast } = useToast();
@@ -77,11 +82,11 @@ export default function InvoiceDetailPage() {
       await supabase.from('invoices').update({ status: 'Cancelled' }).eq('id', invoice.id);
       setInvoice(updated);
       toast({
-        title: 'Invoice cancelled',
-        description: 'The invoice is now cancelled on-chain.',
+        title: t('cancel.done'),
+        description: t('cancel.doneHint'),
         action: (
           <ToastAction
-            altText="Undo cancel"
+            altText={t('cancel.undoAlt')}
             onClick={async () => {
               try {
                 const newId = generateInvoiceId();
@@ -103,24 +108,26 @@ export default function InvoiceDetailPage() {
                   status: 'Pending',
                 });
                 setInvoice(restored);
-                toast({ title: 'Invoice restored', description: 'A new invoice with the same terms has been created.' });
+                toast({ title: t('cancel.restored'), description: t('cancel.restoredHint') });
               } catch (undoErr: unknown) {
                 toast({
-                  title: 'Failed to restore invoice',
-                  description: toErrorMessage(undoErr, 'Error'),
+                  title: t('cancel.restoreFailed'),
+                  description: toErrorMessage(undoErr, t('cancel.restoreFailed')),
                   variant: 'destructive',
                 });
               }
             }}
           >
-            Undo
+            {t('cancel.undo')}
           </ToastAction>
         ),
       });
     } catch (err: unknown) {
       toast({
-        title: 'Failed to cancel invoice',
-        description: toErrorMessage(err, 'Error'),
+        title: t('cancel.failed'),
+        // SDK/network messages are not translatable — they come from the
+        // chain; only the fallback is.
+        description: toErrorMessage(err, t('cancel.failed')),
         variant: 'destructive',
       });
     } finally {
@@ -138,7 +145,7 @@ export default function InvoiceDetailPage() {
         if (/403|unauthorized|forbidden|not authorized|access denied/i.test(errMsg)) {
           setIsUnauthorized(true);
         } else {
-          setError(errMsg || 'Invoice not found');
+          setError(errMsg || t('notFound'));
         }
       })
       .finally(() => setLoading(false));
@@ -193,7 +200,7 @@ export default function InvoiceDetailPage() {
             href="/dashboard"
             className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"
           >
-            <ArrowLeft className="h-4 w-4" /> Back to dashboard
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t('backToDashboard')}
           </Link>
 
           {invoice && (
@@ -204,7 +211,7 @@ export default function InvoiceDetailPage() {
               onClick={() => window.open(`/invoices/${id}/print`, '_blank')}
             >
               <Printer className="h-4 w-4" />
-              Print / Export PDF
+              {t('print')}
             </Button>
           )}
         </div>
@@ -227,12 +234,13 @@ export default function InvoiceDetailPage() {
             <Card>
               <CardHeader className="flex flex-row items-start justify-between">
                 <div>
-                  <p className="text-xs font-mono text-gray-400 mb-1">{invoice.id}</p>
-                  <CardTitle className="text-xl">Invoice</CardTitle>
+                  {/* Invoice IDs are ASCII identifiers — pinned LTR inside an RTL layout. */}
+                  <p className="text-xs font-mono text-gray-400 mb-1" dir="ltr">{invoice.id}</p>
+                  <CardTitle className="text-xl">{t('title')}</CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className={INVOICE_STATUS_COLORS[invoice.status]}>
-                    {invoice.status}
+                    {tStatus(invoice.status)}
                   </Badge>
                   {invoice.status === 'Pending' && publicKey === invoice.originator && (
                     <Button
@@ -242,19 +250,24 @@ export default function InvoiceDetailPage() {
                       disabled={cancelling}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                     >
-                      {cancelling && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                      Cancel
+                      {cancelling && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
+                      {t('cancel.action')}
                     </Button>
                   )}
                 </div>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-4 text-sm">
-                <Field label="Amount" value={formatAmount(invoice.amount, invoice.currency)} mono />
-                <Field label="Currency" value={invoice.currency} />
-                <Field label="Due Date" value={formatDate(invoice.due_date)} />
+
                 <Field
-                  label="Originator"
-                  value={formatAddress(invoice.originator)}
+                  label={t('fields.amount')}
+                  value={format.currency(invoice.amount, invoice.currency)}
+                  mono
+                />
+                <Field label={t('fields.currency')} value={invoice.currency} />
+                <Field label={t('fields.dueDate')} value={format.date(invoice.due_date)} />
+                <Field
+                  label={t('fields.originator')}
+                  value={format.address(invoice.originator)}
                   mono
                   link={`https://stellar.expert/explorer/testnet/account/${invoice.originator}`}
                 />
@@ -263,6 +276,9 @@ export default function InvoiceDetailPage() {
 
             {/* Invoice proof documents */}
             <InvoiceDocuments invoice={invoice} />
+
+            {/* Due-date reminder history + opt-out (originator only, via RLS) */}
+            {publicKey === invoice.originator && <ReminderPanel invoice={invoice} />}
 
             {/* Financing offers */}
             <OfferList invoiceId={id} invoice={invoice} onUpdate={setInvoice} />
@@ -277,7 +293,7 @@ export default function InvoiceDetailPage() {
                 currentAddress={publicKey}
                 counterpartyAddress={counterpartyAddress}
                 counterpartyLabel={
-                  publicKey === invoice.originator ? 'Lender' : 'Business'
+                  publicKey === invoice.originator ? t('counterparty.lender') : t('counterparty.business')
                 }
               />
             )}
@@ -288,11 +304,11 @@ export default function InvoiceDetailPage() {
         <SimulateConfirm
           open={simCancel}
           onOpenChange={open => { if (!open) setSimCancel(false); }}
-          title="Preview: Cancel Invoice"
-          description="Review the expected effects before cancelling this invoice on-chain."
+          title={t('cancel.previewTitle')}
+          description={t('cancel.previewDescription')}
           onSimulate={simulateCancel}
           variant="destructive"
-          confirmLabel="Cancel Invoice"
+          confirmLabel={t('cancel.confirm')}
           holdToConfirm
           // Returned so `SimulateConfirm` can await the submission and keep
           // its "Submitting…" state up while the wallet signs.

@@ -114,7 +114,7 @@ export default function TransactionsPage() {
           </div>
           {publicKey && (
             <Button size="sm" variant="outline" onClick={() => setShowForm(v => !v)}>
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              <Plus className="me-1.5 h-3.5 w-3.5" />
               {showForm ? 'Close' : 'New transaction'}
             </Button>
           )}

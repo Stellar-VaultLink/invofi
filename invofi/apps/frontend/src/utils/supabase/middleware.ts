@@ -8,7 +8,8 @@ export async function updateSession(request: NextRequest) {
 
   // Offline demo mode (#177): no Supabase project configured — skip the
   // session refresh entirely so `npm run dev` works with no env vars.
-  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
+  // Demos (issue #107) set NEXT_PUBLIC_DEMO_MODE=1 which implies mock mode.
+  if (process.env.NEXT_PUBLIC_USE_MOCK === '1' || process.env.NEXT_PUBLIC_DEMO_MODE === '1') {
     return supabaseResponse;
   }
 

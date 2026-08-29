@@ -6,9 +6,15 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProtocolMetricsBand } from '@/components/common/ProtocolMetricsBand';
+import { TryDemoButton } from '@/components/landing/TryDemoButton';
+import { isDemoMode, isMockMode } from '@/lib/mock-mode';
 
 export default async function LandingPage() {
   const t = await getTranslations('Landing');
+  // The demo entry is shown whenever the app can serve seeded demo data —
+  // either explicitly (NEXT_PUBLIC_DEMO_MODE=1) or because the whole app is
+  // running on the offline mock stack (NEXT_PUBLIC_USE_MOCK=1).
+  const demoMode = isDemoMode() || isMockMode();
 
   const HOW_IT_WORKS = [
     {
@@ -159,7 +165,19 @@ export default async function LandingPage() {
             >
               <Link href="/marketplace">{t('hero.browseMarketplace')}</Link>
             </Button>
+
+            {demoMode && (
+              <TryDemoButton label={t('hero.tryDemo')} />
+            )}
           </div>
+
+          {demoMode && (
+            <p className="mt-4 text-sm text-blue-200/80 flex items-center justify-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 border border-amber-300/30 px-3 py-0.5 text-xs font-medium text-amber-100">
+                {t('hero.demoTestnetOnly')}
+              </span>
+            </p>
+          )}
         </div>
       </section>
 
@@ -352,6 +370,9 @@ export default async function LandingPage() {
           <Button asChild variant="outline" size="lg" className="border-white text-white bg-white/10 hover:bg-white/20">
             <Link href="/auth/register?role=lender">{t('cta.imLenderBtn')}</Link>
           </Button>
+          {demoMode && (
+            <TryDemoButton label={t('cta.tryDemo')} />
+          )}
         </div>
       </section>
     </div>

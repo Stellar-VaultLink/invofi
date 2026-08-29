@@ -23,6 +23,7 @@ Most environment variables for the InvoFi frontend are prefixed with `NEXT_PUBLI
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes, for wallet login | *(never committed)* | **Server-only.** Supabase service-role key, from Settings → API. See below. |
 | `NEXT_PUBLIC_WS_URL` | No | `wss://relay.invofi.dev` | WebSocket relay for the live portfolio dashboard (issue #221). When empty or unreachable the dashboard degrades to Soroban event-stream + Supabase polling. |
 | `NEXT_PUBLIC_XLM_USD_PRICE` | No | `0.15` | XLM/USD fallback price used for live USD position values when the live price feed (CoinGecko) is unreachable. |
+| `NEXT_PUBLIC_DEMO_MODE` | No | `1` | Shows a "Try the demo" entry on the landing page hero (issue #107). The demo experience reuses the offline mock layers (seeded invoices, offers, and a position token) so a reviewer can reach a portfolio with seeded data without an account or wallet. The entry is labeled testnet-only and never touches production flows. Set together with `NEXT_PUBLIC_USE_MOCK=1` for a fully offline demo deployment. |
 
 \* Legacy fallback: if the three `*_CONTRACT_ID` variables are unset, the app
 uses the single `NEXT_PUBLIC_CONTRACT_ID` and routes every call to that one

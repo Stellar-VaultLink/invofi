@@ -44,6 +44,32 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npm test
 
+  sdk-entrypoint-smoke:
+    name: SDK / ESM & CJS Entry Point Smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: invofi/apps/sdk
+    env:
+      SDK_SMOKE_DIR: ${{ runner.temp }}/invofi-sdk-smoke
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: invofi/apps/sdk/package-lock.json
+      - run: npm ci
+      - name: Build ESM and CommonJS entry points
+        run: |
+          mkdir -p "$SDK_SMOKE_DIR"
+          npx --no-install esbuild src/index.ts --bundle --platform=node --format=esm --outfile="$SDK_SMOKE_DIR/index.mjs"
+          npx --no-install esbuild src/index.ts --bundle --platform=node --format=cjs --outfile="$SDK_SMOKE_DIR/index.cjs"
+      - name: Smoke-import ESM entry point
+        run: node --input-type=module -e "import(process.env.SDK_SMOKE_DIR + '/index.mjs')"
+      - name: Smoke-require CommonJS entry point
+        run: node -e "require(process.env.SDK_SMOKE_DIR + '/index.cjs')"
+
   frontend-build:
     name: Frontend / Build
     runs-on: ubuntu-latest

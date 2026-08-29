@@ -21,6 +21,7 @@ Welcome to the official InvoFi documentation. InvoFi is a decentralized invoice 
 | [Environment Variables](./08-environment-variables.md) | Every variable explained |
 | [Contributing](./09-contributing.md) | How to set up a dev environment and submit PRs |
 | [Roadmap](./10-roadmap.md) | What's built, what's coming, what's planned for v2 |
+| [Architecture Decision Records](./adr/README.md) | Reviewable records of lasting application architecture decisions |
 
 ---
 

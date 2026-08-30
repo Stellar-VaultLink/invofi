@@ -91,12 +91,12 @@ function EventRow({ entry }: { entry: InvoiceTimelineEntry }) {
       />
       <div className="flex items-center gap-2">
         <Icon className={`h-4 w-4 shrink-0 ${accent.icon}`} aria-hidden="true" />
-        <p className="text-sm font-medium text-gray-900">{entry.label}</p>
-        <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-gray-500">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-50">{entry.label}</p>
+        <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-gray-500 dark:bg-gray-800 dark:text-gray-400">
           {entry.type}
         </span>
       </div>
-      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-500">
+      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
         <span>{entry.occurredAt ? format(new Date(entry.occurredAt), 'MMM d, yyyy h:mm a') : '—'}</span>
         <span aria-hidden="true">·</span>
         <span>Ledger #{entry.ledger}</span>
@@ -107,7 +107,7 @@ function EventRow({ entry }: { entry: InvoiceTimelineEntry }) {
               href={explorerTxUrl(entry.txHash)}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 font-mono text-blue-600 hover:underline"
+              className="inline-flex items-center gap-1 font-mono text-blue-600 hover:underline dark:text-blue-400"
               title={entry.txHash}
             >
               {formatAddress(entry.txHash)} <ExternalLink className="h-3 w-3" />
@@ -135,10 +135,10 @@ export function EventTimeline({ invoiceId }: { invoiceId: string }) {
           <div className="space-y-4" data-testid="event-timeline-loading">
             {[1, 2, 3].map(i => (
               <div key={i} className="flex items-start gap-3">
-                <div className="mt-1 h-2.5 w-2.5 animate-pulse rounded-full bg-gray-200" />
+                <div className="mt-1 h-2.5 w-2.5 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-3.5 w-40 animate-pulse rounded bg-gray-200" />
-                  <div className="h-3 w-64 max-w-full animate-pulse rounded bg-gray-100" />
+                  <div className="h-3.5 w-40 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                  <div className="h-3 w-64 max-w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
                 </div>
               </div>
             ))}
@@ -146,20 +146,20 @@ export function EventTimeline({ invoiceId }: { invoiceId: string }) {
         )}
 
         {!loading && error && (
-          <p className="text-sm text-gray-500">Couldn&apos;t load on-chain activity right now.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Couldn&apos;t load on-chain activity right now.</p>
         )}
 
         {!loading && !error && entries.length === 0 && (
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             <p>No recent on-chain activity found for this invoice.</p>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
               The Soroban RPC keeps only a few days of event history, so older invoices may show nothing here.
             </p>
           </div>
         )}
 
         {!loading && !error && entries.length > 0 && (
-          <ol className="relative ms-[5px] border-s border-gray-200">
+          <ol className="relative ms-[5px] border-s border-gray-200 dark:border-gray-700">
             {entries.map((entry, i) => (
               <EventRow key={`${entry.txHash}:${entry.type}:${entry.ledger}:${i}`} entry={entry} />
             ))}

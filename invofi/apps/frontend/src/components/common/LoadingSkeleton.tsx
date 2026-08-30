@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function CardSkeleton() {
   return (
-    <div className="rounded-xl border border-gray-200 p-5 space-y-3">
+    <div className="rounded-xl border border-gray-200 p-5 space-y-3 dark:border-gray-800">
       <Skeleton className="h-4 w-24" />
       <Skeleton className="h-6 w-40" />
       <div className="flex gap-2">

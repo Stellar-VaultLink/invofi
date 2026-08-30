@@ -59,10 +59,13 @@ export default async function RootLayout({
     // and borders use CSS logical properties (`ms-*`/`me-*`, `ps-*`/`pe-*`,
     // `start-*`/`end-*`, `text-start`) rather than physical left/right ones —
     // see docs/i18n.md before adding a directional utility.
-    <html lang={locale} dir={dirFor(locale)}>
-      <body
-        className={`${inter.className} bg-white dark:bg-gray-950 dark:text-white`}
-      >
+    // suppressHydrationWarning is required by next-themes: it sets the
+    // `dark` class on this element via an inline script that runs before
+    // React hydrates, so the server-rendered class attribute intentionally
+    // differs from the client's first paint (that's what avoids a
+    // flash-of-wrong-theme).
+    <html lang={locale} dir={dirFor(locale)} suppressHydrationWarning>
+      <body className={inter.className}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <Navbar />

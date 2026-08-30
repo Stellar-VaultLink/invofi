@@ -37,9 +37,9 @@ export function FractionalPositionCard({ view, className }: FractionalPositionCa
   const { position, record, currentValue, totalDividendsEarned, ownershipPercent } = view;
 
   const statusStyles: Record<string, string> = {
-    active:   'bg-green-50 text-green-700 border-green-200',
-    sold_out: 'bg-gray-50 text-gray-500 border-gray-200',
-    cancelled:'bg-red-50 text-red-700 border-red-200',
+    active:   'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800',
+    sold_out: 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700',
+    cancelled:'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800',
   };
 
   return (

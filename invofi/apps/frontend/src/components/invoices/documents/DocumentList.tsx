@@ -33,7 +33,7 @@ export function DocumentList({ documents, canVerify, onChanged }: DocumentListPr
   const [busyId, setBusyId] = useState<string | null>(null);
 
   if (documents.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-6">No documents attached yet.</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">No documents attached yet.</p>;
   }
 
   const setStatus = async (doc: InvoiceDocument, status: InvoiceDocument['status']) => {
@@ -74,25 +74,25 @@ export function DocumentList({ documents, canVerify, onChanged }: DocumentListPr
           <li key={doc.id} className="border rounded-lg p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 min-w-0">
-                <span className="mt-0.5 text-gray-400">
+                <span className="mt-0.5 text-gray-400 dark:text-gray-500">
                   {isImage(doc) ? <ImageIcon className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
                 </span>
                 <div className="min-w-0">
                   <button
                     type="button"
                     onClick={() => setPreview(doc)}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
                   >
                     {doc.file_name} <Eye className="h-3.5 w-3.5" />
                   </button>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">
                     {formatDocumentSize(doc.file_size)} · {formatDate(doc.created_at)}
                   </p>
-                  <p className="text-xs text-gray-400 font-mono mt-0.5">
+                  <p className="text-xs text-gray-400 font-mono mt-0.5 dark:text-gray-500">
                     SHA-256 {hashFingerprint(doc.document_hash)}
                   </p>
                   {doc.verification_comment && (
-                    <p className="text-xs text-gray-500 mt-1 italic">“{doc.verification_comment}”</p>
+                    <p className="text-xs text-gray-500 mt-1 italic dark:text-gray-400">“{doc.verification_comment}”</p>
                   )}
                 </div>
               </div>
@@ -113,7 +113,7 @@ export function DocumentList({ documents, canVerify, onChanged }: DocumentListPr
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-green-700 border-green-300 hover:bg-green-50"
+                    className="text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/40"
                     disabled={busyId === doc.id}
                     onClick={() => setStatus(doc, 'verified')}
                   >
@@ -123,7 +123,7 @@ export function DocumentList({ documents, canVerify, onChanged }: DocumentListPr
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-red-700 border-red-300 hover:bg-red-50"
+                    className="text-red-700 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/40"
                     disabled={busyId === doc.id}
                     onClick={() => setStatus(doc, 'rejected')}
                   >
@@ -135,7 +135,7 @@ export function DocumentList({ documents, canVerify, onChanged }: DocumentListPr
             )}
 
             {canVerify && doc.status !== 'pending' && (
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-xs text-gray-400 mt-2 dark:text-gray-500">
                 {doc.verified_at
                   ? `${DOCUMENT_STATUS_LABELS[doc.status]} on ${formatDate(doc.verified_at)}`
                   : DOCUMENT_STATUS_LABELS[doc.status]}

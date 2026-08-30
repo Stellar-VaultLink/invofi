@@ -98,7 +98,7 @@ export function ReminderConfigPanel() {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-10">
-          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400 dark:text-gray-500" />
         </CardContent>
       </Card>
     );
@@ -143,7 +143,7 @@ export function ReminderConfigPanel() {
                   type="checkbox"
                   checked={stages.has(stage)}
                   onChange={() => toggleStage(stage)}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                 />
                 {STAGE_LABELS[stage]}
               </label>

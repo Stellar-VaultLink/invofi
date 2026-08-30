@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { WalletProvider } from '@/components/auth/WalletProvider';
+import { ThemeProvider } from '@/components/layout/ThemeProvider';
 import { useNotificationSeeder } from '@/hooks/useNotifications';
 
 /**
@@ -25,11 +26,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <WalletProvider>
-        {children}
-        <NotificationSeeder />
-      </WalletProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="theme">
+      <QueryClientProvider client={queryClient}>
+        <WalletProvider>
+          {children}
+          <NotificationSeeder />
+        </WalletProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

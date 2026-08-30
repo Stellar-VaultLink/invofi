@@ -51,15 +51,15 @@ export default function Error({
         className="h-12 w-12 mb-4 text-amber-500"
         aria-hidden="true"
       />
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('title')}</h1>
-      <p className="text-gray-500 mb-6 max-w-sm text-sm">{t('description')}</p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2 dark:text-gray-50">{t('title')}</h1>
+      <p className="text-gray-500 mb-6 max-w-sm text-sm dark:text-gray-400">{t('description')}</p>
 
       {/* Dev-only, and deliberately untranslated: `error.message` and the
           digest come from the SDK, the network or Next itself. */}
       {IS_DEV && (error.message || error.digest) && (
         <pre
           data-testid="error-detail"
-          className="mb-6 max-w-md overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-3 text-start text-xs text-gray-700"
+          className="mb-6 max-w-md overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-3 text-start text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
           dir="ltr"
         >
           {error.message}

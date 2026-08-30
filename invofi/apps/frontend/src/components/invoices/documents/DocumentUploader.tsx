@@ -95,7 +95,9 @@ export function DocumentUploader({ invoiceId, onUploaded }: DocumentUploaderProp
           handleFile(e.dataTransfer.files?.[0]);
         }}
         className={`flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-sm transition-colors ${
-          dragOver ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700'
+          dragOver
+            ? 'border-blue-400 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-300'
+            : 'border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
         } disabled:cursor-not-allowed disabled:opacity-60`}
       >
         {uploading ? (

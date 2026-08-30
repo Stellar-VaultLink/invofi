@@ -43,7 +43,7 @@ export function DocumentPreviewDialog({ document, onClose }: DocumentPreviewDial
           </DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-auto rounded-lg border bg-gray-50">
+        <div className="overflow-auto rounded-lg border bg-gray-50 dark:bg-gray-900">
           {document && isImage && (
             // eslint-disable-next-line @next/next/no-img-element
             <img

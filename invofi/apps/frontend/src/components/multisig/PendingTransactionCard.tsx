@@ -23,7 +23,7 @@ const STATUS_STYLES: Record<PendingTransactionStatus, string> = {
   Pending:  'bg-yellow-100 text-yellow-800 border-yellow-200',
   Executed: 'bg-green-100 text-green-800 border-green-200',
   Rejected: 'bg-red-100 text-red-800 border-red-200',
-  Expired:  'bg-gray-100 text-gray-600 border-gray-200',
+  Expired:  'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
 };
 
 function formatCountdown(secs: number): string {

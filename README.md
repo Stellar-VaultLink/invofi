@@ -768,6 +768,13 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/playmaker410">
+                    <img src="https://avatars.githubusercontent.com/u/247983253?v=4" width="100;" alt="playmaker410"/>
+                    <br />
+                    <sub><b>playmaker410</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/Agbasimere">
                     <img src="https://avatars.githubusercontent.com/u/107962282?v=4" width="100;" alt="Agbasimere"/>
                     <br />
@@ -781,20 +788,13 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>EneGab</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/ganeshchandra111">
                     <img src="https://avatars.githubusercontent.com/u/166985591?v=4" width="100;" alt="ganeshchandra111"/>
                     <br />
                     <sub><b>Ganesh chandra</b></sub>
-                </a>
-            </td>
-		</tr>
-		<tr>
-            <td align="center">
-                <a href="https://github.com/playmaker410">
-                    <img src="https://avatars.githubusercontent.com/u/247983253?v=4" width="100;" alt="playmaker410"/>
-                    <br />
-                    <sub><b>playmaker410</b></sub>
                 </a>
             </td>
             <td align="center">

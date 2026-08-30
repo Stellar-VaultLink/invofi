@@ -237,7 +237,7 @@ export function MessagingPanel({
                         }`}
                       >
                         <span
-                          className={`text-[10px] ${isSent ? 'text-purple-200' : 'text-gray-400 dark:text-gray-500'}`}
+                          className={`text-[10px] ${isSent ? 'text-purple-200' : 'text-gray-400'}`}
                         >
                           {formatTime(msg.created_at)}
                         </span>

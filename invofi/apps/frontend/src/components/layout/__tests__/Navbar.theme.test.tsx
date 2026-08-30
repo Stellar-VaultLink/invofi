@@ -64,6 +64,7 @@ beforeEach(() => {
     dispatchEvent: vi.fn(),
   }));
   document.documentElement.classList.remove('dark');
+  window.localStorage.removeItem('theme');
 });
 
 function renderNavbar() {

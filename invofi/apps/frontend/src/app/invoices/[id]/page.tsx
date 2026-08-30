@@ -198,7 +198,7 @@ export default function InvoiceDetailPage() {
         <div className="flex items-center justify-between mb-6">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t('backToDashboard')}
           </Link>
@@ -218,13 +218,13 @@ export default function InvoiceDetailPage() {
 
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400 dark:text-gray-500" />
           </div>
         )}
 
         {error && (
-          <div className="text-center py-20 text-gray-500">
-            <p className="text-red-500 font-medium">{error}</p>
+          <div className="text-center py-20 text-gray-500 dark:text-gray-400">
+            <p className="text-red-500 font-medium dark:text-red-400">{error}</p>
           </div>
         )}
 
@@ -235,7 +235,7 @@ export default function InvoiceDetailPage() {
               <CardHeader className="flex flex-row items-start justify-between">
                 <div>
                   {/* Invoice IDs are ASCII identifiers — pinned LTR inside an RTL layout. */}
-                  <p className="text-xs font-mono text-gray-400 mb-1" dir="ltr">{invoice.id}</p>
+                  <p className="text-xs font-mono text-gray-400 mb-1 dark:text-gray-500" dir="ltr">{invoice.id}</p>
                   <CardTitle className="text-xl">{t('title')}</CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
@@ -248,7 +248,7 @@ export default function InvoiceDetailPage() {
                       variant="outline"
                       onClick={() => setSimCancel(true)}
                       disabled={cancelling}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/40 dark:border-red-800"
                     >
                       {cancelling && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
                       {t('cancel.action')}
@@ -335,18 +335,18 @@ function Field({
 }) {
   return (
     <div>
-      <p className="text-gray-400 text-xs mb-0.5">{label}</p>
+      <p className="text-gray-400 text-xs mb-0.5 dark:text-gray-500">{label}</p>
       {link ? (
         <a
           href={link}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-blue-600 hover:underline font-mono"
+          className="inline-flex items-center gap-1 text-blue-600 hover:underline font-mono dark:text-blue-400"
         >
           {value} <ExternalLink className="h-3 w-3" />
         </a>
       ) : (
-        <p className={mono ? 'font-mono text-gray-800' : 'text-gray-800'}>{value}</p>
+        <p className={mono ? 'font-mono text-gray-800 dark:text-gray-200' : 'text-gray-800 dark:text-gray-200'}>{value}</p>
       )}
     </div>
   );

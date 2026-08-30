@@ -34,7 +34,7 @@ export function InvoiceDocuments({ invoice }: InvoiceDocumentsProps) {
       <CardContent className="space-y-3">
         {loading ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+            <Loader2 className="h-5 w-5 animate-spin text-gray-400 dark:text-gray-500" />
           </div>
         ) : error ? (
           <p className="text-sm text-red-500">{error}</p>
@@ -43,7 +43,7 @@ export function InvoiceDocuments({ invoice }: InvoiceDocumentsProps) {
             {isOriginator && (
               <>
                 <DocumentUploader invoiceId={invoice.id} onUploaded={refresh} />
-                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
                   <FileText className="h-3.5 w-3.5" />
                   Proof documents are stored on IPFS; their SHA-256 hashes are
                   recorded for tamper detection.

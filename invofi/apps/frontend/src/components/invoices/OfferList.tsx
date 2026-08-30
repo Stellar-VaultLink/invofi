@@ -490,8 +490,8 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
       <CardContent className="space-y-3">
         {/* Offer form */}
         {showForm && (
-          <form onSubmit={handleSubmit(submitOffer)} className="border rounded-lg p-4 space-y-3 bg-gray-50">
-            <p className="text-sm font-medium text-gray-700">{t('form.title')}</p>
+          <form onSubmit={handleSubmit(submitOffer)} className="border rounded-lg p-4 space-y-3 bg-gray-50 dark:bg-gray-900">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('form.title')}</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label htmlFor="o-amount">{t('form.amount')}</Label>
@@ -500,7 +500,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="o-currency">{t('form.currency')}</Label>
-                <select id="o-currency" {...register('currency')} className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm">
+                <select id="o-currency" {...register('currency')} className="h-10 w-full rounded-md border border-input bg-white dark:bg-gray-950 dark:text-gray-100 px-3 text-sm">
                   <option value="USDC">USDC</option>
                   <option value="XLM">XLM</option>
                 </select>
@@ -508,7 +508,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               <div className="space-y-1">
                 <Label htmlFor="o-rate">{t('form.interest')}</Label>
                 <Input id="o-rate" type="number" placeholder="500" {...register('interestRate')} />
-                <p className="text-xs text-gray-400">{t('form.interestHint', { example: format.percent(500) })}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{t('form.interestHint', { example: format.percent(500) })}</p>
                 {errors.interestRate && <p className="text-xs text-red-500">{errors.interestRate.message}</p>}
               </div>
               <div className="space-y-1">
@@ -549,7 +549,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
             ))}
           </div>
         ) : offers.length === 0 && !showForm ? (
-          <p className="text-sm text-gray-400 text-center py-6">{t('empty')}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">{t('empty')}</p>
         ) : null}
 
         {offers.map(offer => {
@@ -559,26 +559,26 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           <div key={offer.id} className={`flex items-center justify-between border rounded-lg p-3 ${pendingIds.has(offer.id) ? 'opacity-60' : ''}`}>
             <div>
               {/* Strkeys are ASCII identifiers — pinned LTR inside RTL text. */}
-              <p className="text-sm font-mono text-gray-600" dir="ltr">{formatAddress(offer.lender)}</p>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-sm font-mono text-gray-600 dark:text-gray-300" dir="ltr">{formatAddress(offer.lender)}</p>
+              <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">
                 {format.currency(offer.amount, offer.currency)} ·{' '}
                 {format.percent(offer.interest_rate)} ·{' '}
                 {t('days', { count: Math.round(offer.duration / 86_400) })}
               </p>
               {(offer.status === 'Accepted' || offer.status === 'Financed') && repaid > 0n && (
                 <p className="text-xs mt-1">
-                  <span className="text-green-600">
+                  <span className="text-green-600 dark:text-green-400">
                     {t('repaid', { amount: format.currency(repaid, offer.currency) })}
                   </span>
                   {' · '}
-                  <span className="text-gray-500">
+                  <span className="text-gray-500 dark:text-gray-400">
                     {t('remaining', { amount: format.currency(remaining, offer.currency) })}
                   </span>
                 </p>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Badge className={pendingIds.has(offer.id) ? 'bg-amber-100 text-amber-800 border-amber-200 animate-pulse' : OFFER_STATUS_COLORS[offer.status]}>
+              <Badge className={pendingIds.has(offer.id) ? 'bg-amber-100 text-amber-800 border-amber-200 animate-pulse dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800' : OFFER_STATUS_COLORS[offer.status]}>
                 {pendingIds.has(offer.id) && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
                 {tStatus(offer.status)}
               </Badge>

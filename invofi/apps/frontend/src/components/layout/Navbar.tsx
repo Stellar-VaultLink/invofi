@@ -16,12 +16,12 @@ import {
   Keyboard,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
 import { WalletButton } from "@/components/auth/WalletButton";
 import { useWallet } from "@/components/auth/WalletProvider";
 import { supabase } from "@/lib/supabase";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { NavbarEventIndicator } from "@/components/NavbarEventIndicator";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -53,20 +53,11 @@ export function Navbar() {
   const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
 
-  const [theme, setTheme] = useLocalStorage<"light" | "dark">("theme", "light");
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme, mounted]);
 
   // Close drawer on route change
   useEffect(() => {
@@ -136,7 +127,7 @@ export function Navbar() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [helpOpen, setHelpOpen]);
 
-  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
+  const toggleTheme = () => setTheme(resolvedTheme === "dark" ? "light" : "dark");
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -250,10 +241,10 @@ export function Navbar() {
               title={t("toggleTheme")}
               aria-label={t("toggleTheme")}
             >
-              {theme === "light" ? (
-                <Moon className="h-5 w-5" />
-              ) : (
+              {resolvedTheme === "dark" ? (
                 <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
               )}
             </button>
 

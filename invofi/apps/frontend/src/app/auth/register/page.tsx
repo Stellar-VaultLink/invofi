@@ -136,7 +136,7 @@ function RegisterForm() {
                   : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600',
               )}
             >
-              <r.icon className={cn('h-5 w-5 mb-2', role === r.id ? 'text-blue-600' : 'text-gray-400')} />
+              <r.icon className={cn('h-5 w-5 mb-2', role === r.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500')} />
               <p className={cn('font-semibold text-sm', role === r.id ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300')}>
                 {r.label}
               </p>

@@ -47,20 +47,20 @@ function ContractRow({ label, contractId }: ContractRowProps) {
 
   if (!contractId) {
     return (
-      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-800">
         <span className="font-medium">{label}</span>
-        <span className="text-amber-600">— {t('notConfigured')}</span>
+        <span className="text-amber-600 dark:text-amber-500">— {t('notConfigured')}</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-start justify-between gap-3 rounded-md border border-gray-100 px-3 py-2">
+    <div className="flex items-start justify-between gap-3 rounded-md border border-gray-100 px-3 py-2 dark:border-gray-800">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-700">{label}</p>
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
         {/* Contract IDs are base32 identifiers — pinned LTR so they read
             correctly inside an RTL layout. */}
-        <p className="text-xs text-gray-500 mt-0.5 font-mono truncate" dir="ltr" title={contractId}>
+        <p className="text-xs text-gray-500 mt-0.5 font-mono truncate dark:text-gray-400" dir="ltr" title={contractId}>
           {contractId}
         </p>
       </div>
@@ -68,17 +68,17 @@ function ContractRow({ label, contractId }: ContractRowProps) {
         <button
           type="button"
           onClick={copyId}
-          className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-md px-2 py-1 hover:bg-gray-100 transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-md px-2 py-1 hover:bg-gray-100 transition-colors dark:text-gray-400 dark:hover:text-gray-50 dark:hover:bg-gray-800"
           aria-label={t('copyAria', { label })}
         >
-          {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? t('copied') : t('copy')}
         </button>
         <a
           href={explorerContractUrl(contractId)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-md px-2 py-1 hover:bg-gray-100 transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 rounded-md px-2 py-1 hover:bg-gray-100 transition-colors dark:text-gray-400 dark:hover:text-gray-50 dark:hover:bg-gray-800"
           aria-label={t('explorerAria', { label })}
         >
           <ExternalLink className="h-3.5 w-3.5" />
@@ -101,13 +101,13 @@ function EndpointRow({ label, value }: EndpointRowProps) {
   const t = useTranslations('Settings.contracts');
   return (
     <div className="flex items-start justify-between gap-3">
-      <p className="text-sm font-medium text-gray-700">{label}</p>
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
       {value ? (
-        <p className="text-xs text-gray-500 mt-0.5 text-end break-all max-w-[70%]" dir="ltr" title={value}>
+        <p className="text-xs text-gray-500 mt-0.5 text-end break-all max-w-[70%] dark:text-gray-400" dir="ltr" title={value}>
           {value}
         </p>
       ) : (
-        <p className="text-xs text-amber-600 whitespace-nowrap">{t('notConfigured')}</p>
+        <p className="text-xs text-amber-600 whitespace-nowrap dark:text-amber-500">{t('notConfigured')}</p>
       )}
     </div>
   );
@@ -136,14 +136,14 @@ export default function SettingsPage() {
           <Card className="hover:bg-accent transition-colors">
             <CardContent className="flex items-center justify-between py-4">
               <div className="flex items-center gap-3">
-                <User className="h-4 w-4 text-gray-400" />
+                <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                 <div>
-                  <p className="text-sm font-medium text-gray-700">{t('profile.label')}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{t('profile.hint')}</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.label')}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{t('profile.hint')}</p>
                 </div>
               </div>
               {/* Chevrons point "forward", which is leftwards in RTL. */}
-              <ChevronRight className="h-4 w-4 text-gray-400 rtl:rotate-180" />
+              <ChevronRight className="h-4 w-4 text-gray-400 rtl:rotate-180 dark:text-gray-500" />
             </CardContent>
           </Card>
         </Link>
@@ -164,10 +164,10 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-700">{t('network.label')}</p>
-                <p className="text-xs text-gray-500 mt-0.5 capitalize">{STELLAR_NETWORK}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('network.label')}</p>
+                <p className="text-xs text-gray-500 mt-0.5 capitalize dark:text-gray-400">{STELLAR_NETWORK}</p>
               </div>
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1 dark:text-green-400 dark:bg-green-950/40 dark:border-green-800">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 {t('network.connected')}
               </span>
@@ -179,7 +179,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="pt-1">
-              <p className="text-sm font-medium text-gray-700 mb-2">{t('contracts.title')}</p>
+              <p className="text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">{t('contracts.title')}</p>
               <div className="space-y-2">
                 <ContractRow label={t('contracts.registry')} contractId={REGISTRY_CONTRACT_ID} />
                 <ContractRow label={t('contracts.financing')} contractId={FINANCING_CONTRACT_ID} />

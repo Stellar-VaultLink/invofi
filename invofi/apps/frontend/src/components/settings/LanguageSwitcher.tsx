@@ -41,15 +41,15 @@ export function LanguageSwitcher() {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        <Globe className="h-4 w-4 text-gray-400 shrink-0" aria-hidden />
+        <Globe className="h-4 w-4 text-gray-400 shrink-0 dark:text-gray-500" aria-hidden />
         <div>
-          <p className="text-sm font-medium text-gray-700">{t('label')}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{t('hint')}</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('label')}</p>
+          <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{t('hint')}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        {isPending && <Loader2 className="h-4 w-4 animate-spin text-gray-400" aria-hidden />}
+        {isPending && <Loader2 className="h-4 w-4 animate-spin text-gray-400 dark:text-gray-500" aria-hidden />}
         <select
           // Stable hook for e2e: the accessible name is translated, so tests
           // cannot select on it once the language changes.

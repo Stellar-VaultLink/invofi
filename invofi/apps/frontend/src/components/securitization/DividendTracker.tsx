@@ -50,7 +50,7 @@ type DividendFormValues = z.infer<typeof dividendSchema>;
 const STATUS_STYLES: Record<DividendRecord['status'], string> = {
   pending:     'bg-yellow-50 text-yellow-700 border-yellow-200',
   distributed: 'bg-green-50 text-green-700 border-green-200',
-  cancelled:   'bg-gray-50 text-gray-500 border-gray-200',
+  cancelled:   'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700',
 };
 
 // ── Create dividend form (originator only) ────────────────────────────────────

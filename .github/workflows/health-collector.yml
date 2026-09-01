@@ -80,6 +80,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The test and type-check import from ../apps/frontend and ../apps/sdk,
+      # which require their own node_modules for type resolution.
+      - name: Install frontend dependencies (for test imports)
+        run: npm ci
+        working-directory: invofi/apps/frontend
+      - name: Install SDK dependencies (for type-check)
+        run: npm ci
+        working-directory: invofi/apps/sdk
+
       # ── Type-check ────────────────────────────────────────────────────────
       - name: Type-check
         run: npm run type-check

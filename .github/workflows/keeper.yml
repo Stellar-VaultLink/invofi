@@ -41,6 +41,11 @@ jobs:
           cache: npm
           cache-dependency-path: invofi/scripts/package-lock.json
       - run: npm ci
+      # The keeper test imports from ../apps/frontend/src/lib/health/collector.js,
+      # which requires @stellar/stellar-sdk resolved from the frontend workspace.
+      - name: Install frontend dependencies (for test imports)
+        run: npm ci
+        working-directory: invofi/apps/frontend
       - run: npm test
       - run: npx tsc --noEmit --project tsconfig.keeper.json
       - name: Download checkpoint artifact

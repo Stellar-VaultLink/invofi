@@ -821,9 +821,10 @@ export function createInvofiClient(cfg: InvofiClientConfig) {
       const { code, issuer } = parseAssetParts(cfg.positionTokenAsset);
       const account = await horizon().loadAccount(address);
       return account.balances.some(
-        b =>
-          (b as { asset_code?: string; asset_issuer?: string }).asset_code === code &&
-          (b as { asset_code?: string; asset_issuer?: string }).asset_issuer === issuer,
+        b => {
+          const bal = b as { asset_code?: string; asset_issuer?: string };
+          return bal.asset_code === code && bal.asset_issuer === issuer;
+        },
       );
     },
 

@@ -15,7 +15,7 @@ import { TableSkeleton } from '@/components/common/LoadingSkeleton';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken, type FinancingOffer } from '@/lib/contract';
-import { OFFER_STATUS_COLORS } from '@/lib/utils';
+import { OFFER_STATUS_COLORS, toStroopsBigInt } from '@/lib/utils';
 import { useFormat } from '@/hooks/useFormat';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';

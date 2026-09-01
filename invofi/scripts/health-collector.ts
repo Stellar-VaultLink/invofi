@@ -65,8 +65,9 @@ const CFG: CollectorConfig = {
   insuranceId:      env('INSURANCE_CONTRACT_ID'),
   reputationId:     env('REPUTATION_CONTRACT_ID'),
 };
-const SUPABASE_URL  = env('SUPABASE_URL');
-const SUPABASE_KEY  = env('SUPABASE_SERVICE_ROLE_KEY');
+const SUPABASE_URL  = process.env.SUPABASE_URL ?? '';
+const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+const HAS_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_KEY);
 const LOOKBACK_HOURS = Number(env('LOOKBACK_HOURS', '1'));
 const DRY_RUN = process.env.DRY_RUN === 'true';
 
@@ -274,7 +275,10 @@ export async function run(): Promise<void> {
   log('Health collector starting…');
   if (DRY_RUN) log('[dry-run mode — no writes will occur]');
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  if (!HAS_SUPABASE) {
+  log('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set — running in collect-only mode (no DB writes).');
+}
+const supabase = HAS_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
   // Determine bucket start (truncated to the hour).
   const now = new Date();
@@ -305,12 +309,18 @@ export async function run(): Promise<void> {
   const metricRow = windowToMetric(window, bucketStart);
   log(`Metric row: success=${metricRow.tx_success} failure=${metricRow.tx_failure} avgFee=${metricRow.avg_fee_stroops}`);
 
+  if (!HAS_SUPABASE) {
+    log('Collect-only mode: skipping snapshot/alerts/DB writes.');
+    log('Health collector finished (collect-only).');
+    return;
+  }
+
   // Step 3: Snapshot contract state.
-  const snapshot = await snapshotContractState(supabase, latestLedger);
+  const snapshot = await snapshotContractState(supabase!, latestLedger);
   log(`Snapshot: overdue_rate=${snapshot.overdue_rate} repayment_rate=${snapshot.repayment_rate}`);
 
   // Step 4: Evaluate alert configs.
-  const alertConfigs = await loadAlertConfigs(supabase);
+  const alertConfigs = await loadAlertConfigs(supabase!);
   const breaches = evaluateAlerts(
     alertConfigs,
     snapshot as unknown as ContractStateSnapshot,
@@ -319,9 +329,9 @@ export async function run(): Promise<void> {
   log(`Alert evaluation: ${alertConfigs.length} rules, ${breaches.length} breach(es)`);
 
   // Step 5: Write everything to Supabase.
-  await writeMetric(supabase, metricRow);
-  await writeSnapshot(supabase, snapshot);
-  await writeAuditBreaches(supabase, breaches);
+  await writeMetric(supabase!, metricRow);
+  await writeSnapshot(supabase!, snapshot);
+  await writeAuditBreaches(supabase!, breaches);
 
   log('Health collector finished successfully.');
 }

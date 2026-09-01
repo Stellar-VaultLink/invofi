@@ -28,7 +28,6 @@ import { PositionTokensPanel } from '@/components/portfolio/PositionTokensPanel'
 import { paginate } from '@/lib/pagination';
 import type { LivePosition } from '@/lib/live/types';
 import { toErrorMessage } from '@/lib/errors';
-import { SupabaseUser } from '@/lib/types/supabase-auth';
 
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
@@ -422,32 +421,13 @@ export default function PortfolioPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  useEffect(() => {
-  supabase.auth.getUser().then(async ({ data }: { data: { user: SupabaseUser | null } }) => {
-    const { user } = data;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    const { data: offersData } = await supabase
-      .from('financing_offers')
-      .select('*, invoice:invoices(*)')
-      .eq('lender_id', user.id)
-      .order('created_at', { ascending: false });
-    const rows = (offersData as unknown as FinancingOffer[]) ?? [];
-    setOffers(rows.map(o => ({
-      ...o,
-      amount: toStroopsBigInt(o.amount),
-      amount_repaid: toStroopsBigInt(o.amount_repaid),
-    })));
-    // Fractional positions count — set to 0 on success, leave null on error
-    try {
-      const fp = await fetchFractionalPositions(user.id);
-      setFractionalCount(fp.length);
-    } catch { /* non-fatal — panel stays hidden while null */ }
-    setLoading(false);
-  });
-}, []);
+  // Map useLivePortfolio positions to the `offers` shape the rest of the
+  // component expects.  LivePosition extends FinancingOffer, so this is
+  // a zero-cost cast that keeps the downstream filter/reduce logic intact.
+  const offers = positions as unknown as import('@/lib/contract').FinancingOffer[];
+  const fractionalCount = positions.length;
+
+
 
   // An offer is active while it is financing an invoice: from acceptance until
   // it is fully repaid. Partial repayments flip offers to Financed on-chain,

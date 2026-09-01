@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useLocale, useTranslations } from 'next-intl';
-import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, Copy, Check, Send, RefreshCw, Tag, DollarSign } from 'lucide-react';
+import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, Copy, Check, Send, RefreshCw, Tag, DollarSign, Layers } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

@@ -28,6 +28,7 @@ import { PositionTokensPanel } from '@/components/portfolio/PositionTokensPanel'
 import { paginate } from '@/lib/pagination';
 import type { LivePosition } from '@/lib/live/types';
 import { toErrorMessage } from '@/lib/errors';
+import { SupabaseUser } from '@/lib/types/supabase-auth';
 
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';

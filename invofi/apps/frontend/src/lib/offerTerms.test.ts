@@ -18,8 +18,8 @@ describe('computeOfferTerms', () => {
     expect(terms!.totalRepayment).toBeCloseTo(10500, 8);
     // Annualized simple rate: 5% * 365/30
     expect(terms!.annualizedApr).toBeCloseTo(60.833_333, 4);
-    // Annualized compounded rate over the term: (1.05)^(365/30)-1 ≈ 81.05%
-    expect(terms!.annualizedApy).toBeCloseTo(81.051_9, 2);
+    // Annualized compounded rate using 360-day banker's year: (1.05)^(360/30)-1 ≈ 79.59%
+    expect(terms!.annualizedApy).toBeCloseTo(79.585_6, 2);
     expect(terms!.rateOutOfRange).toBe(false);
     expect(terms!.durationOutOfRange).toBe(false);
   });

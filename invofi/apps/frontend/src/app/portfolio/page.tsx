@@ -12,14 +12,15 @@ import { Button } from '@/components/ui/button';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { TableSkeleton } from '@/components/common/LoadingSkeleton';
-import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken, type FinancingOffer } from '@/lib/contract';
-import { OFFER_STATUS_COLORS, toStroopsBigInt, formatAmount } from '@/lib/utils';
+import { OFFER_STATUS_COLORS, toStroopsBigInt, interestRateLabel, durationLabel } from '@/lib/utils';
 import { useFormat } from '@/hooks/useFormat';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import { getXlmUsdInfo, stroopsToUsd } from '@/lib/live/prices';
+import { formatDate } from '@/lib/formatters';
+import { formatAmount, formatDate } from '@/lib/formatters';
 import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
 import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
@@ -421,17 +422,9 @@ export default function PortfolioPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Map useLivePortfolio positions to the `offers` shape the rest of the
-  // component expects.  LivePosition extends FinancingOffer, so this is
-  // a zero-cost cast that keeps the downstream filter/reduce logic intact.
-  const offers = positions as unknown as import('@/lib/contract').FinancingOffer[];
-  const fractionalCount = positions.length;
+  // Offer lists derived from live portfolio positions
+  const offers = positions;
 
-
-
-  // An offer is active while it is financing an invoice: from acceptance until
-  // it is fully repaid. Partial repayments flip offers to Financed on-chain,
-  // so both statuses count as deployed capital.
   const active = offers.filter(o => o.status === 'Accepted' || o.status === 'Financed');
   const repaid = offers.filter(o => o.status === 'Repaid');
   const pending = offers.filter(o => o.status === 'Pending');
@@ -442,6 +435,18 @@ export default function PortfolioPage() {
     const yield_ = principal * (o.interest_rate / 10000);
     return sum + yield_;
   }, 0);
+
+  // USD pricing for summary card
+  const xlmUsdInfo = getXlmUsdInfo();
+  const totalValueUsd = offers.reduce((sum, o) => sum + stroopsToUsd(toStroopsBigInt(o.amount), o.currency), 0);
+  const currencyTotalsUsd: [string, number][] = Object.entries(
+    offers.reduce<Record<string, number>>((acc, o) => {
+      acc[o.currency] = (acc[o.currency] ?? 0) + stroopsToUsd(toStroopsBigInt(o.amount), o.currency);
+      return acc;
+    }, {}),
+  );
+  const totalEarnedToDateUsd = offers.reduce((sum, o) => sum + stroopsToUsd(o.earnedToDate, o.currency), 0);
+  const fractionalCount: number | null = offers.length > 0 ? offers.length : null;
 
   const exportOffersCsv = () => {
     const rows = offers.map(o => ({

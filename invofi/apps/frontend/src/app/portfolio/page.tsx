@@ -19,7 +19,6 @@ import { useFormat } from '@/hooks/useFormat';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import { getXlmUsdInfo, stroopsToUsd } from '@/lib/live/prices';
-import { formatDate } from '@/lib/formatters';
 import { formatAmount, formatDate } from '@/lib/formatters';
 import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';

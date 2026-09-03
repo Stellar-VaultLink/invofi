@@ -925,7 +925,7 @@ export async function replayEvents(
   if (targetTo === undefined) {
     const latestLedgerRes = await rpcServer.getLatestLedger();
     targetTo = latestLedgerRes.sequence;
-    if (targetTo < from) {
+    if (targetTo! < from) {
       return [];
     }
   }

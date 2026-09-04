@@ -106,7 +106,7 @@ function RegisterForm() {
         <Card className="border-2 border-blue-100 dark:border-blue-900">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Continue with Wallet</CardTitle>
-            <CardDescription>Use Freighter or LOBSTR to sign up instantly — no password needed</CardDescription>
+            <CardDescription>Connect your Stellar wallet to sign up instantly — no password needed</CardDescription>
           </CardHeader>
           <CardContent>
             <WalletButton onConnected={() => router.push('/dashboard')} />

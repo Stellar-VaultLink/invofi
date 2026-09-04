@@ -113,7 +113,7 @@ export default function LoginPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Sign in with Wallet</CardTitle>
             <CardDescription>
-              Connect Freighter or LOBSTR, then sign a one-time challenge to prove ownership —
+              Connect your Stellar wallet, then sign a one-time challenge to prove ownership —
               no password needed
             </CardDescription>
           </CardHeader>

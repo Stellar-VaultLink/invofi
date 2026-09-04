@@ -153,7 +153,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
     if (!isConnected || !publicKey) {
       toast({
         title: 'Wallet not connected',
-        description: 'Connect your Freighter or LOBSTR wallet first.',
+        description: 'Connect an approved Stellar wallet first.',
         variant: 'destructive',
       });
       return;
@@ -264,7 +264,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
 
           {!isConnected && (
             <p className="text-sm text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-              Connect your Freighter or LOBSTR wallet before submitting.
+              Connect an approved Stellar wallet before submitting.
             </p>
           )}
 

@@ -5,7 +5,9 @@ test.describe('authentication pages', () => {
     await page.goto('/auth/login');
 
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Connect Wallet' })).toBeVisible();
+    // Wallet sign-in card (opens the wallet-select dialog) plus the email form.
+    await expect(page.getByRole('heading', { name: 'Sign in with Wallet' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Connect Wallet' }).first()).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible();

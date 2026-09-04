@@ -23,7 +23,7 @@ jobs:
       - name: Check if lock file is in sync
         run: |
           # Install with package-lock only to detect drift
-          npm install --package-lock-only --ignore-scripts --legacy-peer-deps 2>&1
+          npm install --package-lock-only --ignore-scripts 2>&1
           if ! git diff --quiet package-lock.json; then
             echo "::error::package-lock.json is out of sync with package.json. Please run 'npm install' and commit the updated lock file."
             git diff package-lock.json

@@ -205,6 +205,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       setState(s => ({ ...s, isInstalled: true }));
 
+      // On the sign-in / register pages the point is to *choose* a wallet
+      // from the approved list — never silently re-attach the last-used
+      // wallet there, or the connect dialog never gets a chance to show.
+      // Auto-restore still applies everywhere else so returning users land
+      // connected on the dashboard (issue #172 persistence contract).
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/')) {
+        setIsCheckingWallet(false);
+        return;
+      }
+
       // Prefer the last-connected wallet so returning users reconnect to the
       // wallet they chose last time; fall back to probing every approved
       // wallet for a previously-granted session.

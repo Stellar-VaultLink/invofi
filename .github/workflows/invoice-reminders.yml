@@ -88,7 +88,16 @@ jobs:
         run: npx tsx --test invoice-reminders.test.ts
 
       # ── Run collector ─────────────────────────────────────────────────────
+      # Supabase is mid-migration (see README); until SUPABASE_URL and
+      # SUPABASE_SERVICE_ROLE_KEY are configured in repo secrets, the daily run
+      # validates type-check + unit tests above and skips the send (same
+      # graceful-skip pattern as health-collector). Re-enable by adding the
+      # secrets.
+      - name: Skip reminder send (Supabase not configured)
+        if: ${{ secrets.SUPABASE_URL == '' || secrets.SUPABASE_SERVICE_ROLE_KEY == '' }}
+        run: echo "[invoice-reminders] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not configured — skipping send (Supabase migration paused)."
       - name: Send due-date reminders
+        if: ${{ secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

@@ -93,15 +93,16 @@ jobs:
       # validates type-check + unit tests above and skips the send (same
       # graceful-skip pattern as health-collector). Re-enable by adding the
       # secrets.
-      - name: Skip reminder send (Supabase not configured)
-        if: ${{ secrets.SUPABASE_URL == '' || secrets.SUPABASE_SERVICE_ROLE_KEY == '' }}
-        run: echo "[invoice-reminders] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not configured — skipping send (Supabase migration paused)."
       - name: Send due-date reminders
-        if: ${{ secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REMINDER_FROM_EMAIL: ${{ vars.REMINDER_FROM_EMAIL || 'reminders@invofi.app' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-        run: npx tsx invoice-reminders.ts
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "[invoice-reminders] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not configured — skipping send (Supabase migration paused)."
+            exit 0
+          fi
+          npx tsx invoice-reminders.ts

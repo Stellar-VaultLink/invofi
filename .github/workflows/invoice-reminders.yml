@@ -46,7 +46,10 @@ jobs:
   remind:
     name: Invoice reminders / daily
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Three workspace installs (scripts/frontend/sdk) + type-check + tests.
+    # npm cache (below) keeps installs fast; the cap is generous for the
+    # first cold run after a lockfile change.
+    timeout-minutes: 30
 
     defaults:
       run:
@@ -60,8 +63,18 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: invofi/scripts/package-lock.json
+
+      # Monorepo npm cache: scripts, frontend, and sdk each have their own
+      # lockfile, so key the shared ~/.npm cache on all of them — caching on
+      # one lockfile only would miss the other two workspaces and every run
+      # would re-download the full frontend dependency tree.
+      - name: Cache npm dependencies
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
 
       # ── Install dependencies ──────────────────────────────────────────────
       - name: Install dependencies

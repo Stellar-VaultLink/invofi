@@ -13,7 +13,7 @@
     "test:health": "tsx --test health-collector.test.ts"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^16.0.1",
+    "@stellar/stellar-sdk": "^16.3.0",
     "@supabase/supabase-js": "^2.50.5"
   },
   "devDependencies": {

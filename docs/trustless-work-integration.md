@@ -51,9 +51,10 @@ To go live, complete these in order:
    increases. Then record the tx hashes in this doc.
    (Pre-requisite done 2026-09-08: USDC trustlines added to the
    originator, lender, and platform wallets on testnet.)
-5. **Milestone-approval UI** (follow-up issue, not yet filed) — the approve
-   step currently happens via the TW Backoffice/CLI; the product UI for
-   "confirm delivery → release" is the remaining Epic-3 item.
+5. **Milestone-approval UI** — tracked in
+   [#381 — Milestone-approval UI (Epic 3.2)](https://github.com/Stellar-VaultLink/invofi/issues/381);
+   the approve step currently happens via the TW Backoffice/CLI, and the
+   product UI for "confirm delivery → release" is the remaining Epic-3 item.
 
 ### Status of the TW API itself (live-verified 2026-09-08/09 against the REAL API)
 

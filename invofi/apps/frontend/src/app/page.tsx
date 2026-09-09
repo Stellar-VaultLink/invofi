@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import {
   ArrowRight, FileText, TrendingUp, Zap,
-  Building2, Wallet, CheckCircle, Clock, Globe, Lock, ChevronDown,
+  Building2, Wallet, CheckCircle, Clock, Globe, Lock, ShieldCheck, ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProtocolMetricsBand } from '@/components/common/ProtocolMetricsBand';
@@ -83,6 +83,11 @@ export default async function LandingPage() {
       icon: Globe,
       title: t('stellar.globalTitle'),
       description: t('stellar.globalDesc'),
+    },
+    {
+      icon: ShieldCheck,
+      title: t('stellar.escrowTitle'),
+      description: t('stellar.escrowDesc'),
     },
   ];
 

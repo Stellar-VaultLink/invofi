@@ -105,14 +105,14 @@ export {
 export { Contract, Networks, xdr, nativeToScVal, scValToNative } from '@stellar/stellar-sdk';
 
 // ── Trustless Work escrow adapter (Phase 2 — Escrow Rail) ──────────────────
-// Typed client for the Trustless Work Core API (v2 single-release escrows):
+// Typed client for the Trustless Work Core REST API (single-release escrows):
 // milestone-gated disbursement on `accept_offer` (lender → escrow →
-// originator), with the same build → sign → submit loop the frontend
-// already uses. Fully optional — nothing else in the SDK touches it.
+// originator), with the live-verified build → sign → submit loop. Fully
+// optional — nothing else in the SDK touches it.
 //
 // @example
 // ```ts
-// import { createTrustlessWorkClient, usdcTestnetTrustline } from '@invofi/sdk';
+// import { createTrustlessWorkClient, usdcTestnetTrustline, disbursementEngagementId } from '@invofi/sdk';
 //
 // const tw = createTrustlessWorkClient({
 //   env: 'testnet',
@@ -130,12 +130,18 @@ export { Contract, Networks, xdr, nativeToScVal, scValToNative } from '@stellar/
 //     trustline: usdcTestnetTrustline(USDC_ISSUER_TESTNET),
 //   }),
 // );
-// // built.contractId → the escrow's future on-chain address; persist it.
+// // TW's deploy build does not return the escrow's contract id — resolve it
+// // from the read model once the tx lands:
+// const escrow = await tw.findEscrowByEngagementId(
+//   lenderAddress, disbursementEngagementId('inv_001', 'off_001'),
+// );
+// // escrow?.contractId → persist it against the offer.
 // ```
 export {
   createTrustlessWorkClient,
   mapToDeployPayload,
   usdcTestnetTrustline,
+  disbursementEngagementId,
   TrustlessWorkError,
   DELIVERY_MILESTONE_DESCRIPTION,
 } from './escrow';

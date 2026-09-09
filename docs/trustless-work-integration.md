@@ -1,18 +1,18 @@
 # Trustless Work Escrow Integration — Research, Plan & Status
 
-> **Status:** ✅ **Phase 2 core shipped** (SDK adapter + proxy + accept_offer wiring, merged to main) · **Owner:** @samjay8 · **Decision record:** [ADR-0010](./adr/0010-trustless-work-escrow-rail.md)
+> **Status:** 🟢 **LIVE on testnet** — core shipped, API key issued & active on Vercel (server-only), production deployed · **Owner:** @samjay8 · **Decision record:** [ADR-0010](./adr/0010-trustless-work-escrow-rail.md)
 > **Companion repos:** [Trustless Work org](https://github.com/Trustless-Work) · [Smart escrow contract](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar) · [React SDK](https://www.npmjs.com/package/@trustless-work/escrow) · [API docs](https://docs.trustlesswork.com)
 
 ---
 
-## Part 0 — Current status (read this first, updated 2026-09-08)
+## Part 0 — Current status (read this first, updated 2026-09-09)
 
 ### What is DONE and merged
 
 | Item | Where | State |
 |---|---|---|
-| **TW Core API v2 research** — build→sign→submit loop, endpoint paths, deploy/fund/release body shapes, auth (`x-api-key: id.secret`), RFC 9457 error shape | this doc, §Parts 1–2 | ✅ verified against live API (beta.api returned `AUTH_CREDENTIAL_MISSING` 401 in exactly the documented Problem-Details shape) |
-| **Typed TW client in `@invofi/sdk`** — `createTrustlessWorkClient` (deploy/fund/release builds, sign+submit, read-model GET), InvoFi→TW role mapping (`mapToDeployPayload`), `TrustlessWorkError`, `usdcTestnetTrustline` | `invofi/apps/sdk/src/escrow.ts` | ✅ merged, **15 unit tests green**, full SDK typecheck clean |
+| **TW Core API research** — build→sign→submit loop, endpoint paths, deploy/fund/release body shapes, auth (`x-api-key: id.secret`), RFC 9457 error shape | this doc, §Parts 1–2 (desk research) + **Part 0 (live-verified contract — supersedes the desk research)** | ✅ verified against the **live production API** (`dev.api.trustlesswork.com`): real deploy build returned HTTP 201 with `unsignedTransaction` XDR |
+| **Typed TW client in `@invofi/sdk`** — `createTrustlessWorkClient` (deploy/fund builds, sign+submit, `resolveContractId`/read-model helpers), InvoFi→TW role mapping, `TrustlessWorkError`, `usdcTestnetTrustline` | `invofi/apps/sdk/src/escrow.ts` | ✅ rewritten to the live API contract (2026-09-09), full SDK typecheck clean, **349/349 SDK tests green** |
 | **Server proxy** `/api/escrow/[action]` — injects the server-only key (`TW_ESCROW_API_KEY`), forwards deploy/fund/release/submit/status; SSRF-guard on `baseUrl`; never signs | `invofi/apps/frontend/src/app/api/escrow/[action]/route.ts` | ✅ merged, lint+typecheck clean |
 | **Frontend binding** — `lib/escrow.ts`: feature-flagged (`NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY`), USDC-only, wallet signer lazy-imported (test-safe) | `invofi/apps/frontend/src/lib/escrow.ts` | ✅ merged |
 | **`accept_offer` wiring** — after a successful accept, best-effort deploy+fund of the disbursement escrow; failure never rolls back the accepted offer; escrow contract id persisted | `OfferList.tsx` + `migrations/003_escrow.sql` (`financing_offers.escrow_contract_id`) | ✅ merged, CI green (commit `316a90b6` + fix `1-fix`) |
@@ -25,41 +25,68 @@
 The rail **ships dark**: with no API key set, user-facing behavior is unchanged.
 To go live, complete these in order:
 
-1. **Request the TW API key (manual, wallet-signed — cannot be automated).**
-   Done in the [Trustless Work Backoffice dApp](https://dapp.trustlesswork.com):
-   connect a Stellar wallet (Freighter) → sign the ownership message →
-   Settings → fill **profile with use case** (required, e.g. *"InvoFi —
-   open-source invoice financing protocol; milestone-gated disbursement
-   escrows for invoice payments on Stellar Soroban"*) → API Keys tab →
-   choose **Testnet** → **Request API Key** → **copy immediately** (shown
-   once). Format: `id.secret`.
-2. **Set the two key vars** — server-side `TW_ESCROW_API_KEY` (the real key;
-   never exposed) and the public flag `NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY`
-   (any non-empty value acts as the on-switch) on Vercel, production+preview.
-   *Until this step, `isEscrowEnabled()` is false and nothing changes for
-   users.*
-3. **Redeploy** so the env vars take effect.
-4. **End-to-end testnet verification** — two funded testnet wallets
-   (lender + originator, Freighter): register a USDC invoice → offer →
-   accept → confirm in the logs/`financing_offers.escrow_contract_id` that
-   an escrow contract was deployed and funded → find it on the **Escrow
-   Viewer** → approve the delivery milestone (platform wallet) → release →
-   originator balance increases. Then record the tx hashes in this doc.
+1. ~~**Request the TW API key (manual, wallet-signed — cannot be automated).**~~
+   **DONE 2026-09-08.** Requested in the [Trustless Work Backoffice dApp](https://dapp.trustlesswork.com)
+   (wallet-signed ownership message + profile with use case). Key format
+   confirmed: `id.secret`.
+2. ~~**Set the two key vars.**~~ **DONE 2026-09-09, on Vercel (project
+   `invofi`, production+preview+development):**
+   - `TW_ESCROW_API_KEY` — the real key, type **Sensitive** (server-only;
+     injected into `/api/escrow/*`; never in the browser bundle and never
+     returned by the Vercel API).
+   - `NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY` — value `set`, type **plain**:
+     an **on/off switch only**, NOT the key (the key must never ship to the
+     browser bundle).
+   - Plus (set 2026-09-08): `NEXT_PUBLIC_TRUSTLESS_WORK_ENV=testnet`,
+     `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS=GBDDLOWR…EVZR` (deployer
+     / platform wallet), `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_FEE=0.5`.
+3. ~~**Redeploy.**~~ **DONE 2026-09-09** — production rebuilt from `main`
+   after the env vars landed (build `dpl_FsWhr3bu…`).
+4. **End-to-end testnet verification** — ⬜ **next step.** Two funded
+   testnet wallets (lender + originator, Freighter): register a USDC
+   invoice → offer → accept → confirm in the logs/
+   `financing_offers.escrow_contract_id` that an escrow contract was
+   deployed and funded → find it on the **Escrow Viewer** → approve the
+   delivery milestone (platform wallet) → release → originator balance
+   increases. Then record the tx hashes in this doc.
+   (Pre-requisite done 2026-09-08: USDC trustlines added to the
+   originator, lender, and platform wallets on testnet.)
 5. **Milestone-approval UI** (follow-up issue, not yet filed) — the approve
    step currently happens via the TW Backoffice/CLI; the product UI for
    "confirm delivery → release" is the remaining Epic-3 item.
 
-### Status of the TW API itself (as verified 2026-09-08)
+### Status of the TW API itself (live-verified 2026-09-08/09 against the REAL API)
 
-- Core API v2 lives at `https://beta.api.trustlesswork.com` (testnet).
-- Auth: `x-api-key: <id>.<secret>` per request; errors are RFC 9457 Problem
-  Details with a stable `code` (e.g. `AUTH_CREDENTIAL_MISSING`).
-- Deploy returns `unsignedXdr` + `txHash` + `contractId` — the escrow's
-  **future** address, known upfront, stable across re-preparations.
-- Release requires every milestone approved; fees deduct on-chain; a release
-  is blocked while a dispute is open.
-- v1 API (`api.trustlesswork.com` / `dev.api.trustlesswork.com`) is a
-  different, non-interchangeable surface — we target **v2 only**.
+> ⚠️ **Correction to earlier research:** the original desk research targeted
+> the **v2 beta** surface. Once a real key was issued it authenticated **only
+> on the current production API** — the live contract below is what the SDK
+> adapter now implements (verified with a real deploy build, HTTP 201).
+
+- **Testnet base URL:** `https://dev.api.trustlesswork.com` (the `beta.api…`
+  host rejects current keys; `api.trustlesswork.com` is mainnet).
+- **Auth:** `x-api-key: <id>.<secret>` per request; missing/invalid key
+  returns RFC 9457 Problem Details with codes `AUTH_CREDENTIAL_MISSING` /
+  `AUTH_INVALID_CREDENTIAL`.
+- **Swagger (live):** `https://dev.api.trustlesswork.com/docs-json` —
+  38 paths, the authoritative route list.
+- **Deploy:** `POST /deployer/single-release` — body `{ signer,
+  engagementId, title, description, roles: { approver, serviceProvider,
+  platformAddress, releaseSigner, disputeResolver, receiver }, amount,
+  platformFee, milestones: [{ description }], trustline: { address,
+  decimals, name, symbol } }` → **HTTP 201** with `{ unsignedTransaction:
+  "<XDR>" }`.
+- **Fund:** `POST /escrow/fund-escrow` with `{ contractId, signer }`.
+- **Submit (any network):** `POST /helper/send-transaction` with the signed
+  XDR.
+- **Reads:** `GET /helper/get-escrow-by-contract-ids?contractIds[]=…`,
+  `GET /helper/get-escrows-by-signer?role=…&valid=true` — the escrow's
+  on-chain contract ID is resolved from the read model **after** funding
+  (not returned at build time).
+- **Empirical validation:** a real deploy build against testnet passed
+  schema + business checks (it first rejected the receiver for a missing
+  USDC trustline — fixed by adding trustlines to originator, lender, and
+  platform wallets — then returned `201` with `unsignedTransaction` XDR).
+  The XDR was **never signed or submitted**; no funds moved.
 
 ### Meeting brief (TL;DR if talking to the Trustless Work team)
 
@@ -68,11 +95,12 @@ To go live, complete these in order:
   insurance/reputation), real USDC/XLM testnet transfers, public stats,
   GrantFox bounties, SCF-path project.
 - **What we built against your API already:** a typed zero-dependency adapter
-  for **Core API v2 single-release escrows** in our SDK (`@invofi/sdk`), with
-  an InvoFi→TW role mapping (receiver=originator, approvers=[platform,
-  lender] @ approvalsTarget 1, releaseSigners/admin/disputeResolver=platform),
-  a server-side key proxy, and the accept-offer disbursement flow wired
-  behind a feature flag. 15 unit tests; CI green.
+  for **single-release escrows on your live production API**
+  (`dev.api.trustlesswork.com`) in our SDK (`@invofi/sdk`) — deploy payload
+  validated end-to-end (HTTP 201) — with an InvoFi→TW role mapping
+  (receiver=originator, approver=platform, releaseSigner/disputeResolver=
+  platform), a server-side key proxy, and the accept-offer disbursement flow
+  wired behind a feature flag. Full SDK test suite green; CI green.
 - **What we need from you:** a **testnet API key** (we'll self-serve via the
   Backoffice — flagging in case key issuance needs approval for platform
   wallets), confirmation that `beta.api.trustlesswork.com` v2 is the
@@ -89,7 +117,7 @@ To go live, complete these in order:
 
 ---
 
-## Part 1 — What Trustless Work is (research summary)
+## Part 1 — What Trustless Work is (research summary — historical desk research; the live-verified API contract in Part 0 supersedes the endpoint details below)
 
 Trustless Work is **Escrow-as-a-Service (EaaS) on Stellar Soroban**, USDC-native. Their core design question is: *"What must happen before funds move?"* — when the answer involves multiple parties, milestones, approvals, or release conditions, they provide on-chain primitives to model that flow.
 

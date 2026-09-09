@@ -12,7 +12,7 @@
     "signOut": "ログアウト"
   },
   "Footer": {
-    "tagline": "Stellar Soroban 上の分散型請求書ファイナンス",
+    "tagline": "Stellar Soroban上の請求書ファイナンス — トークン化された請求書、検証済みの納品、USDC・XLMでのマイルストーン型エスクロー送金。",
     "stats": "統計",
     "github": "GitHub",
     "docs": "ドキュメント",

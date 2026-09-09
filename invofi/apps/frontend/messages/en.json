@@ -12,7 +12,7 @@
     "signOut": "Sign out"
   },
   "Footer": {
-    "tagline": "Decentralized Invoice Financing on Stellar Soroban",
+    "tagline": "Invoice financing on Stellar Soroban — tokenized invoices, verified deliveries, and milestone-gated escrow disbursements in USDC & XLM.",
     "stats": "Stats",
     "github": "GitHub",
     "docs": "Docs",
@@ -86,7 +86,9 @@
       "sorobanTitle": "Soroban Smart Contracts",
       "sorobanDesc": "Purpose-built for DeFi. Deterministic, auditable, and efficient — no runaway gas costs.",
       "globalTitle": "Global & Permissionless",
-      "globalDesc": "Anyone with a Stellar wallet can participate. No geography, no gatekeepers."
+      "globalDesc": "Anyone with a Stellar wallet can participate. No geography, no gatekeepers.",
+      "escrowTitle": "Milestone-Gated Escrows",
+      "escrowDesc": "Disbursements route through audited Trustless Work escrows — funds move only when delivery is confirmed, disputes have a resolver."
     },
     "faq": {
       "title": "Frequently Asked Questions",

@@ -109,6 +109,7 @@ npm install && npm run dev
 - **Transparent** — every action is a public transaction on Stellar, auditable by anyone
 - **Permissionless** — anyone with a Stellar wallet can participate
 - **Dual auth** — email/password (Supabase) and Stellar wallet (Freighter, LOBSTR, or Albedo)
+- **Milestone-gated escrows** — USDC disbursements route through audited [Trustless Work](https://www.trustlesswork.com) escrows (Runtime Verification-audited, SCF-funded): funds move only when delivery is confirmed, with a built-in dispute resolver
 - **Multi-currency** — invoices denominated in XLM or USDC
 - **Partial repayment** — businesses can repay incrementally; offer stays Financed until fully cleared
 - **Free to deploy** — Vercel (free) + Supabase (free) + Stellar testnet
@@ -650,11 +651,13 @@ Soroban (USDC-native) becomes the payment rail for InvoFi's riskiest transfers:
 4. **Insurance payout rail** — default payouts released through escrow with the
    insurance contract as resolver.
 
-**Status (2026-09-08): the core rail is shipped** — a typed zero-dependency
-adapter for the TW Core API v2 in `@invofi/sdk`, a server-side key proxy
-(`/api/escrow/*`), and best-effort escrow deploy+fund wired into the
-`accept_offer` flow (USDC, feature-flagged). The rail is dark until the
-Trustless Work API key is added — activation checklist and full status:
+**Status (2026-09-08): the escrow rail is LIVE on testnet** — a typed
+zero-dependency adapter for the TW Core API in `@invofi/sdk`, a server-side
+key proxy (`/api/escrow/*`), and best-effort escrow deploy+fund wired into the
+`accept_offer` flow (USDC, feature-flagged). The API key is issued, set on
+Vercel (server-only), and the production deployment ships with the rail
+active for USDC offers. API contract, validation results, and the
+testnet-verification checklist:
 **[docs/trustless-work-integration.md](./docs/trustless-work-integration.md)**
 (see its Part 0) · Decision record: [ADR-0010](./docs/adr/0010-trustless-work-escrow-rail.md)
 

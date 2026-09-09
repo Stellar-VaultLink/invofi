@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   createTrustlessWorkClient,
   mapToDeployPayload,
+  disbursementEngagementId,
   TrustlessWorkError,
   type DisbursementEscrowParams,
   type TrustlessWorkEnv,
@@ -18,11 +19,12 @@ export const dynamic = 'force-dynamic';
  * this route keeps the key out of the client bundle while allowing the
  * frontend to call build/submit endpoints on behalf of the connected wallet.
  *
- * Supported actions (the v2 single-release loop, plus reads):
+ * Supported actions (the live v1 single-release loop, plus reads):
  *   deploy  — build the deploy tx for a disbursement escrow (InvoFi role mapping)
  *   fund    — build the fund tx
  *   release — build the release tx
- *   submit  — forward a signed XDR to TW's /stellar/send-transaction
+ *   submit  — forward a signed XDR to TW's /helper/send-transaction
+ *   resolve — find an escrow's contract id by engagementId (signer read)
  *   status  — GET the read-model snapshot for one escrow
  *
  * The proxy is stateless: it never stores escrow state, only relays. All
@@ -34,6 +36,7 @@ const ACTION_SCHEMA = {
   fund: ['contractId', 'signer', 'amount'],
   release: ['contractId', 'releaseSigner'],
   submit: ['signedXdr'],
+  resolve: ['invoiceId', 'offerId', 'signer'],
 } as const;
 
 type Action = keyof typeof ACTION_SCHEMA;
@@ -147,6 +150,13 @@ export async function POST(
       case 'submit': {
         const result = await client.submit(String(body.signedXdr));
         return NextResponse.json(result.raw);
+      }
+      case 'resolve': {
+        const signer = String(body.signer);
+        const rows = await client.getEscrowsBySigner(signer);
+        const engagementId = disbursementEngagementId(String(body.invoiceId), String(body.offerId));
+        const hit = rows.find(r => r.engagementId === engagementId);
+        return NextResponse.json({ contractId: (hit?.contractId as string | undefined) ?? null, engagementId });
       }
     }
   } catch (err) {

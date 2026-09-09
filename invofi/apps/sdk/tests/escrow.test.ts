@@ -3,6 +3,7 @@ import {
   createTrustlessWorkClient,
   mapToDeployPayload,
   usdcTestnetTrustline,
+  disbursementEngagementId,
   TrustlessWorkError,
   DELIVERY_MILESTONE_DESCRIPTION,
   type DisbursementEscrowParams,
@@ -32,39 +33,40 @@ function fetchProblem(status: number, problem: unknown): FetchLike {
   return (async () => ({ ok: false, status, json: async () => problem })) as unknown as FetchLike;
 }
 
-const XDR = { unsignedXdr: 'AAAAAgAAAAAtWsgedQ==', txHash: 'abc123', contractId: 'CEscrow999999999999999999999999999999999999999999' };
+/** Live-verified build response shape: `{ status, unsignedTransaction }`. */
+const BUILD_OK = { status: 201, unsignedTransaction: 'AAAAAgAAAAAtWsgedQ==' };
 
-describe('mapToDeployPayload — InvoFi → TW role mapping', () => {
+describe('mapToDeployPayload — InvoFi → TW role mapping (v1, singular roles)', () => {
   it('maps the disbursement roles correctly', () => {
     const payload = mapToDeployPayload(VALID_PARAMS);
     expect(payload.signer).toBe(VALID_PARAMS.lenderAddress);
     expect(payload.engagementId).toBe('invofi-inv_001-off_001');
+    // v1 roles are singular addresses.
     expect(payload.roles.receiver).toBe(VALID_PARAMS.originatorAddress);
-    expect(payload.roles.serviceProviders).toEqual([VALID_PARAMS.originatorAddress]);
-    // Either the platform or the lender can approve delivery (never strands funds).
-    expect(payload.roles.approvers).toEqual([VALID_PARAMS.platformAddress, VALID_PARAMS.lenderAddress]);
-    expect(payload.roles.releaseSigners).toEqual([VALID_PARAMS.platformAddress]);
-    expect(payload.roles.disputeResolvers).toEqual([VALID_PARAMS.platformAddress]);
-    expect(payload.roles.admin).toBe(VALID_PARAMS.platformAddress);
+    expect(payload.roles.serviceProvider).toBe(VALID_PARAMS.originatorAddress);
+    // The platform approves/releases/resolves — an absent external lender
+    // can never strand the originator's funds (ADR-0010, v1 constraint).
+    expect(payload.roles.approver).toBe(VALID_PARAMS.platformAddress);
+    expect(payload.roles.releaseSigner).toBe(VALID_PARAMS.platformAddress);
+    expect(payload.roles.disputeResolver).toBe(VALID_PARAMS.platformAddress);
+    expect(payload.roles.platformAddress).toBe(VALID_PARAMS.platformAddress);
   });
 
   it('attaches exactly one delivery-verification milestone', () => {
     const payload = mapToDeployPayload(VALID_PARAMS);
     expect(payload.milestones).toHaveLength(1);
-    expect(payload.milestones![0].description).toBe(DELIVERY_MILESTONE_DESCRIPTION);
-    expect(payload.milestones![0].approvalsTarget).toBe(1);
+    expect(payload.milestones[0].description).toBe(DELIVERY_MILESTONE_DESCRIPTION);
   });
 
   it('carries the human-readable amount and trustline through', () => {
     const payload = mapToDeployPayload(VALID_PARAMS);
     expect(payload.amount).toBe(1250.5);
+    expect(payload.platformFee).toBe(0.5);
     expect(payload.trustline).toEqual(VALID_PARAMS.trustline);
   });
 
-  it('omits receiverMemo when absent and includes it when set', () => {
-    expect(mapToDeployPayload(VALID_PARAMS).receiverMemo).toBeUndefined();
-    const withMemo = mapToDeployPayload({ ...VALID_PARAMS, receiverMemo: 42 });
-    expect(withMemo.receiverMemo).toBe(42);
+  it('builds a deterministic engagementId', () => {
+    expect(disbursementEngagementId('inv_9', 'off_9')).toBe('invofi-inv_9-off_9');
   });
 
   it('usdcTestnetTrustline produces a symbol+issuer trustline', () => {
@@ -75,44 +77,79 @@ describe('mapToDeployPayload — InvoFi → TW role mapping', () => {
   });
 });
 
-describe('createTrustlessWorkClient — build/sign/submit loop', () => {
-  it('sends x-api-key and posts the exact v2 deploy path', async () => {
+describe('createTrustlessWorkClient — build/sign/submit loop (live-verified contract)', () => {
+  it('sends x-api-key and posts the live deploy path with the mapped body', async () => {
     const calls: { url: string; init?: { method?: string; headers?: Record<string, string>; body?: string } }[] = [];
     const client = createTrustlessWorkClient({
       env: 'testnet',
       apiKey: 'test-key-id.test-secret',
       networkPassphrase: 'Test SDF Network ; September 2015',
       signTransaction: async xdr => `signed(${xdr})`,
-      fetchImpl: fetchOk(XDR, calls),
+      fetchImpl: fetchOk(BUILD_OK, calls),
     });
 
     await client.buildDisbursementEscrow(VALID_PARAMS);
 
     expect(calls).toHaveLength(1);
-    expect(calls[0].url).toBe('https://beta.api.trustlesswork.com/escrow/single-release/v2/deploy');
+    expect(calls[0].url).toBe('https://dev.api.trustlesswork.com/deployer/single-release');
     expect((calls[0].init!.headers as Record<string, string>)['x-api-key']).toBe('test-key-id.test-secret');
     const body = JSON.parse(calls[0].init!.body!);
     expect(body.signer).toBe(VALID_PARAMS.lenderAddress);
     expect(body.roles.receiver).toBe(VALID_PARAMS.originatorAddress);
+    expect(body.roles.approver).toBe(VALID_PARAMS.platformAddress);
+    expect(body.trustline).toEqual(VALID_PARAMS.trustline);
   });
 
-  it('buildFund and buildRelease post their v2 paths with the right bodies', async () => {
+  it('extracts unsignedTransaction from the live response shape', async () => {
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchOk(BUILD_OK),
+    });
+    const built = await client.buildFund('CEscrow1', 'GFunder', 100);
+    expect(built.unsignedXdr).toBe('AAAAAgAAAAAtWsgedQ==');
+  });
+
+  it('buildFund and buildRelease post the live paths with the right bodies', async () => {
     const calls: { url: string; init?: { method?: string; headers?: Record<string, string>; body?: string } }[] = [];
     const client = createTrustlessWorkClient({
       env: 'testnet',
       apiKey: 'k.s',
       networkPassphrase: 'test',
       signTransaction: async x => x,
-      fetchImpl: fetchOk(XDR, calls),
+      fetchImpl: fetchOk(BUILD_OK, calls),
     });
 
     await client.buildFund('CEscrow1', 'GFunder', 100);
     await client.buildRelease('CEscrow1', 'GReleaser');
 
-    expect(calls[0].url).toContain('/escrow/single-release/v2/fund');
+    expect(calls[0].url).toBe('https://dev.api.trustlesswork.com/escrow/single-release/fund-escrow');
     expect(JSON.parse(calls[0].init!.body!)).toEqual({ contractId: 'CEscrow1', signer: 'GFunder', amount: 100 });
-    expect(calls[1].url).toContain('/escrow/single-release/v2/release-funds');
+    expect(calls[1].url).toBe('https://dev.api.trustlesswork.com/escrow/single-release/release-funds');
     expect(JSON.parse(calls[1].init!.body!)).toEqual({ contractId: 'CEscrow1', releaseSigner: 'GReleaser' });
+  });
+
+  it('buildApproveMilestone and buildChangeMilestoneStatus post string milestone indexes', async () => {
+    const calls: { url: string; init?: { method?: string; headers?: Record<string, string>; body?: string } }[] = [];
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchOk(BUILD_OK, calls),
+    });
+
+    await client.buildApproveMilestone('CEscrow1', 0, 'GApprover');
+    await client.buildChangeMilestoneStatus('CEscrow1', 0, 'GProvider', 'completed', 'invoice PDF link');
+
+    expect(calls[0].url).toBe('https://dev.api.trustlesswork.com/escrow/single-release/approve-milestone');
+    expect(JSON.parse(calls[0].init!.body!)).toEqual({ contractId: 'CEscrow1', milestoneIndex: '0', approver: 'GApprover' });
+    expect(calls[1].url).toBe('https://dev.api.trustlesswork.com/escrow/single-release/change-milestone-status');
+    expect(JSON.parse(calls[1].init!.body!)).toEqual({
+      contractId: 'CEscrow1', milestoneIndex: '0', serviceProvider: 'GProvider', newStatus: 'completed', newEvidence: 'invoice PDF link',
+    });
   });
 
   it('buildSignSubmit chains build → sign → submit and returns both results', async () => {
@@ -123,32 +160,84 @@ describe('createTrustlessWorkClient — build/sign/submit loop', () => {
       apiKey: 'k.s',
       networkPassphrase: 'test',
       signTransaction: signSpy,
-      fetchImpl: fetchOk({ ...XDR, contractId: null }, calls),
+      fetchImpl: fetchOk(BUILD_OK, calls),
     });
 
     const { built, submitted } = await client.buildSignSubmit(client.buildFund('CEscrow1', 'GFunder', 10));
-    expect(built.txHash).toBe('abc123');
+    expect(built.unsignedXdr).toBe('AAAAAgAAAAAtWsgedQ==');
     expect(signSpy).toHaveBeenCalledWith('AAAAAgAAAAAtWsgedQ==', 'test');
-    expect(calls[1].url).toContain('/stellar/send-transaction');
+    expect(calls[1].url).toBe('https://dev.api.trustlesswork.com/helper/send-transaction');
     expect(JSON.parse(calls[1].init!.body!)).toEqual({ signedXdr: 'SIGNED:AAAAAgAAAAAtWsgedQ==' });
     expect(submitted.success).toBe(true);
   });
 
-  it('getEscrow unwraps the read-model data envelope', async () => {
+  it('getEscrow resolves one escrow via the by-contract-ids read model', async () => {
+    const calls: { url: string; init?: { method?: string; headers?: Record<string, string>; body?: string } }[] = [];
     const client = createTrustlessWorkClient({
       env: 'testnet',
       apiKey: 'k.s',
       networkPassphrase: 'test',
       signTransaction: async x => x,
-      fetchImpl: fetchOk({ data: { contractId: 'CEscrow1', amount: '100.00' } }),
+      fetchImpl: fetchOk([{ contractId: 'CEscrow1', amount: '100.00', engagementId: 'invofi-inv_001-off_001' }], calls),
     });
     const escrow = await client.getEscrow('CEscrow1');
     expect(escrow.contractId).toBe('CEscrow1');
+    expect(calls[0].url).toContain('/helper/get-escrow-by-contract-ids?contractIds=CEscrow1');
+  });
+
+  it('getEscrow throws ESCROW_NOT_FOUND when the read model has no row', async () => {
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchOk([]),
+    });
+    await expect(client.getEscrow('Cmissing')).rejects.toMatchObject({ code: 'ESCROW_NOT_FOUND', status: 404 });
+  });
+
+  it('findEscrowByEngagementId matches on the engagementId among signer escrows', async () => {
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchOk([
+        { contractId: 'COther', engagementId: 'invofi-inv_x-off_x' },
+        { contractId: 'CHit', engagementId: 'invofi-inv_001-off_001' },
+      ]),
+    });
+    const hit = await client.findEscrowByEngagementId('GLender', 'invofi-inv_001-off_001');
+    expect(hit?.contractId).toBe('CHit');
+    const miss = await client.findEscrowByEngagementId('GLender', 'invofi-inv_zzz-off_zzz');
+    expect(miss).toBeNull();
   });
 });
 
 describe('createTrustlessWorkClient — errors', () => {
-  it('maps RFC 9457 Problem Details into TrustlessWorkError', async () => {
+  it('maps v1 NestJS-style error bodies into TrustlessWorkError', async () => {
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchProblem(400, {
+        statusCode: 400,
+        message: "The wallet for role 'receiver' does not have the required asset to complete this operation.",
+        timestamp: '2026-09-09T09:02:27.726Z',
+        path: '/deployer/single-release',
+      }),
+    });
+
+    await expect(client.buildDeploy(mapToDeployPayload(VALID_PARAMS))).rejects.toMatchObject({
+      name: 'TrustlessWorkError',
+      status: 400,
+      code: 'TW_ERROR',
+      detail: "The wallet for role 'receiver' does not have the required asset to complete this operation.",
+    });
+  });
+
+  it('also maps v2 RFC 9457 Problem Details bodies (future-proofing)', async () => {
     const client = createTrustlessWorkClient({
       env: 'testnet',
       apiKey: 'k.s',
@@ -190,7 +279,7 @@ describe('createTrustlessWorkClient — errors', () => {
       apiKey: '',
       networkPassphrase: 'test',
       signTransaction: async x => x,
-      fetchImpl: fetchOk(XDR),
+      fetchImpl: fetchOk(BUILD_OK),
     });
     await expect(client.buildFund('C1', 'G1', 5)).rejects.toMatchObject({ code: 'MISSING_API_KEY', status: 401 });
   });
@@ -203,14 +292,27 @@ describe('createTrustlessWorkClient — errors', () => {
 });
 
 describe('environment defaults', () => {
-  it('mainnet defaults to the production base URL', async () => {
+  it('testnet defaults to the live dev host', async () => {
+    const calls: { url: string; init?: { method?: string; headers?: Record<string, string>; body?: string } }[] = [];
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchOk(BUILD_OK, calls),
+    });
+    await client.buildFund('C1', 'G1', 1);
+    expect(calls[0].url.startsWith('https://dev.api.trustlesswork.com/')).toBe(true);
+  });
+
+  it('mainnet defaults to the production host', async () => {
     const calls: { url: string; init?: { method?: string; headers?: Record<string, string>; body?: string } }[] = [];
     const client = createTrustlessWorkClient({
       env: 'mainnet',
       apiKey: 'k.s',
       networkPassphrase: 'Public Global Stellar Network ; September 2015',
       signTransaction: async x => x,
-      fetchImpl: fetchOk(XDR, calls),
+      fetchImpl: fetchOk(BUILD_OK, calls),
     });
     await client.buildFund('C1', 'G1', 1);
     expect(calls[0].url.startsWith('https://api.trustlesswork.com/')).toBe(true);
@@ -224,7 +326,7 @@ describe('environment defaults', () => {
       apiKey: 'k.s',
       networkPassphrase: 'test',
       signTransaction: async x => x,
-      fetchImpl: fetchOk(XDR, calls),
+      fetchImpl: fetchOk(BUILD_OK, calls),
     });
     await client.buildFund('C1', 'G1', 1);
     expect(calls[0].url.startsWith('https://tw.proxy.internal/')).toBe(true);

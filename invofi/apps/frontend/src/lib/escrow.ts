@@ -54,7 +54,7 @@ export function escrowTrustlineForCurrency(currency: 'XLM' | 'USDC'): EscrowTrus
   return usdcTestnetTrustline(USDC_ISSUER_TESTNET);
 }
 
-type EscrowAction = 'deploy' | 'fund' | 'release';
+type EscrowAction = 'deploy' | 'fund' | 'release' | 'resolve';
 
 /**
  * Calls the Next.js API proxy (`/api/escrow/[action]`), which injects the
@@ -107,8 +107,12 @@ async function signAndSubmitViaProxy(unsignedXdr: string): Promise<SendTransacti
 
 /**
  * Builds AND executes the disbursement escrow for an accepted offer:
- * deploy → (lender signs) → submit. Returns the escrow's future contractId
- * so the caller can persist it against the offer.
+ * deploy → (lender signs) → submit.
+ *
+ * The TW v1 deploy build does NOT return the escrow's on-chain contract id —
+ * resolve it right after the fund tx lands with `resolveDisbursementEscrow`
+ * (it matches TW's read model on the deterministic engagementId) and persist
+ * the result against the offer.
  *
  * The caller must have already checked `isEscrowEnabled()` and obtained the
  * offer's amount in human-readable units.
@@ -120,8 +124,7 @@ export async function createDisbursementEscrow(params: {
   lenderAddress: string;
   originatorAddress: string;
   trustline: EscrowTrustline;
-  receiverMemo?: number;
-}): Promise<{ contractId: string | null; result: SendTransactionResult }> {
+}): Promise<{ result: SendTransactionResult }> {
   if (!isEscrowEnabled()) {
     throw new TrustlessWorkError({
       status: 412,
@@ -139,10 +142,41 @@ export async function createDisbursementEscrow(params: {
     platformAddress: TW_PLATFORM_ADDRESS,
     platformFeePercent: TW_PLATFORM_FEE,
     trustline: params.trustline,
-    ...(params.receiverMemo !== undefined ? { receiverMemo: params.receiverMemo } : {}),
   });
   const result = await signAndSubmitViaProxy(built.unsignedXdr);
-  return { contractId: built.contractId ?? null, result };
+  return { result };
+}
+
+/**
+ * Resolves the escrow's on-chain contract id from TW's read model by
+ * matching the deterministic engagementId among the lender's escrows.
+ * The read model can lag the chain by a few seconds, so this retries a
+ * few times before giving up (returns null — the caller keeps going;
+ * the mapping can be repaired later).
+ */
+export async function resolveDisbursementEscrow(
+  invoiceId: string,
+  offerId: string,
+  lenderAddress: string,
+  attempts = 3,
+): Promise<string | null> {
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, 4000));
+    try {
+      const res = await fetch('/api/escrow/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceId, offerId, signer: lenderAddress, env: TW_ENV }),
+      });
+      const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+      if (res.ok && typeof data?.contractId === 'string' && data.contractId.length > 0) {
+        return data.contractId;
+      }
+    } catch {
+      // Read-model lag / transient — retry.
+    }
+  }
+  return null;
 }
 
 /**

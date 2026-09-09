@@ -22,7 +22,7 @@ import {
   encodeI128,
 } from '@/lib/simulate';
 import { supabase } from '@/lib/supabase';
-import { isEscrowEnabled, createDisbursementEscrow, fundEscrow, escrowTrustlineForCurrency } from '@/lib/escrow';
+import { isEscrowEnabled, createDisbursementEscrow, resolveDisbursementEscrow, fundEscrow, escrowTrustlineForCurrency, TrustlessWorkError } from '@/lib/escrow';
 import { formatAmount as formatUnits, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import {
@@ -267,7 +267,7 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
         if (trustline) {
           try {
             const amountHuman = Number(offer.amount) / 1e7;
-            const { contractId } = await createDisbursementEscrow({
+            await createDisbursementEscrow({
               invoiceId,
               offerId: offer.id,
               amountHuman,
@@ -275,10 +275,21 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               originatorAddress: invoice.originator,
               trustline,
             });
-            if (contractId) {
-              await fundEscrow(contractId, offer.lender, amountHuman);
-              await supabase.from('financing_offers').update({ escrow_contract_id: contractId }).eq('id', offer.id);
+            // TW's deploy build doesn't return the escrow's contract id —
+            // resolve it from the read model (brief retry for indexing lag),
+            // then fund. If resolution fails the escrow exists but is
+            // unfunded; the failure toast points at the repair affordance.
+            const contractId = await resolveDisbursementEscrow(invoiceId, offer.id, offer.lender);
+            if (!contractId) {
+              throw new TrustlessWorkError({
+                status: 504,
+                code: 'ESCROW_RESOLVE_TIMEOUT',
+                title: 'Escrow created but unresolved',
+                detail: 'The escrow was deployed but its contract id could not be resolved yet — retry funding from the offer escrow status.',
+              }, 504);
             }
+            await fundEscrow(contractId, offer.lender, amountHuman);
+            await supabase.from('financing_offers').update({ escrow_contract_id: contractId }).eq('id', offer.id);
             toast({ title: t('toast.escrowFunded'), description: t('toast.escrowFundedHint') });
           } catch (escrowErr: unknown) {
             console.error('[escrow] disbursement escrow failed (offer remains accepted):', escrowErr);

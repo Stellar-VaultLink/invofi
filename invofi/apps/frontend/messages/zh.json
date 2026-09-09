@@ -12,7 +12,7 @@
     "signOut": "退出登录"
   },
   "Footer": {
-    "tagline": "基于 Stellar Soroban 的去中心化发票融资",
+    "tagline": "Stellar Soroban 上的发票融资 — 代币化发票、经验证的交付，以及以 USDC 与 XLM 结算的里程碑托管放款。",
     "stats": "统计",
     "github": "GitHub",
     "docs": "文档",

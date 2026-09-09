@@ -395,6 +395,10 @@ All Trustless Work calls sit behind **one adapter file** in `@invofi/sdk` so a T
 > conversation has a single paper trail. The report below is the exact
 > message — copy-paste as-is. Evidence is all public testnet, independently
 > verifiable on Horizon / Stellar Expert.
+>
+> **📄 Standalone copy:** the report also lives on its own for download/sharing
+> as a document: [trustless-work-bug-report.md](./trustless-work-bug-report.md)
+> (kept byte-identical to the message below).
 
 ````markdown
 Subject: Bug report — release-funds build endpoint returns "Escrow already in dispute" for a fully releasable escrow (testnet, repro + tx hashes)

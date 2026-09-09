@@ -42,15 +42,31 @@ To go live, complete these in order:
      / platform wallet), `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_FEE=0.5`.
 3. ~~**Redeploy.**~~ **DONE 2026-09-09** — production rebuilt from `main`
    after the env vars landed (build `dpl_FsWhr3bu…`).
-4. **End-to-end testnet verification** — ⬜ **next step.** Two funded
-   testnet wallets (lender + originator, Freighter): register a USDC
-   invoice → offer → accept → confirm in the logs/
-   `financing_offers.escrow_contract_id` that an escrow contract was
-   deployed and funded → find it on the **Escrow Viewer** → approve the
-   delivery milestone (platform wallet) → release → originator balance
-   increases. Then record the tx hashes in this doc.
-   (Pre-requisite done 2026-09-08: USDC trustlines added to the
-   originator, lender, and platform wallets on testnet.)
+4. **End-to-end testnet verification** — ✅ **DONE 2026-09-09.** Full
+   deploy → fund → milestone → release lifecycle executed against the live
+   API + testnet, with real balances moving. Because no USDC faucet was
+   drivable headlessly, the run used **VBUC** (`VBUC:GBG77OVPMWHLOSRD3MSJ2IN7GLUTLCUWOV5J53WY4NBAOO4YZTQ6WFQ6`,
+   SAC `CCJ4FGM5DJA26ERC7Q7LG7PFJSVZOI7RPN4IEK4CUPYBHEF4X5ENO3ZF`) — a
+   testnet-only asset minted for this verification (the rail is
+   currency-agnostic; production flows use USDC unchanged).
+
+   **Escrow:** `CC2OKXVNUSX3AX5VM2FRSXA4ZV2YMOAKMR77BWQBARGOQ4WNO2T4SVOS`
+   (engagement `invofi-e2e-escrow-002-o1`) · 250 units, 0.5% platform fee
+   · [view on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CC2OKXVNUSX3AX5VM2FRSXA4ZV2YMOAKMR77BWQBARGOQ4WNO2T4SVOS)
+
+   | Step | Signer | Tx hash |
+   |---|---|---|
+   | VBUC SAC deploy | issuer | `5a19d9281cfdb3c092e9730a4a21bdef66df3bfd7b77209545d674de806a07b9` |
+   | Escrow deploy (`/deployer/single-release`) | lender | `df8b10afad912c692403f6133daefe5178a6775cca99f0525987aee374fe721a` |
+   | Fund escrow (250 units) | lender | `4a8c67ae7de13caf085abc10f0cf1297d47495bfd65f913f0fdf2c261d42a9d9` |
+   | Approve milestone (index 0) | platform | `0f45d500166da477c6f1ee2861da8e8f75d5e4493f029130558f24b6199a569d` |
+   | Milestone status → completed (+evidence) | originator (serviceProvider) | `3f9fab46e4acf1b64ba1276f9c5d722e4251fac280af4b0beb3a5174c01271eb` |
+   | **Release funds** | platform | `d3c0f77b542dea14f851155701391c0e81ab1f1b5fdb7279db5b414ddef86fb0` |
+
+   **Balance proof (Horizon):** lender 1000 → **750** VBUC (funded the
+   escrow) · originator 500 → **748** (+248 = 250 − 0.5% fee) · platform
+   +**1.25** fee · escrow drained to 0 · on-chain flags after release:
+   `released: true, disputed: false`. `tw_release` event published.
 5. **Milestone-approval UI** — tracked in
    [#381 — Milestone-approval UI (Epic 3.2)](https://github.com/Stellar-VaultLink/invofi/issues/381);
    the approve step currently happens via the TW Backoffice/CLI, and the
@@ -88,6 +104,30 @@ To go live, complete these in order:
   USDC trustline — fixed by adding trustlines to originator, lender, and
   platform wallets — then returned `201` with `unsignedTransaction` XDR).
   The XDR was **never signed or submitted**; no funds moved.
+
+### Findings from the live e2e run (2026-09-09) — for the TW team & implementers
+
+1. **Trustline `address` must be the asset ISSUER account (G…), not the
+   SAC contract (C…).** The API validates it as a G-address ("Issuer is
+   invalid" otherwise) and resolves issuer → SAC itself. (Passing a C…
+   contract address builds but funds fail with `Storage, MissingValue`.)
+2. **The asset's Stellar Asset Contract must be deployed** before the
+   escrow can fund (`stellar contract asset deploy` / SDK
+   `createStellarAssetContract`). USDC on testnet already has one.
+3. **Release requires TWO milestone steps:** `approve-milestone`
+   (approver) **and** `change-milestone-status` → `completed` with
+   evidence (serviceProvider). Approve alone leaves `status: pending`.
+4. ⚠️ **`/escrow/single-release/release-funds` build endpoint currently
+   mis-reports "Escrow already in dispute"** for a fully releasable escrow
+   (on-chain flags: `disputed:false`, milestone `approved+completed`,
+   balance > 0 — verified via `validateOnChain=true` and a direct
+   `get_escrow` contract read). Workaround used for the verification:
+   invoke `release_funds(release_signer, trustless_work_address =
+   escrow factory)` directly on the escrow contract. **Impact on #381:
+   the UI release step needs either this TW fix or the same direct
+   contract invocation.**
+5. The escrow's **`get_escrow` on-chain read is authoritative** and
+   matched every step — useful as a fallback when the indexer lags.
 
 ### Meeting brief (TL;DR if talking to the Trustless Work team)
 

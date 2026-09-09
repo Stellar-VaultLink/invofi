@@ -153,10 +153,17 @@ export async function POST(
       }
       case 'resolve': {
         const signer = String(body.signer);
-        const rows = await client.getEscrowsBySigner(signer);
-        const engagementId = disbursementEngagementId(String(body.invoiceId), String(body.offerId));
-        const hit = rows.find(r => r.engagementId === engagementId);
-        return NextResponse.json({ contractId: (hit?.contractId as string | undefined) ?? null, engagementId });
+        // Delegate to the SDK's backoff retry: TW's read model trails the
+        // chain by seconds after a deploy lands, so a single lookup misses.
+        // The budget here is deliberately SMALL — this route runs in a
+        // serverless function with a hard wall-clock limit; the frontend's
+        // resolveDisbursementEscrow loop provides the outer retries.
+        const contractId = await client.resolveContractId(
+          signer,
+          disbursementEngagementId(String(body.invoiceId), String(body.offerId)),
+          { attempts: 3, backoffBaseMs: 1_000, maxBackoffMs: 2_000 },
+        );
+        return NextResponse.json({ contractId });
       }
     }
   } catch (err) {

@@ -150,9 +150,15 @@ export async function createDisbursementEscrow(params: {
 /**
  * Resolves the escrow's on-chain contract id from TW's read model by
  * matching the deterministic engagementId among the lender's escrows.
- * The read model can lag the chain by a few seconds, so this retries a
- * few times before giving up (returns null — the caller keeps going;
- * the mapping can be repaired later).
+ *
+ * Two retry layers cover indexer lag:
+ *   1. inside the proxy — the SDK's `resolveContractId` retries with
+ *      exponential backoff (3 attempts, ≤2s waits) within one request; and
+ *   2. here — outer retries across separate proxy calls with their own
+ *      backoff + ±20% jitter, so total tolerance is roughly 45s of lag.
+ *
+ * Returns null when the escrow never appeared — the caller keeps going
+ * (the offer keeps its accepted state; the mapping can be repaired later).
  */
 export async function resolveDisbursementEscrow(
   invoiceId: string,
@@ -160,8 +166,7 @@ export async function resolveDisbursementEscrow(
   lenderAddress: string,
   attempts = 3,
 ): Promise<string | null> {
-  for (let i = 0; i < attempts; i++) {
-    if (i > 0) await new Promise(r => setTimeout(r, 4000));
+  for (let i = 0; ; i++) {
     try {
       const res = await fetch('/api/escrow/resolve', {
         method: 'POST',
@@ -175,8 +180,10 @@ export async function resolveDisbursementEscrow(
     } catch {
       // Read-model lag / transient — retry.
     }
+    if (i + 1 >= attempts) return null;
+    const base = Math.min(2_000 * 2 ** i, 8_000);
+    await new Promise(r => setTimeout(r, Math.round(base * (0.8 + 0.4 * Math.random()))));
   }
-  return null;
 }
 
 /**

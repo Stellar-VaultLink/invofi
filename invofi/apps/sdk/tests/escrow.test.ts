@@ -214,6 +214,136 @@ describe('createTrustlessWorkClient — build/sign/submit loop (live-verified co
   });
 });
 
+describe('createTrustlessWorkClient — resolveContractId (indexer-lag retry)', () => {
+  /** fetch mock whose responses change per call. */
+  function fetchSequence(responses: unknown[]): FetchLike {
+    let call = 0;
+    return (async () => {
+      const body = responses[Math.min(call, responses.length - 1)];
+      call += 1;
+      return { ok: true, status: 200, json: async () => body };
+    }) as unknown as FetchLike;
+  }
+
+  /** Per-test no-op delay mock (fresh each test so call counts don't leak). */
+  const noDelay = () => vi.fn(async (_ms: number) => {});
+
+  it('returns the contract id immediately when the escrow is already indexed (no waits)', async () => {
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchSequence([{ escrows: [{ contractId: 'CHit', engagementId: 'invofi-inv_1-off_1' }] }]),
+    });
+    const delay = noDelay();
+    const id = await client.resolveContractId('GLender', 'invofi-inv_1-off_1', { delayImpl: delay });
+    expect(id).toBe('CHit');
+    expect(delay).not.toHaveBeenCalled();
+  });
+
+  it('retries with exponential backoff (+jitter) until the indexer catches up', async () => {
+    const delay = vi.fn(async (_ms: number) => {});
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchSequence([
+        { escrows: [] }, // attempt 1: not indexed yet
+        { escrows: [] }, // attempt 2: still lagging
+        { escrows: [{ contractId: 'CLate', engagementId: 'invofi-inv_1-off_1' }] }, // attempt 3: caught up
+      ]),
+    });
+    const id = await client.resolveContractId('GLender', 'invofi-inv_1-off_1', {
+      attempts: 4,
+      backoffBaseMs: 1_000,
+      maxBackoffMs: 8_000,
+      delayImpl: delay,
+    });
+    expect(id).toBe('CLate');
+    expect(delay).toHaveBeenCalledTimes(2);
+    // Bases 1s then 2s, each jittered ±20%.
+    expect(delay.mock.calls[0][0]).toBeGreaterThanOrEqual(800);
+    expect(delay.mock.calls[0][0]).toBeLessThanOrEqual(1_200);
+    expect(delay.mock.calls[1][0]).toBeGreaterThanOrEqual(1_600);
+    expect(delay.mock.calls[1][0]).toBeLessThanOrEqual(2_400);
+  });
+
+  it('caps a single wait at maxBackoffMs before jitter', async () => {
+    const delay = vi.fn(async (_ms: number) => {});
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchSequence([{ escrows: [] }]), // always a miss
+    });
+    await expect(
+      client.resolveContractId('GLender', 'invofi-inv_1-off_1', { attempts: 4, backoffBaseMs: 5_000, maxBackoffMs: 3_000, delayImpl: delay }),
+    ).rejects.toMatchObject({ code: 'ESCROW_RESOLVE_TIMEOUT' });
+    // Bases 5s, 10s, 20s all cap to 3s → jittered within [2.4s, 3.6s].
+    for (const call of delay.mock.calls) {
+      expect(call[0]).toBeGreaterThanOrEqual(2_400);
+      expect(call[0]).toBeLessThanOrEqual(3_600);
+    }
+  });
+
+  it('throws ESCROW_RESOLVE_TIMEOUT after exhausting the attempts', async () => {
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchSequence([{ escrows: [] }]),
+    });
+    await expect(
+      client.resolveContractId('GLender', 'invofi-inv_never-off_never', { attempts: 3, delayImpl: noDelay() }),
+    ).rejects.toMatchObject({
+      code: 'ESCROW_RESOLVE_TIMEOUT',
+      status: 408,
+      detail: expect.stringContaining('after 3 attempts'),
+    });
+  });
+
+  it('does NOT retry on HTTP/auth errors — they surface immediately', async () => {
+    let calls = 0;
+    const fetchErr = (async () => {
+      calls += 1;
+      return { ok: false, status: 401, json: async () => ({ statusCode: 401, message: 'AUTH_INVALID_CREDENTIAL' }) };
+    }) as unknown as FetchLike;
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'bad.key',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchErr,
+    });
+    // The adapter maps an untyped 401 body to TW_ERROR (detail carries the
+    // API message) — the point here is that it surfaces IMMEDIATELY: one
+    // fetch, no delay, no retry loop.
+    await expect(
+      client.resolveContractId('GLender', 'invofi-inv_1-off_1', { attempts: 5, delayImpl: noDelay() }),
+    ).rejects.toMatchObject({ code: 'TW_ERROR', status: 401 });
+    expect(calls).toBe(1);
+  });
+
+  it('attempts: 1 throws without any delay (single-shot mode)', async () => {
+    const client = createTrustlessWorkClient({
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'test',
+      signTransaction: async x => x,
+      fetchImpl: fetchSequence([{ escrows: [] }]),
+    });
+    const delay = noDelay();
+    await expect(
+      client.resolveContractId('GLender', 'invofi-inv_1-off_1', { attempts: 1, delayImpl: delay }),
+    ).rejects.toMatchObject({ code: 'ESCROW_RESOLVE_TIMEOUT' });
+    expect(delay).not.toHaveBeenCalled();
+  });
+});
+
 describe('createTrustlessWorkClient — errors', () => {
   it('maps v1 NestJS-style error bodies into TrustlessWorkError', async () => {
     const client = createTrustlessWorkClient({

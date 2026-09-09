@@ -195,6 +195,31 @@ export class TrustlessWorkError extends Error {
 // The lender still signs the deploy + fund transactions as `signer`, so
 // nothing moves without the lender's wallet.
 
+/**
+ * Defaults for `resolveContractId`'s indexer-lag retry loop. TW's read model
+ * can trail the chain by several seconds after a deploy lands, so a resolve
+ * needs a few spaced attempts, not one poll.
+ */
+export const RESOLVE_CONTRACT_ID_DEFAULTS = {
+  attempts: 5,
+  backoffBaseMs: 1_000,
+  maxBackoffMs: 8_000,
+} as const;
+
+/** Knobs for `resolveContractId` — every field falls back to the defaults above. */
+export interface ResolveContractIdOptions {
+  /** Total attempts (first try + retries). Default 5. */
+  attempts?: number;
+  /** Base for the exponential backoff, ms. Default 1000 (1s, 2s, 4s, …). */
+  backoffBaseMs?: number;
+  /** Upper bound for a single backoff wait, ms. Default 8000. */
+  maxBackoffMs?: number;
+  /** Injectable delay (tests pass a no-op to run instantly). */
+  delayImpl?: (ms: number) => Promise<void>;
+}
+
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
 export interface DisbursementEscrowParams {
   /** Invoice id (InvoFi domain) — becomes part of the engagementId. */
   invoiceId: string;
@@ -409,7 +434,8 @@ export function createTrustlessWorkClient(cfg: TrustlessWorkConfig) {
      * escrows signed by `signer`. TW's deploy build does NOT return the
      * escrow's future contract id, so callers resolve it this way right
      * after the deploy transaction lands. Returns null when not found yet
-     * (the read model may lag the chain by a few seconds — retry upstream).
+     * (the read model may lag the chain by a few seconds — prefer
+     * {@link TrustlessWorkClient.resolveContractId}, which retries for you).
      */
     async findEscrowByEngagementId(signer: string, engagementId: string): Promise<Record<string, unknown> | null> {
       const rows = await this.getEscrowsBySigner(signer);
@@ -417,12 +443,51 @@ export function createTrustlessWorkClient(cfg: TrustlessWorkConfig) {
       return hit ?? null;
     },
 
+    /**
+     * Resolves an escrow's on-chain contract id from the read model by its
+     * deterministic engagementId, retrying with exponential backoff while
+     * the indexer catches up with the chain. This is the primary entry
+     * point for "I just deployed, give me the contract id" — TW's build
+     * endpoints do not return it.
+     *
+     * Retries ONLY the expected lag condition (escrow not indexed yet);
+     * any HTTP/auth error surfaces immediately as `TrustlessWorkError`.
+     * Throws `ESCROW_RESOLVE_TIMEOUT` after exhausting the attempts.
+     */
+    async resolveContractId(signer: string, engagementId: string, options: ResolveContractIdOptions = {}): Promise<string> {
+      const { attempts = RESOLVE_CONTRACT_ID_DEFAULTS.attempts, backoffBaseMs = RESOLVE_CONTRACT_ID_DEFAULTS.backoffBaseMs, maxBackoffMs = RESOLVE_CONTRACT_ID_DEFAULTS.maxBackoffMs, delayImpl = sleep } = options;
+
+      for (let attempt = 1; attempt <= attempts; attempt++) {
+        const hit = await this.findEscrowByEngagementId(signer, engagementId);
+        const contractId = (hit as { contractId?: string } | null)?.contractId;
+        if (typeof contractId === 'string' && contractId.length > 0) return contractId;
+
+        if (attempt < attempts) {
+          // Exponential backoff with ±20% jitter so many waiters resolve on
+          // staggered ticks instead of hammering the read model in lockstep.
+          const base = Math.min(backoffBaseMs * 2 ** (attempt - 1), maxBackoffMs);
+          const jittered = Math.round(base * (0.8 + 0.4 * Math.random()));
+          await delayImpl(jittered);
+        }
+      }
+      throw new TrustlessWorkError(
+        {
+          status: 408,
+          code: 'ESCROW_RESOLVE_TIMEOUT',
+          title: 'Escrow not indexed yet',
+          detail: `No escrow with engagementId "${engagementId}" appeared in the read model after ${attempts} attempts. The deploy tx may still be propagating — check it on the explorer, then retry.`,
+        },
+        408,
+      );
+    },
+
     // ── InvoFi domain helpers ──────────────────────────────────────────────
 
     /**
      * Builds the deploy tx for an InvoFi disbursement escrow (role mapping
      * per mapToDeployPayload). Resolve the escrow's contract id afterwards
-     * with findEscrowByEngagementId once the tx has landed.
+     * with resolveContractId (retries indexer lag for you) once the tx has
+     * landed.
      */
     buildDisbursementEscrow(params: DisbursementEscrowParams): Promise<UnsignedTransaction> {
       return build('/deployer/single-release', mapToDeployPayload(params));

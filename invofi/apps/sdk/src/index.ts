@@ -131,11 +131,12 @@ export { Contract, Networks, xdr, nativeToScVal, scValToNative } from '@stellar/
 //   }),
 // );
 // // TW's deploy build does not return the escrow's contract id — resolve it
-// // from the read model once the tx lands:
-// const escrow = await tw.findEscrowByEngagementId(
+// // from the read model once the tx lands (retries indexer lag with
+// // exponential backoff; throws ESCROW_RESOLVE_TIMEOUT when it never shows):
+// const contractId = await tw.resolveContractId(
 //   lenderAddress, disbursementEngagementId('inv_001', 'off_001'),
 // );
-// // escrow?.contractId → persist it against the offer.
+// // → persist contractId against the offer.
 // ```
 export {
   createTrustlessWorkClient,
@@ -144,6 +145,7 @@ export {
   disbursementEngagementId,
   TrustlessWorkError,
   DELIVERY_MILESTONE_DESCRIPTION,
+  RESOLVE_CONTRACT_ID_DEFAULTS,
 } from './escrow';
 export type {
   TrustlessWorkConfig,
@@ -156,6 +158,7 @@ export type {
   DisbursementEscrowParams,
   UnsignedTransaction,
   SendTransactionResult,
+  ResolveContractIdOptions,
 } from './escrow';
 
 // ── Event stream (listenToEvents) ───────────────────────────────────────────

@@ -1,6 +1,7 @@
 'use client';
 
-import { StellarWalletsKit } from '@creit.tech/stellar-wallets-kit';
+import { StellarWalletsKit, KitEventType } from '@creit.tech/stellar-wallets-kit';
+import type { KitEventStateUpdated } from '@creit.tech/stellar-wallets-kit';
 import { getNetwork } from '@stellar/freighter-api';
 import { APPROVED_WALLETS, WALLET_IDS } from './approved-wallets';
 
@@ -66,3 +67,35 @@ export async function probeWalletNetwork(walletId: string): Promise<string | nul
 }
 
 export { StellarWalletsKit, NETWORK_PASSPHRASE };
+
+/**
+ * Subscribes to wallet account-change and disconnect events emitted by the
+ * StellarWalletsKit so the app can react without a manual page reload.
+ *
+ * Returns a cleanup function that unsubscribes both listeners.
+ * Usage: call after `initWalletKit()` (e.g. in WalletProvider's useEffect).
+ */
+export function subscribeToWalletEvents(
+  onAddressChange: (address: string, networkPassphrase: string) => void,
+  onDisconnect: () => void,
+): () => void {
+  const unsubState = StellarWalletsKit.on(
+    KitEventType.STATE_UPDATED,
+    (event) => {
+      const { address } = (event as KitEventStateUpdated).payload;
+      if (address) {
+        onAddressChange(address, (event as KitEventStateUpdated).payload.networkPassphrase);
+      }
+    },
+  );
+  const unsubDisconnect = StellarWalletsKit.on(
+    KitEventType.DISCONNECT,
+    () => {
+      onDisconnect();
+    },
+  );
+  return () => {
+    unsubState();
+    unsubDisconnect();
+  };
+}

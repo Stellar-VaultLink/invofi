@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { amountToStroops, formatAmount, toStroopsBigInt } from './utils';
+import {
+  amountToStroops,
+  formatAmount,
+  toStroopsBigInt,
+  INVOICE_STATUS_COLORS,
+  OFFER_STATUS_COLORS,
+} from './utils';
 
 describe('monetary utilities', () => {
   it('converts whole, fractional, and zero amounts to stroops', () => {
@@ -30,5 +36,27 @@ describe('monetary utilities', () => {
     expect(toStroopsBigInt('10000')).toBe(100_000_000_000n);
     expect(toStroopsBigInt('10000.01')).toBe(100_000_100_000n);
     expect(toStroopsBigInt('')).toBe(0n);
+  });
+});
+
+// Dark-mode coverage (issue #173): every status badge used across the
+// dashboard/marketplace/portfolio/invoice pages must carry a `dark:`
+// variant for its background, text, and border so it stays readable when
+// the `dark` class is applied to <html>, not just the light-mode default.
+describe('status badge dark-mode coverage', () => {
+  it('pairs every invoice status color with dark:bg/text/border variants', () => {
+    for (const classes of Object.values(INVOICE_STATUS_COLORS)) {
+      expect(classes).toMatch(/dark:bg-/);
+      expect(classes).toMatch(/dark:text-/);
+      expect(classes).toMatch(/dark:border-/);
+    }
+  });
+
+  it('pairs every offer status color with dark:bg/text/border variants', () => {
+    for (const classes of Object.values(OFFER_STATUS_COLORS)) {
+      expect(classes).toMatch(/dark:bg-/);
+      expect(classes).toMatch(/dark:text-/);
+      expect(classes).toMatch(/dark:border-/);
+    }
   });
 });

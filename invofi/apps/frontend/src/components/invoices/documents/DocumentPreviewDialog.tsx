@@ -30,7 +30,7 @@ export function DocumentPreviewDialog({ document, onClose }: DocumentPreviewDial
     <Dialog open={document !== null} onOpenChange={open => { if (!open) onClose(); }}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 pr-8">
+          <DialogTitle className="flex items-center gap-2 pe-8">
             {document?.mime_type === 'application/pdf' ? (
               <FileText className="h-4 w-4" />
             ) : (
@@ -43,7 +43,7 @@ export function DocumentPreviewDialog({ document, onClose }: DocumentPreviewDial
           </DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-auto rounded-lg border bg-gray-50">
+        <div className="overflow-auto rounded-lg border bg-gray-50 dark:bg-gray-900">
           {document && isImage && (
             // eslint-disable-next-line @next/next/no-img-element
             <img

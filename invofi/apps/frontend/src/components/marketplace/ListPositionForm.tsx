@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import {
   LISTING_NOTE_MAX,
   checkListingSize,
@@ -17,7 +18,8 @@ import {
   listingDraftSchema,
   type ListingDraft,
 } from '@/lib/listings';
-import { formatAmount, formatAddress, toStroopsBigInt } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatAmount as formatUnits, formatAddress, toStroopsBigInt } from '@/lib/utils';
 import type { FinancingOffer, PositionListing } from '@/types';
 
 interface ListPositionFormProps {
@@ -29,7 +31,7 @@ interface ListPositionFormProps {
 
 /** Position tokens are minted 1:1 with principal (ADR-0002). */
 function positionSize(offer: FinancingOffer): string {
-  return formatAmount(toStroopsBigInt(offer.amount));
+  return formatUnits(toStroopsBigInt(offer.amount));
 }
 
 export function ListPositionForm({ sellerAddress, sellerId, onCreated }: ListPositionFormProps) {
@@ -98,7 +100,7 @@ export function ListPositionForm({ sellerAddress, sellerId, onCreated }: ListPos
       reset({ offerId: '', tokenAmount: '', askingPrice: '', priceCurrency: 'USDC', note: '' });
       onCreated(listing);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not publish the listing';
+      const msg = toErrorMessage(err, 'Could not publish the listing');
       toast({ title: 'Listing failed', description: msg, variant: 'destructive' });
     } finally {
       setSubmitting(false);
@@ -143,7 +145,7 @@ export function ListPositionForm({ sellerAddress, sellerId, onCreated }: ListPos
               <option value="">Select a position…</option>
               {positions.map(p => (
                 <option key={p.id} value={p.id}>
-                  Invoice {p.invoice_id} — {positionSize(p)} {p.currency} principal
+                  Invoice {p.invoice_id} — {formatAmount(toStroopsBigInt(p.amount), p.currency)} principal
                 </option>
               ))}
             </select>
@@ -194,7 +196,7 @@ export function ListPositionForm({ sellerAddress, sellerId, onCreated }: ListPos
             <Button type="submit" disabled={submitting}>
               {submitting ? (
                 <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Publishing…
+                  <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" /> Publishing…
                 </>
               ) : (
                 'Publish listing'

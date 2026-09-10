@@ -102,7 +102,7 @@ function OptionButton({ value, current, onChange, children, description }: Optio
       onClick={() => onChange(value)}
       aria-pressed={active}
       className={cn(
-        'flex-1 rounded-lg border px-3 py-2.5 text-sm text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'flex-1 rounded-lg border px-3 py-2.5 text-sm text-start transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
           ? 'border-primary bg-primary/10 text-primary font-medium'
           : 'border-input bg-background text-foreground hover:border-muted-foreground/50',
@@ -178,7 +178,7 @@ export function LenderPreferencesForm({
       <DialogTrigger asChild>
         {trigger ?? (
           <Button variant="outline" size="sm" aria-label="Matching preferences">
-            <Settings2 className="h-4 w-4 mr-2" />
+            <Settings2 className="h-4 w-4 me-2" />
             Preferences
           </Button>
         )}
@@ -238,7 +238,7 @@ export function LenderPreferencesForm({
           <div className="space-y-2">
             <Label htmlFor="minYieldPercent">
               Minimum yield (% APY)
-              <span className="ml-1 text-xs text-muted-foreground font-normal">
+              <span className="ms-1 text-xs text-muted-foreground font-normal">
                 — invoices below this yield are ranked lower
               </span>
             </Label>
@@ -249,10 +249,10 @@ export function LenderPreferencesForm({
                 step="0.01"
                 min="0"
                 max="1000"
-                className="pr-8"
+                className="pe-8"
                 {...register('minYieldPercent', { valueAsNumber: true })}
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+              <span className="absolute end-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
             </div>
             <FieldError message={errors.minYieldPercent?.message} />
           </div>
@@ -262,7 +262,7 @@ export function LenderPreferencesForm({
             <div className="space-y-2">
               <Label htmlFor="minAmountXlm">
                 Min amount (XLM)
-                <span className="ml-1 text-xs text-muted-foreground font-normal">0 = no floor</span>
+                <span className="ms-1 text-xs text-muted-foreground font-normal">0 = no floor</span>
               </Label>
               <Input
                 id="minAmountXlm"
@@ -277,7 +277,7 @@ export function LenderPreferencesForm({
             <div className="space-y-2">
               <Label htmlFor="maxAmountXlm">
                 Max amount (XLM)
-                <span className="ml-1 text-xs text-muted-foreground font-normal">0 = no cap</span>
+                <span className="ms-1 text-xs text-muted-foreground font-normal">0 = no cap</span>
               </Label>
               <Input
                 id="maxAmountXlm"
@@ -294,7 +294,7 @@ export function LenderPreferencesForm({
           <div className="space-y-2">
             <Label htmlFor="maxDueDays">
               Max due-date horizon (days)
-              <span className="ml-1 text-xs text-muted-foreground font-normal">0 = no cap</span>
+              <span className="ms-1 text-xs text-muted-foreground font-normal">0 = no cap</span>
             </Label>
             <Input
               id="maxDueDays"
@@ -316,7 +316,7 @@ export function LenderPreferencesForm({
               disabled={saving}
               className="w-full sm:w-auto"
             >
-              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              <RotateCcw className="h-3.5 w-3.5 me-1.5" />
               Reset to defaults
             </Button>
             <Button
@@ -325,7 +325,7 @@ export function LenderPreferencesForm({
               disabled={saving || !isDirty}
               className="w-full sm:w-auto"
             >
-              {saving && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+              {saving && <Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />}
               Save preferences
             </Button>
           </DialogFooter>

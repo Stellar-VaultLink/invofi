@@ -14,6 +14,7 @@ const SITE_MAP = {
     { label: 'Documentation', href: 'https://stellar-vault-link.gitbook.io/stellar-vault-link-docs' },
     { label: 'GitHub', href: 'https://github.com/Stellar-VaultLink/invofi' },
     { label: 'Smart Contracts', href: 'https://github.com/Stellar-VaultLink/invofi-contracts' },
+    { label: 'Escrows by Trustless Work', href: 'https://www.trustlesswork.com' },
     { label: 'Report a Bug', href: 'https://github.com/Stellar-VaultLink/invofi/issues' },
   ],
   community: [
@@ -129,6 +130,18 @@ export function Footer() {
             >
               Stellar
             </a>
+            <span aria-hidden="true">·</span>
+            <span>
+              Escrows by{' '}
+              <a
+                href="https://www.trustlesswork.com"
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold hover:text-foreground transition-colors"
+              >
+                Trustless Work
+              </a>
+            </span>
           </p>
         </div>
       </div>

@@ -43,7 +43,7 @@ jobs:
       - name: Install Playwright Chromium + system deps
         run: npx playwright install --with-deps chromium
       - name: Run smoke tests
-        run: npm run test:e2e
+        run: npm run e2e
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -75,6 +75,10 @@ jobs:
         working-directory: invofi/apps/sdk
         run: npm ci
       - run: npm run type-check
+      # The on-chain flow needs two funded testnet identities. Until the
+      # E2E_* secrets are configured (CONTRIBUTING.md#testing), skip the flow
+      # so the weekly run stays green — the type-check above still validates
+      # that e2e-onchain.ts compiles.
       - name: Run on-chain flow
         env:
           RPC_URL: https://soroban-testnet.stellar.org
@@ -84,4 +88,9 @@ jobs:
           REPAYMENT_CONTRACT_ID: ${{ vars.REPAYMENT_CONTRACT_ID || 'CCDATW5GMVDOPK55Q4MLXV5SGA3VLXPD67ABLBNMHWFF6BLL2IZBUVEP' }}
           E2E_ORIGINATOR_SECRET_KEY: ${{ secrets.E2E_ORIGINATOR_SECRET_KEY }}
           E2E_LENDER_SECRET_KEY: ${{ secrets.E2E_LENDER_SECRET_KEY }}
-        run: npm run e2e:onchain
+        run: |
+          if [ -z "$E2E_ORIGINATOR_SECRET_KEY" ] || [ -z "$E2E_LENDER_SECRET_KEY" ]; then
+            echo "[e2e] E2E_ORIGINATOR_SECRET_KEY / E2E_LENDER_SECRET_KEY not configured — skipping on-chain flow."
+            exit 0
+          fi
+          npm run e2e:onchain

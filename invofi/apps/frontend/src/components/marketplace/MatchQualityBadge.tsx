@@ -56,7 +56,7 @@ export function MatchQualityBadge({
     >
       {label}
       {score !== undefined && !compact && (
-        <span className="ml-1 opacity-60">({score})</span>
+        <span className="ms-1 opacity-60">({score})</span>
       )}
     </Badge>
   );

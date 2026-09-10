@@ -113,7 +113,7 @@ export default function LoginPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Sign in with Wallet</CardTitle>
             <CardDescription>
-              Connect Freighter or LOBSTR, then sign a one-time challenge to prove ownership —
+              Connect your Stellar wallet, then sign a one-time challenge to prove ownership —
               no password needed
             </CardDescription>
           </CardHeader>
@@ -154,7 +154,7 @@ export default function LoginPage() {
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
             </form>

@@ -21,7 +21,7 @@ import { StatsCard } from '@/components/common/StatsCard';
 import { StatsGrid } from '@/components/common/StatsGrid';
 import { CardSkeleton } from '@/components/common/LoadingSkeleton';
 import { supabase } from '@/lib/supabase';
-import { STROOPS_PER_XLM } from '@/lib/constants';
+import { formatAmount } from '@/lib/formatters';
 
 interface ProtocolStats {
   id: number;
@@ -38,15 +38,7 @@ interface ProtocolStats {
   updated_at?: string;
 }
 
-/** Stroops (i128 stored as text) → XLM with 2 decimals. */
-function xlm(stroops: string): string {
-  const n = Number(stroops) / STROOPS_PER_XLM;
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
-
+/** ISO date → display string. */
 function formatDate(iso?: string): string {
   if (!iso) return '—';
   return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
@@ -133,7 +125,7 @@ export default function StatsPage() {
             />
             <StatsCard
               title="Total Volume"
-              value={`${xlm(stats.total_volume)} XLM`}
+              value={formatAmount(stats.total_volume)}
               icon={TrendingUp}
               description="Financed principal (on-chain total_financed)"
             />
@@ -163,7 +155,7 @@ export default function StatsPage() {
             />
             <StatsCard
               title="Insurance Pool"
-              value={`${xlm(stats.insurance_pool)} XLM`}
+              value={formatAmount(stats.insurance_pool)}
               icon={ShieldCheck}
               description="Staked by insurance providers"
             />

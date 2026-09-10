@@ -11,8 +11,12 @@ append, never rewrite (status updates go in the file).
 | 0004 | [Secondary-market discovery for position tokens](./0004-position-token-listings.md) | Accepted |
 | 0005 | [Event-driven keeper](./0005-event-driven-keeper.md) | Accepted |
 | 0006 | [Multi-signature approval for high-value operations](./0006-multisig-transaction-approval.md) | Accepted |
+| 0007 | [Repository topology and SDK location](./0007-repo-topology-and-sdk.md) | Accepted |
+| 0008 | [Authentication layer for the Neon backend](./0008-auth-replacement.md) | Accepted |
+| 0009 | [Authorization model for the Neon backend](./0009-authorization-model.md) | Accepted |
+| 0010 | [Trustless Work escrow rail for disbursements](./0010-trustless-work-escrow-rail.md) | Accepted |
 
-Contract-facing decisions live in the contracts repo: [invofi-contracts/docs/adr](https://github.com/Stellar-VaultLink/invofi-contracts/tree/main/docs/adr).
+Contract-facing decisions live in the contracts repo: [invofi-contracts/docs/adr](https://github.com/Stellar-VaultLink/invofi-contracts/blob/master/docs/adr/README.md).
 
 ## Why ADRs
 

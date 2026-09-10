@@ -106,7 +106,7 @@ function RegisterForm() {
         <Card className="border-2 border-blue-100 dark:border-blue-900">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Continue with Wallet</CardTitle>
-            <CardDescription>Use Freighter or LOBSTR to sign up instantly — no password needed</CardDescription>
+            <CardDescription>Connect your Stellar wallet to sign up instantly — no password needed</CardDescription>
           </CardHeader>
           <CardContent>
             <WalletButton onConnected={() => router.push('/dashboard')} />
@@ -130,13 +130,13 @@ function RegisterForm() {
               type="button"
               onClick={() => setRole(r.id)}
               className={cn(
-                'p-4 rounded-xl border-2 text-left transition-all',
+                'p-4 rounded-xl border-2 text-start transition-all',
                 role === r.id
                   ? 'border-blue-600 bg-blue-50 dark:bg-blue-950'
                   : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600',
               )}
             >
-              <r.icon className={cn('h-5 w-5 mb-2', role === r.id ? 'text-blue-600' : 'text-gray-400')} />
+              <r.icon className={cn('h-5 w-5 mb-2', role === r.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500')} />
               <p className={cn('font-semibold text-sm', role === r.id ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300')}>
                 {r.label}
               </p>
@@ -173,7 +173,7 @@ function RegisterForm() {
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                 Create Account as {role === 'business' ? 'Business' : 'Lender'}
               </Button>
             </form>

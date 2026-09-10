@@ -55,6 +55,22 @@ Last updated: August 2026. Checkbox status reflects what is merged to `main`
 
 ---
 
+## Phase 2 — Trustless Work Escrow Rail
+
+Planned integration of [Trustless Work](https://www.trustlesswork.com) — audited,
+SCF-funded escrow infrastructure on Stellar Soroban — as the payment rail for
+InvoFi's riskiest transfers: disbursement escrow on `accept_offer`
+(delivery-verified release to originators), repayment escrow for guaranteed
+principal + yield, dispute routing through their Dispute Resolver role, and
+insurance payouts released through escrow. USDC-only scope via the currency
+registry; all calls behind an `escrowAdapter` in `@invofi/sdk`.
+
+See **[trustless-work-integration.md](./trustless-work-integration.md)** for the
+full research, delivery plan (epics + GrantFox-ready issues), hands-on steps,
+and partnership approach.
+
+---
+
 ## Long-Range
 
 - [ ] Lender verification (threshold-based SEP-12 onboarding, Phase 4 of compliance.md)

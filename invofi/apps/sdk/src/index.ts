@@ -12,6 +12,8 @@ export {
   type InvofiClient,
   type InvofiClientMethods,
   type BatchCall,
+  type SendCall,
+  type SendEnvelope,
   SdkValidationError,
   ErrorCode,
 } from './client';
@@ -94,12 +96,70 @@ export {
   CONTRACT_ERROR_MAP,
   parseContractError,
   setErrorReporter,
+  type InvofiError,
   type RecoverySuggestion,
 } from './errors';
 
 // Stellar primitives the client surface needs — re-exported so consumers
 // don't need a direct @stellar/stellar-sdk dependency for common cases.
 export { Contract, Networks, xdr, nativeToScVal, scValToNative } from '@stellar/stellar-sdk';
+
+// ── Trustless Work escrow adapter (Phase 2 — Escrow Rail) ──────────────────
+// Typed client for the Trustless Work Core REST API (single-release escrows):
+// milestone-gated disbursement on `accept_offer` (lender → escrow →
+// originator), with the live-verified build → sign → submit loop. Fully
+// optional — nothing else in the SDK touches it.
+//
+// @example
+// ```ts
+// import { createTrustlessWorkClient, usdcTestnetTrustline, disbursementEngagementId } from '@invofi/sdk';
+//
+// const tw = createTrustlessWorkClient({
+//   env: 'testnet',
+//   apiKey: process.env.TW_API_KEY!, // `id.secret` from the TW Backoffice
+//   networkPassphrase: Networks.TESTNET,
+//   signTransaction: signTransactionWithActiveWallet,
+// });
+//
+// const { built, submitted } = await tw.buildSignSubmit(
+//   tw.buildDisbursementEscrow({
+//     invoiceId: 'inv_001', offerId: 'off_001',
+//     amountHuman: 1250.5,
+//     lenderAddress, originatorAddress, platformAddress,
+//     platformFeePercent: 0.5,
+//     trustline: usdcTestnetTrustline(USDC_ISSUER_TESTNET),
+//   }),
+// );
+// // TW's deploy build does not return the escrow's contract id — resolve it
+// // from the read model once the tx lands (retries indexer lag with
+// // exponential backoff; throws ESCROW_RESOLVE_TIMEOUT when it never shows):
+// const contractId = await tw.resolveContractId(
+//   lenderAddress, disbursementEngagementId('inv_001', 'off_001'),
+// );
+// // → persist contractId against the offer.
+// ```
+export {
+  createTrustlessWorkClient,
+  mapToDeployPayload,
+  usdcTestnetTrustline,
+  disbursementEngagementId,
+  TrustlessWorkError,
+  DELIVERY_MILESTONE_DESCRIPTION,
+  RESOLVE_CONTRACT_ID_DEFAULTS,
+} from './escrow';
+export type {
+  TrustlessWorkConfig,
+  TrustlessWorkClient,
+  TrustlessWorkEnv,
+  EscrowRoles,
+  EscrowTrustline,
+  EscrowMilestone,
+  DeployEscrowPayload,
+  DisbursementEscrowParams,
+  UnsignedTransaction,
+  SendTransactionResult,
+  ResolveContractIdOptions,
+} from './escrow';
 
 // ── Event stream (listenToEvents) ───────────────────────────────────────────
 // Typed, polling-based event subscription for InvoFi protocol events.

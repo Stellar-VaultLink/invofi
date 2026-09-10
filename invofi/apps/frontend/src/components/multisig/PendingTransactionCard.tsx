@@ -23,7 +23,7 @@ const STATUS_STYLES: Record<PendingTransactionStatus, string> = {
   Pending:  'bg-yellow-100 text-yellow-800 border-yellow-200',
   Executed: 'bg-green-100 text-green-800 border-green-200',
   Rejected: 'bg-red-100 text-red-800 border-red-200',
-  Expired:  'bg-gray-100 text-gray-600 border-gray-200',
+  Expired:  'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
 };
 
 function formatCountdown(secs: number): string {
@@ -136,9 +136,9 @@ export function PendingTransactionCard({
             {canApprove && (
               <Button size="sm" onClick={() => onApprove(tx)} disabled={busy}>
                 {busy ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                  <CheckCircle2 className="me-1.5 h-3.5 w-3.5" />
                 )}
                 Approve
               </Button>
@@ -146,16 +146,16 @@ export function PendingTransactionCard({
             {canExecute && (
               <Button size="sm" onClick={() => onExecute(tx)} disabled={busy}>
                 {busy ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Send className="mr-1.5 h-3.5 w-3.5" />
+                  <Send className="me-1.5 h-3.5 w-3.5" />
                 )}
                 Execute
               </Button>
             )}
             {canReject && (
               <Button size="sm" variant="outline" onClick={() => onReject(tx)} disabled={busy}>
-                <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                <XCircle className="me-1.5 h-3.5 w-3.5" />
                 Reject
               </Button>
             )}

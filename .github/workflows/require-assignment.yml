@@ -1,0 +1,104 @@
+name: Require assignment
+
+# Blocks PRs from contributors who are not assigned to the linked issue.
+# Runs on every PR open/reopen — provides immediate feedback instead of
+# waiting for the auto-merge bot's hourly sweep.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+  issues: read
+
+concurrency:
+  group: assign-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-assignment:
+    name: Check issue assignment
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # PR-controlled fields are passed as env vars rather than interpolated
+      # directly into the script below. `${{ }}` substitution happens as a
+      # raw text splice into the YAML *before* bash ever sees it, so a body
+      # containing backticks or `$(...)` would otherwise be executed as
+      # commands in this pull_request_target context (which holds a
+      # write-scoped token). Env vars are passed as opaque string values
+      # instead, so bash only ever sees "$BODY" as data.
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_DRAFT: ${{ github.event.pull_request.draft }}
+    steps:
+      - name: Verify PR author is assigned to linked issue
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REPO="${GITHUB_REPOSITORY}"
+          PR="${PR_NUMBER}"
+          AUTHOR="${PR_AUTHOR}"
+          BODY="${PR_BODY}"
+
+          # Bot-authored PRs are exempt (contributors bot, dependabot)
+          if [[ "${AUTHOR}" == "github-actions[bot]" ]] || [[ "${AUTHOR}" == "app/dependabot" ]] || [[ "${AUTHOR}" == "@dependabot" ]] || [[ "${AUTHOR}" == *"[bot]" ]]; then
+            echo "Bot PR — skipping assignment check"
+            exit 0
+          fi
+
+          # Draft PRs are exempt (not ready for merge anyway)
+          IS_DRAFT="${PR_DRAFT}"
+          if [ "${IS_DRAFT}" = "true" ]; then
+            echo "Draft PR — skipping assignment check"
+            exit 0
+          fi
+
+          # Extract linked issue number from PR body
+          LINKED_ISSUE="$(printf '%s' "${BODY}" \
+            | grep -oE '(Closes|Fixes|close[s]?|fixes) #?[0-9]+' \
+            | head -1 | grep -oE '[0-9]+' || true)"
+
+          if [ -z "${LINKED_ISSUE}" ]; then
+            echo "No linked issue found — skipping assignment check"
+            exit 0
+          fi
+
+          echo "PR #${PR} by ${AUTHOR} links to issue #${LINKED_ISSUE}"
+
+          # Check if author is assigned to the issue
+          IS_ASSIGNED="$(gh issue view "${LINKED_ISSUE}" --repo "${REPO}" \
+            --json assignees \
+            --jq "[.assignees[] | select(.login == \"${AUTHOR}\")] | length" \
+            2>/dev/null || echo 0)"
+
+          if [ "${IS_ASSIGNED}" -eq 0 ]; then
+            echo "❌ ${AUTHOR} is NOT assigned to #${LINKED_ISSUE}"
+
+            COMMENT_BODY="$(cat <<'MSG'
+          🤖 **Assignment check** — ⚠️ You are not assigned to the linked issue.
+
+          **To get your PR reviewed and merged:**
+          1. Comment on the issue requesting assignment
+          2. Wait for a maintainer to assign you
+          3. The auto-merge bot will then evaluate your PR
+
+          Maintainers assign issues to avoid duplicate work and ensure quality review. Unassigned PRs will not be auto-merged.
+          MSG
+            )"
+            gh pr comment "${PR}" --repo "${REPO}" --body "${COMMENT_BODY}" 2>/dev/null || true
+
+            # Add a label to mark the PR as unassigned
+            gh pr edit "${PR}" --repo "${REPO}" --add-label "needs-assignment" 2>/dev/null || true
+
+            exit 1
+          fi
+
+          echo "✅ ${AUTHOR} is assigned to #${LINKED_ISSUE}"
+
+          # Remove the label if it was previously added
+          gh pr edit "${PR}" --repo "${REPO}" --remove-label "needs-assignment" 2>/dev/null || true

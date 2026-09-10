@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Loader2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,41 +12,122 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { OfferList } from '@/components/invoices/OfferList';
 import { InvoiceDocuments } from '@/components/invoices/documents/InvoiceDocuments';
+import { ReminderPanel } from '@/components/invoices/ReminderPanel';
 import { MessagingPanel } from '@/components/invoices/MessagingPanel';
 import { EventTimeline } from '@/components/invoices/EventTimeline';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { getInvoice, cancelInvoice } from '@/lib/contract';
+import { SimulateConfirm } from '@/components/common/SimulateConfirm';
+import { getInvoice, cancelInvoice, registerInvoice } from '@/lib/contract';
+import {
+  simulateContractCall,
+  encodeSymbol,
+  encodeAddress,
+} from '@/lib/simulate';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
-import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
+import { ToastAction } from '@/components/ui/toast';
+import { toErrorMessage } from '@/lib/errors';
+import { INVOICE_STATUS_COLORS, generateInvoiceId } from '@/lib/utils';
+import { useFormat } from '@/hooks/useFormat';
+import { REGISTRY_CONTRACT_ID } from '@/lib/constants';
 import type { Invoice, FinancingOffer } from '@/types';
+import type { SimulationResult } from '@/lib/simulate';
 
 export default function InvoiceDetailPage() {
+  const t = useTranslations('Invoice');
+  const tStatus = useTranslations('Status');
+  const format = useFormat();
   const { id } = useParams<{ id: string }>();
   const { publicKey } = useWallet();
   const { toast } = useToast();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [simCancel, setSimCancel] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
   // Counterparty address for the messaging panel.  Derived from the accepted
   // offer once offers are loaded: originator ↔ accepted lender.
   const [counterpartyAddress, setCounterpartyAddress] = useState<string>('');
 
+  // Previews `cancel_invoice` against the current ledger. A missing invoice or
+  // wallet is reported as a failed simulation so the dialog blocks submission
+  // rather than silently broadcasting an unbuildable call.
+  const simulateCancel = useCallback(async (): Promise<SimulationResult> => {
+    if (!invoice || !publicKey) {
+      return {
+        success: false,
+        error: 'Connect a wallet and load the invoice before cancelling.',
+        tokenMovements: [],
+        stateChanges: [],
+        events: [],
+        resourceFee: '0',
+        latestLedger: 0,
+      };
+    }
+    return simulateContractCall(
+      REGISTRY_CONTRACT_ID,
+      'cancel_invoice',
+      [encodeSymbol(invoice.id), encodeAddress(publicKey)],
+      publicKey,
+    );
+  }, [invoice, publicKey]);
+
   const handleCancel = async () => {
     if (!invoice || !publicKey) return;
     setCancelling(true);
+    // Capture the invoice data before cancelling so we can re-register on undo.
+    const cancelledInvoice = invoice;
     try {
       const updated = await cancelInvoice(invoice.id, publicKey);
       await supabase.from('invoices').update({ status: 'Cancelled' }).eq('id', invoice.id);
       setInvoice(updated);
-      toast({ title: 'Invoice cancelled', description: 'The invoice is now cancelled on-chain.' });
+      toast({
+        title: t('cancel.done'),
+        description: t('cancel.doneHint'),
+        action: (
+          <ToastAction
+            altText={t('cancel.undoAlt')}
+            onClick={async () => {
+              try {
+                const newId = generateInvoiceId();
+                const restored = await registerInvoice(
+                  {
+                    id: newId,
+                    amount: cancelledInvoice.amount,
+                    currency: cancelledInvoice.currency,
+                    dueDate: Number(cancelledInvoice.due_date),
+                  },
+                  publicKey,
+                );
+                await supabase.from('invoices').insert({
+                  id: newId,
+                  originator: publicKey,
+                  amount: cancelledInvoice.amount,
+                  currency: cancelledInvoice.currency,
+                  due_date: new Date(Number(cancelledInvoice.due_date) * 1000).toISOString(),
+                  status: 'Pending',
+                });
+                setInvoice(restored);
+                toast({ title: t('cancel.restored'), description: t('cancel.restoredHint') });
+              } catch (undoErr: unknown) {
+                toast({
+                  title: t('cancel.restoreFailed'),
+                  description: toErrorMessage(undoErr, t('cancel.restoreFailed')),
+                  variant: 'destructive',
+                });
+              }
+            }}
+          >
+            {t('cancel.undo')}
+          </ToastAction>
+        ),
+      });
     } catch (err: unknown) {
       toast({
-        title: 'Failed to cancel invoice',
-        description: err instanceof Error ? err.message : 'Error',
+        title: t('cancel.failed'),
+        // SDK/network messages are not translatable — they come from the
+        // chain; only the fallback is.
+        description: toErrorMessage(err, t('cancel.failed')),
         variant: 'destructive',
       });
     } finally {
@@ -63,7 +145,7 @@ export default function InvoiceDetailPage() {
         if (/403|unauthorized|forbidden|not authorized|access denied/i.test(errMsg)) {
           setIsUnauthorized(true);
         } else {
-          setError(errMsg || 'Invoice not found');
+          setError(errMsg || t('notFound'));
         }
       })
       .finally(() => setLoading(false));
@@ -116,9 +198,9 @@ export default function InvoiceDetailPage() {
         <div className="flex items-center justify-between mb-6">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <ArrowLeft className="h-4 w-4" /> Back to dashboard
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t('backToDashboard')}
           </Link>
 
           {invoice && (
@@ -129,20 +211,20 @@ export default function InvoiceDetailPage() {
               onClick={() => window.open(`/invoices/${id}/print`, '_blank')}
             >
               <Printer className="h-4 w-4" />
-              Print / Export PDF
+              {t('print')}
             </Button>
           )}
         </div>
 
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400 dark:text-gray-500" />
           </div>
         )}
 
         {error && (
-          <div className="text-center py-20 text-gray-500">
-            <p className="text-red-500 font-medium">{error}</p>
+          <div className="text-center py-20 text-gray-500 dark:text-gray-400">
+            <p className="text-red-500 font-medium dark:text-red-400">{error}</p>
           </div>
         )}
 
@@ -152,34 +234,40 @@ export default function InvoiceDetailPage() {
             <Card>
               <CardHeader className="flex flex-row items-start justify-between">
                 <div>
-                  <p className="text-xs font-mono text-gray-400 mb-1">{invoice.id}</p>
-                  <CardTitle className="text-xl">Invoice</CardTitle>
+                  {/* Invoice IDs are ASCII identifiers — pinned LTR inside an RTL layout. */}
+                  <p className="text-xs font-mono text-gray-400 mb-1 dark:text-gray-500" dir="ltr">{invoice.id}</p>
+                  <CardTitle className="text-xl">{t('title')}</CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className={INVOICE_STATUS_COLORS[invoice.status]}>
-                    {invoice.status}
+                    {tStatus(invoice.status)}
                   </Badge>
                   {invoice.status === 'Pending' && publicKey === invoice.originator && (
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setConfirmCancel(true)}
+                      onClick={() => setSimCancel(true)}
                       disabled={cancelling}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/40 dark:border-red-800"
                     >
-                      {cancelling && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                      Cancel
+                      {cancelling && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
+                      {t('cancel.action')}
                     </Button>
                   )}
                 </div>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-4 text-sm">
-                <Field label="Amount" value={`${formatAmount(invoice.amount)} ${invoice.currency}`} mono />
-                <Field label="Currency" value={invoice.currency} />
-                <Field label="Due Date" value={formatDate(invoice.due_date)} />
+
                 <Field
-                  label="Originator"
-                  value={formatAddress(invoice.originator)}
+                  label={t('fields.amount')}
+                  value={format.currency(invoice.amount, invoice.currency)}
+                  mono
+                />
+                <Field label={t('fields.currency')} value={invoice.currency} />
+                <Field label={t('fields.dueDate')} value={format.date(invoice.due_date)} />
+                <Field
+                  label={t('fields.originator')}
+                  value={format.address(invoice.originator)}
                   mono
                   link={`https://stellar.expert/explorer/testnet/account/${invoice.originator}`}
                 />
@@ -188,6 +276,9 @@ export default function InvoiceDetailPage() {
 
             {/* Invoice proof documents */}
             <InvoiceDocuments invoice={invoice} />
+
+            {/* Due-date reminder history + opt-out (originator only, via RLS) */}
+            {publicKey === invoice.originator && <ReminderPanel invoice={invoice} />}
 
             {/* Financing offers */}
             <OfferList invoiceId={id} invoice={invoice} onUpdate={setInvoice} />
@@ -202,23 +293,28 @@ export default function InvoiceDetailPage() {
                 currentAddress={publicKey}
                 counterpartyAddress={counterpartyAddress}
                 counterpartyLabel={
-                  publicKey === invoice.originator ? 'Lender' : 'Business'
+                  publicKey === invoice.originator ? t('counterparty.lender') : t('counterparty.business')
                 }
               />
             )}
           </div>
         )}
 
-        <ConfirmDialog
-          open={confirmCancel}
-          onOpenChange={open => { if (!open) setConfirmCancel(false); }}
-          title="Cancel this invoice?"
-          description="The invoice will be cancelled on-chain and can no longer receive financing offers. This cannot be undone."
-          confirmLabel="Cancel Invoice"
+        {/* ── Simulation confirmation for cancel ──────────────────────── */}
+        <SimulateConfirm
+          open={simCancel}
+          onOpenChange={open => { if (!open) setSimCancel(false); }}
+          title={t('cancel.previewTitle')}
+          description={t('cancel.previewDescription')}
+          onSimulate={simulateCancel}
           variant="destructive"
+          confirmLabel={t('cancel.confirm')}
+          holdToConfirm
+          // Returned so `SimulateConfirm` can await the submission and keep
+          // its "Submitting…" state up while the wallet signs.
           onConfirm={() => {
-            setConfirmCancel(false);
-            handleCancel();
+            setSimCancel(false);
+            return handleCancel();
           }}
         />
       </div>
@@ -239,18 +335,18 @@ function Field({
 }) {
   return (
     <div>
-      <p className="text-gray-400 text-xs mb-0.5">{label}</p>
+      <p className="text-gray-400 text-xs mb-0.5 dark:text-gray-500">{label}</p>
       {link ? (
         <a
           href={link}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-blue-600 hover:underline font-mono"
+          className="inline-flex items-center gap-1 text-blue-600 hover:underline font-mono dark:text-blue-400"
         >
           {value} <ExternalLink className="h-3 w-3" />
         </a>
       ) : (
-        <p className={mono ? 'font-mono text-gray-800' : 'text-gray-800'}>{value}</p>
+        <p className={mono ? 'font-mono text-gray-800 dark:text-gray-200' : 'text-gray-800 dark:text-gray-200'}>{value}</p>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { __setXlmUsdPriceForTests, refreshXlmUsdPrice, stroopsToUsd, usdPriceFor } from './prices';
+import { __setXlmUsdPriceForTests, getXlmUsdInfo, refreshXlmUsdPrice, stroopsToUsd, usdPriceFor } from './prices';
 
 describe('prices', () => {
   afterEach(() => {
@@ -33,5 +33,25 @@ describe('prices', () => {
     );
     await expect(refreshXlmUsdPrice()).resolves.toBeCloseTo(0.42, 5);
     expect(usdPriceFor('XLM')).toBeCloseTo(0.42, 5);
+  });
+
+  it('getXlmUsdInfo reports the default source when nothing is pinned', () => {
+    __setXlmUsdPriceForTests(null);
+    const info = getXlmUsdInfo();
+    expect(info.price).toBeGreaterThan(0);
+    expect(['default', 'env']).toContain(info.source);
+    expect(info.updatedAt).toBe(0);
+  });
+
+  it('getXlmUsdInfo tracks a CoinGecko-fetched price', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ stellar: { usd: 0.42 } }), { status: 200 })),
+    );
+    await refreshXlmUsdPrice();
+    const info = getXlmUsdInfo();
+    expect(info.price).toBeCloseTo(0.42, 5);
+    expect(info.source).toBe('coingecko');
+    expect(info.updatedAt).toBeGreaterThan(0);
   });
 });

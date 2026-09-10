@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { accountExists, fundAccountViaFriendbot } from '@/lib/horizon';
 import { amountToStroops, generateInvoiceId } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import { HighValueBanner } from '@/components/multisig/HighValueBanner';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -140,7 +141,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
     } catch (err: unknown) {
       toast({
         title: 'Funding failed',
-        description: err instanceof Error ? err.message : 'Could not fund account',
+        description: toErrorMessage(err, 'Could not fund account'),
         variant: 'destructive',
       });
     } finally {
@@ -152,7 +153,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
     if (!isConnected || !publicKey) {
       toast({
         title: 'Wallet not connected',
-        description: 'Connect your Freighter or LOBSTR wallet first.',
+        description: 'Connect an approved Stellar wallet first.',
         variant: 'destructive',
       });
       return;
@@ -213,7 +214,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
     } catch (err: unknown) {
       toast({
         title: 'Failed to register invoice',
-        description: err instanceof Error ? err.message : 'Transaction failed',
+        description: toErrorMessage(err, 'Transaction failed'),
         variant: 'destructive',
       });
     } finally {
@@ -263,7 +264,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
 
           {!isConnected && (
             <p className="text-sm text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-              Connect your Freighter or LOBSTR wallet before submitting.
+              Connect an approved Stellar wallet before submitting.
             </p>
           )}
 
@@ -303,8 +304,8 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
                   disabled={funding}
                 >
                   {funding
-                    ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Funding…</>
-                    : <><Zap className="mr-1.5 h-3.5 w-3.5" /> Fund with Friendbot</>
+                    ? <><Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" /> Funding…</>
+                    : <><Zap className="me-1.5 h-3.5 w-3.5" /> Fund with Friendbot</>
                   }
                 </Button>
               </div>
@@ -316,7 +317,7 @@ function InvoiceDraftForm({ draftKey, onSuccess }: InvoiceFormProps & { draftKey
             className="w-full"
             disabled={submitting || !isConnected || (CONTRACT_OK && IS_TESTNET && accountFunded === false)}
           >
-            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {submitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {submitting
               ? (CONTRACT_OK ? 'Registering on-chain…' : 'Saving invoice…')
               : (CONTRACT_OK ? 'Register Invoice' : 'Save Invoice')}

@@ -34,7 +34,7 @@ export function AuthGuard({ children, isUnauthorized }: AuthGuardProps) {
   if (!sessionReady || isCheckingWallet) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400 dark:text-gray-500" />
       </div>
     );
   }

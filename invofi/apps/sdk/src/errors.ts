@@ -196,6 +196,21 @@ export class ContractError extends SdkError {
   }
 }
 
+// ── Invofi error — domain-facing name for a decoded contract failure (#188) ─
+//
+// `InvofiError` is the public, stable name consumers (frontend toasts,
+// analytics, debugging) use for a *decoded* contract-call failure. It is a
+// `ContractError`, so it carries:
+//   - a machine-readable code: `errorType` (`UNAUTHORIZED`, `NOT_FOUND`,
+//     `PAUSED`, `INSUFFICIENT_BALANCE`, …) plus the raw Soroban `rawCode`;
+//   - a human-readable `message` plus an optional `recovery` suggestion;
+//   - the original failure preserved as `cause`.
+// Branching on `errorType` replaces the regex-matching of raw Soroban error
+// text (#188) — the SDK decodes once, callers branch on the typed variant.
+
+/** A decoded contract-call failure surfaced by `client.send()`. */
+export type InvofiError = ContractError;
+
 // ── Error code extraction & mapping ──────────────────────────────────────────
 
 /**

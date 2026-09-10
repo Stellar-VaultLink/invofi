@@ -12,6 +12,7 @@ import { ListPositionForm } from '@/components/marketplace/ListPositionForm';
 import { PositionListingCard } from '@/components/marketplace/PositionListingCard';
 import { CardSkeleton } from '@/components/common/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import {
   LISTING_SORT_OPTIONS,
@@ -91,7 +92,7 @@ export default function PositionListingsPage() {
             : 'The listing is no longer on the board.',
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not update the listing';
+      const msg = toErrorMessage(err, 'Could not update the listing');
       toast({ title: 'Update failed', description: msg, variant: 'destructive' });
     } finally {
       setBusyId(null);
@@ -134,7 +135,7 @@ export default function PositionListingsPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-foreground">Sell a position</h2>
             <Button size="sm" variant="outline" onClick={() => setShowForm(v => !v)}>
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              <Plus className="me-1.5 h-3.5 w-3.5" />
               {showForm ? 'Close' : 'List a position'}
             </Button>
           </div>
@@ -180,11 +181,11 @@ export default function PositionListingsPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by invoice reference or seller…"
               aria-label="Search listings"
-              className="pl-9"
+              className="ps-9"
               value={filters.search}
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
             />

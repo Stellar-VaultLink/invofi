@@ -33,21 +33,21 @@ interface UpgradeBannerProps {
 const SEVERITY_CONFIG = {
   info: {
     icon: Info,
-    containerClass: 'bg-blue-50 border-blue-200 text-blue-900',
-    iconClass: 'text-blue-500',
-    badgeClass: 'bg-blue-100 text-blue-700',
+    containerClass: 'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-200',
+    iconClass: 'text-blue-500 dark:text-blue-400',
+    badgeClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300',
   },
   warning: {
     icon: AlertTriangle,
-    containerClass: 'bg-amber-50 border-amber-200 text-amber-900',
-    iconClass: 'text-amber-500',
-    badgeClass: 'bg-amber-100 text-amber-700',
+    containerClass: 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200',
+    iconClass: 'text-amber-500 dark:text-amber-400',
+    badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
   },
   critical: {
     icon: ShieldAlert,
-    containerClass: 'bg-red-50 border-red-200 text-red-900',
-    iconClass: 'text-red-500',
-    badgeClass: 'bg-red-100 text-red-700',
+    containerClass: 'bg-red-50 border-red-200 text-red-900 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200',
+    iconClass: 'text-red-500 dark:text-red-400',
+    badgeClass: 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300',
   },
 } as const;
 
@@ -132,7 +132,7 @@ function SingleNotification({
       </button>
 
       {expanded && (
-        <div className="mt-2 rounded-md bg-white/50 p-3 text-xs space-y-1.5">
+        <div className="mt-2 rounded-md bg-white/50 dark:bg-black/20 p-3 text-xs space-y-1.5">
           <div className="flex justify-between">
             <span className="font-medium">Contract:</span>
             <span className="font-mono">{notification.contractId.slice(0, 12)}…</span>
@@ -146,7 +146,7 @@ function SingleNotification({
             <span className="font-mono">{notification.targetVersion}</span>
           </div>
           {notification.isBreaking && (
-            <p className="text-red-600 font-medium pt-1">
+            <p className="text-red-600 font-medium pt-1 dark:text-red-400">
               ⚠️ This is a major upgrade — a migration plan should be prepared before upgrading.
             </p>
           )}

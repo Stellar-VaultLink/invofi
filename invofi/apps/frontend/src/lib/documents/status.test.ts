@@ -17,6 +17,16 @@ describe('document status metadata', () => {
       expect(DOCUMENT_STATUS_COLORS[status]).toMatch(/bg-.*-100 text-.*-800/);
     }
   });
+
+  // Dark-mode coverage (issue #173): document badges render inside
+  // InvoiceDocuments on the invoice detail page, which must stay readable
+  // when the `dark` class is applied.
+  it('pairs every status color with a dark:bg/text variant', () => {
+    for (const status of DOCUMENT_STATUSES) {
+      expect(DOCUMENT_STATUS_COLORS[status]).toMatch(/dark:bg-/);
+      expect(DOCUMENT_STATUS_COLORS[status]).toMatch(/dark:text-/);
+    }
+  });
 });
 
 describe('formatDocumentSize', () => {

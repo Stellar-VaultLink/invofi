@@ -150,12 +150,12 @@ export function MessagingPanel({
         <CardTitle className="flex items-center gap-2 text-base">
           <MessageCircle className="h-4 w-4 text-purple-500" aria-hidden="true" />
           Private Messages
-          <Lock className="h-3.5 w-3.5 text-green-500 ml-1" aria-hidden="true" />
-          <span className="text-xs font-normal text-gray-400 ml-1">End-to-end encrypted</span>
+          <Lock className="h-3.5 w-3.5 text-green-500 ms-1" aria-hidden="true" />
+          <span className="text-xs font-normal text-gray-400 ms-1 dark:text-gray-500">End-to-end encrypted</span>
         </CardTitle>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">
           Conversation with{' '}
-          <span className="font-medium text-gray-600">{counterpartyLabel}</span>{' '}
+          <span className="font-medium text-gray-600 dark:text-gray-300">{counterpartyLabel}</span>{' '}
           <span className="font-mono">
             {counterpartyAddress.slice(0, 6)}…{counterpartyAddress.slice(-4)}
           </span>
@@ -166,14 +166,14 @@ export function MessagingPanel({
         {/* Message list */}
         <div
           ref={scrollRef}
-          className="flex flex-col gap-1 overflow-y-auto max-h-80 min-h-[10rem] pr-1"
+          className="flex flex-col gap-1 overflow-y-auto max-h-80 min-h-[10rem] pe-1"
           role="log"
           aria-live="polite"
           aria-label="Message history"
         >
           {loading && (
-            <div className="flex items-center justify-center h-full py-8 text-gray-400">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" aria-hidden="true" />
+            <div className="flex items-center justify-center h-full py-8 text-gray-400 dark:text-gray-500">
+              <Loader2 className="h-5 w-5 animate-spin me-2" aria-hidden="true" />
               <span className="text-sm">Loading messages…</span>
             </div>
           )}
@@ -185,7 +185,7 @@ export function MessagingPanel({
           )}
 
           {!loading && !error && messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full py-10 text-gray-400 gap-2">
+            <div className="flex flex-col items-center justify-center h-full py-10 text-gray-400 dark:text-gray-500 gap-2">
               <Lock className="h-6 w-6 opacity-40" aria-hidden="true" />
               <p className="text-sm">No messages yet.</p>
               <p className="text-xs opacity-70">Messages are end-to-end encrypted.</p>
@@ -197,7 +197,7 @@ export function MessagingPanel({
               {/* Date separator */}
               <div className="flex items-center gap-2 my-2">
                 <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800" />
-                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">
                   {date}
                 </span>
                 <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800" />

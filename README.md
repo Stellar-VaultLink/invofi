@@ -44,10 +44,12 @@ InvoFi lives across **two repositories**, split so the fast-moving app layer and
 
 | Repo | Contains | Why separate |
 |---|---|---|
-| **[invofi](https://github.com/Stellar-VaultLink/invofi)** (this repo) | Next.js frontend (`invofi/apps/frontend`), docs, scripts, roadmap | App-layer changes constantly; Node/npm CI; no audit dependency |
+| **[invofi](https://github.com/Stellar-VaultLink/invofi)** (this repo) | Next.js frontend (`invofi/apps/frontend`), `@invofi/sdk` (`apps/sdk`), docs, scripts, roadmap | App-layer changes constantly; Node/npm CI; no audit dependency |
 | **[invofi-contracts](https://github.com/Stellar-VaultLink/invofi-contracts)** | All Soroban Rust contracts — registry, financing, repayment, insurance, reputation, common | Stable, auditable, slow-moving history; Rust-only CI; the repo that goes through the SCF Audit Bank |
 
 **Smart contracts now live in a dedicated repo: [invofi-contracts](https://github.com/Stellar-VaultLink/invofi-contracts).**
+
+See [ADR-0007: Repository topology and SDK location](./docs/adr/0007-repo-topology-and-sdk.md) for the decision, rationale, and tradeoffs behind this project map.
 
 ---
 
@@ -106,7 +108,8 @@ npm install && npm run dev
 - **Trustless** — all terms, state transitions, and repayments enforced by Soroban smart contracts
 - **Transparent** — every action is a public transaction on Stellar, auditable by anyone
 - **Permissionless** — anyone with a Stellar wallet can participate
-- **Dual auth** — email/password (Supabase) and Stellar wallet (Freighter or Lobstr)
+- **Dual auth** — email/password (Supabase) and Stellar wallet (Freighter, LOBSTR, or Albedo)
+- **Milestone-gated escrows** — USDC disbursements route through audited [Trustless Work](https://www.trustlesswork.com) escrows (Runtime Verification-audited, SCF-funded): funds move only when delivery is confirmed, with a built-in dispute resolver
 - **Multi-currency** — invoices denominated in XLM or USDC
 - **Partial repayment** — businesses can repay incrementally; offer stays Financed until fully cleared
 - **Free to deploy** — Vercel (free) + Supabase (free) + Stellar testnet
@@ -121,7 +124,7 @@ npm install && npm run dev
 │                Next.js 14 App Router — deployed on Vercel                  │
 │                                                                            │
 │   ┌──────────────────────┐   ┌─────────────────────────────────────────┐   │
-│   │ Email / Password auth │   │  Stellar wallet: Freighter / LOBSTR    │   │
+│   │ Email / Password auth │   │  Stellar wallet: Freighter / LOBSTR / Albedo    │   │
 │   │ via Supabase          │   │  @creit.tech/stellar-wallets-kit      │   │
 │   │                       │   │  approved-wallets.ts allowlist (6A)    │   │
 │   └──────────┬───────────┘   └─────────────────────┬───────────────────┘   │
@@ -179,7 +182,7 @@ invofi/
 │           │   └── settings/         Account settings
 │           ├── components/
 │           │   ├── auth/             AuthGuard, WalletButton, WalletProvider,
-│           │   │                     WalletSelectDialog (Freighter + Lobstr picker)
+│           │   │                     WalletSelectDialog (Freighter + Lobstr + Albedo picker)
 │           │   ├── common/           ConfirmDialog, StatsCard, StatsGrid,
 │           │   │                     StatusBadge, PageHeader, EmptyState
 │           │   ├── invoices/         InvoiceCard, InvoiceForm, InvoiceTable,
@@ -347,7 +350,7 @@ register_invoice()
 | Frontend | Next.js 14 (App Router) + TypeScript 5.5 | Free Vercel deployment, SSR |
 | Styling | Tailwind CSS + shadcn/ui | Fast, accessible, composable |
 | Auth | Supabase | Free tier, row-level security |
-| Wallet | Freighter + LOBSTR (approved allowlist) via `@creit.tech/stellar-wallets-kit` | Approving a 3rd wallet = one entry in `approved-wallets.ts` |
+| Wallet | Freighter + LOBSTR + Albedo (approved allowlist) via `@creit.tech/stellar-wallets-kit` | Approving a 4th wallet = one entry in `approved-wallets.ts` |
 | Data Fetching | TanStack Query v5 | Caching, background refetch |
 | Forms | React Hook Form + Zod | Type-safe validation |
 | Icons | Lucide React | Consistent icon set |
@@ -361,7 +364,7 @@ register_invoice()
 
 - [Node.js 20+](https://nodejs.org)
 - [Rust 1.70+](https://rustup.rs) with `wasm32-unknown-unknown` target (`rustup target add wasm32-unknown-unknown`)
-- A Stellar wallet: [Freighter](https://freighter.app) (browser extension) **or** [LOBSTR](https://lobstr.co) (mobile / browser extension)
+- A Stellar wallet: [Freighter](https://freighter.app) (browser extension), [LOBSTR](https://lobstr.co) (mobile / browser extension), **or** [Albedo](https://albedo.link) (web wallet)
 - A free [Supabase](https://supabase.com) account
 
 ### 1. Clone
@@ -602,7 +605,7 @@ Both identities are auto-funded via Friendbot on testnet. See
 - [x] Dispute lifecycle — `raise_dispute` / `resolve_dispute` with admin resolution
 - [x] Lender stats — `get_lender_stats` tracking total offered, accepted, pending, repaid
 - [x] Input validation — `amount >= MIN_INVOICE_AMOUNT`, `due_date > now`, `interest_rate > 0`, `duration <= MAX_OFFER_DURATION_SECS`
-- [x] Next.js 14 frontend with multi-wallet support (Freighter + LOBSTR via `@creit.tech/stellar-wallets-kit`)
+- [x] Next.js 14 frontend with multi-wallet support (Freighter + LOBSTR + Albedo via `@creit.tech/stellar-wallets-kit`)
 - [x] Alpha / demo mode — app runs fully off-chain when no contract is deployed; shows info banner
 - [x] Supabase auth (email + wallet), dark mode, accessibility, SEO metadata
 - [x] Marketplace and portfolio views, sortable InvoiceTable, StatsCard KPIs
@@ -627,6 +630,36 @@ Both identities are auto-funded via Friendbot on testnet. See
 - [ ] Multi-signature treasury and escrow
 - [ ] KYC / AML with SEP-12 support
 - [ ] Contract upgradeability with timelock governance
+
+---
+
+## Phase 2 — Escrow Rail (Trustless Work)
+
+InvoFi's Phase-2 escrow integration turns the riskiest money movements into
+milestone-verified escrows on [Trustless Work](https://www.trustlesswork.com) —
+**audited** (Runtime Verification), **SCF-funded** ($118K across 2 rounds), and
+part of the **SCF Integration Track**. Their escrow infrastructure on Stellar
+Soroban (USDC-native) becomes the payment rail for InvoFi's riskiest transfers:
+
+1. **Disbursement escrow** — the financed amount from `accept_offer` is held in
+   escrow until the originator's customer confirms delivery, then released to
+   the originator (converts financing from unsecured to delivery-verified).
+2. **Repayment escrow** — guaranteed principal + yield release to lenders at
+   maturity.
+3. **Dispute routing** — InvoFi's `Disputed` state handed to Trustless Work's
+   Dispute Resolver role.
+4. **Insurance payout rail** — default payouts released through escrow with the
+   insurance contract as resolver.
+
+**Status (2026-09-08): the escrow rail is LIVE on testnet** — a typed
+zero-dependency adapter for the TW Core API in `@invofi/sdk`, a server-side
+key proxy (`/api/escrow/*`), and best-effort escrow deploy+fund wired into the
+`accept_offer` flow (USDC, feature-flagged). The API key is issued, set on
+Vercel (server-only), and the production deployment ships with the rail
+active for USDC offers. API contract, validation results, and the
+testnet-verification checklist:
+**[docs/trustless-work-integration.md](./docs/trustless-work-integration.md)**
+(see its Part 0) · Decision record: [ADR-0010](./docs/adr/0010-trustless-work-escrow-rail.md)
 
 ---
 
@@ -664,6 +697,13 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/waterWang">
+                    <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
+                    <br />
+                    <sub><b>water</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/Ajibose">
                     <img src="https://avatars.githubusercontent.com/u/99620327?v=4" width="100;" alt="Ajibose"/>
                     <br />
@@ -677,6 +717,22 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>fadesany</b></sub>
                 </a>
             </td>
+            <td align="center">
+                <a href="https://github.com/retkatmun">
+                    <img src="https://avatars.githubusercontent.com/u/153809730?v=4" width="100;" alt="retkatmun"/>
+                    <br />
+                    <sub><b>scholar</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Fury03">
+                    <img src="https://avatars.githubusercontent.com/u/98775983?v=4" width="100;" alt="Fury03"/>
+                    <br />
+                    <sub><b>Damilola Ogunrotimi</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/JinadJay">
                     <img src="https://avatars.githubusercontent.com/u/103272555?v=4" width="100;" alt="JinadJay"/>
@@ -698,20 +754,11 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>MJ | Dev 🏀</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/Unclebaffa">
                     <img src="https://avatars.githubusercontent.com/u/122823433?v=4" width="100;" alt="Unclebaffa"/>
                     <br />
                     <sub><b>Alhassan Nuhu Idris</b></sub>
-                </a>
-            </td>
-            <td align="center">
-                <a href="https://github.com/retkatmun">
-                    <img src="https://avatars.githubusercontent.com/u/153809730?v=4" width="100;" alt="retkatmun"/>
-                    <br />
-                    <sub><b>scholar</b></sub>
                 </a>
             </td>
             <td align="center">
@@ -728,6 +775,15 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Omitogun Ayobami</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/Babigdk">
+                    <img src="https://avatars.githubusercontent.com/u/29020286?v=4" width="100;" alt="Babigdk"/>
+                    <br />
+                    <sub><b>Abdulrazaq Isa Babi</b></sub>
+                </a>
+            </td>
             <td align="center">
                 <a href="https://github.com/Damieee">
                     <img src="https://avatars.githubusercontent.com/u/115638760?v=4" width="100;" alt="Damieee"/>
@@ -736,33 +792,17 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/Babigdk">
-                    <img src="https://avatars.githubusercontent.com/u/29020286?v=4" width="100;" alt="Babigdk"/>
+                <a href="https://github.com/estyemma">
+                    <img src="https://avatars.githubusercontent.com/u/262563001?v=4" width="100;" alt="estyemma"/>
                     <br />
-                    <sub><b>Abdulrazaq Isa Babi</b></sub>
-                </a>
-            </td>
-		</tr>
-		<tr>
-            <td align="center">
-                <a href="https://github.com/waterWang">
-                    <img src="https://avatars.githubusercontent.com/u/6082925?v=4" width="100;" alt="waterWang"/>
-                    <br />
-                    <sub><b>water</b></sub>
+                    <sub><b>Esther Emmanuel</b></sub>
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/ganeshchandra111">
-                    <img src="https://avatars.githubusercontent.com/u/166985591?v=4" width="100;" alt="ganeshchandra111"/>
+                <a href="https://github.com/playmaker410">
+                    <img src="https://avatars.githubusercontent.com/u/247983253?v=4" width="100;" alt="playmaker410"/>
                     <br />
-                    <sub><b>Ganesh chandra</b></sub>
-                </a>
-            </td>
-            <td align="center">
-                <a href="https://github.com/EneGab">
-                    <img src="https://avatars.githubusercontent.com/u/157655503?v=4" width="100;" alt="EneGab"/>
-                    <br />
-                    <sub><b>EneGab</b></sub>
+                    <sub><b>playmaker410</b></sub>
                 </a>
             </td>
             <td align="center">
@@ -773,21 +813,28 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/EneGab">
+                    <img src="https://avatars.githubusercontent.com/u/157655503?v=4" width="100;" alt="EneGab"/>
+                    <br />
+                    <sub><b>EneGab</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/ganeshchandra111">
+                    <img src="https://avatars.githubusercontent.com/u/166985591?v=4" width="100;" alt="ganeshchandra111"/>
+                    <br />
+                    <sub><b>Ganesh chandra</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/AbuJulaybeeb">
                     <img src="https://avatars.githubusercontent.com/u/178188157?v=4" width="100;" alt="AbuJulaybeeb"/>
                     <br />
                     <sub><b>Jibril Raji Qasim </b></sub>
                 </a>
             </td>
-            <td align="center">
-                <a href="https://github.com/Fury03">
-                    <img src="https://avatars.githubusercontent.com/u/98775983?v=4" width="100;" alt="Fury03"/>
-                    <br />
-                    <sub><b>Damilola Ogunrotimi</b></sub>
-                </a>
-            </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/Jayking40">
                     <img src="https://avatars.githubusercontent.com/u/101714779?v=4" width="100;" alt="Jayking40"/>
@@ -816,6 +863,8 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>Raw_Nuke</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/Jah-yee">
                     <img src="https://avatars.githubusercontent.com/u/166608075?v=4" width="100;" alt="Jah-yee"/>
@@ -830,8 +879,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                     <sub><b>WAGMI</b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/mansur-codes">
                     <img src="https://avatars.githubusercontent.com/u/114710463?v=4" width="100;" alt="mansur-codes"/>

@@ -219,7 +219,7 @@ export function createCache(scope: CacheScope = {}): CacheHandle {
     if (!isIndexedDbAvailable()) return null;
     if (!dbPromise) {
       dbPromise = openDB(dbName, DB_VERSION, {
-        upgrade(db) {
+        upgrade(db: IDBPDatabase) {
           if (!db.objectStoreNames.contains(STORE_NAME)) {
             const store = db.createObjectStore(STORE_NAME, { keyPath: 'key' });
             store.createIndex(LAST_ACCESSED_INDEX, 'lastAccessed');

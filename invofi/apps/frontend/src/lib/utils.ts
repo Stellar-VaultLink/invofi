@@ -69,22 +69,22 @@ export function durationLabel(seconds: number | bigint | string): string {
 }
 
 export const INVOICE_STATUS_COLORS: Record<InvoiceStatus, string> = {
-  Pending:   'bg-yellow-100 text-yellow-800 border-yellow-200',
-  Financed:  'bg-blue-100 text-blue-800 border-blue-200',
-  Repaid:    'bg-green-100 text-green-800 border-green-200',
-  Overdue:   'bg-red-100 text-red-800 border-red-200',
-  Cancelled: 'bg-gray-100 text-gray-600 border-gray-200',
-  Disputed:  'bg-purple-100 text-purple-800 border-purple-200',
-  Defaulted: 'bg-orange-100 text-orange-800 border-orange-200',
+  Pending:   'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800',
+  Financed:  'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
+  Repaid:    'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800',
+  Overdue:   'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800',
+  Cancelled: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
+  Disputed:  'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800',
+  Defaulted: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
 };
 
 export const OFFER_STATUS_COLORS: Record<OfferStatus, string> = {
-  Pending:   'bg-yellow-100 text-yellow-800 border-yellow-200',
-  Accepted:  'bg-blue-100 text-blue-800 border-blue-200',
-  Financed:  'bg-indigo-100 text-indigo-800 border-indigo-200',
-  Rejected:  'bg-red-100 text-red-800 border-red-200',
-  Repaid:    'bg-green-100 text-green-800 border-green-200',
-  Defaulted: 'bg-orange-100 text-orange-800 border-orange-200',
+  Pending:   'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800',
+  Accepted:  'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
+  Financed:  'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800',
+  Rejected:  'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800',
+  Repaid:    'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800',
+  Defaulted: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
 };
 
 export function generateInvoiceId(): string {

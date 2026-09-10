@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
+import { dirFor } from '@/i18n/config';
 import './globals.css';
 import { Providers } from '@/components/layout/Providers';
 import { Navbar } from '@/components/layout/Navbar';
@@ -42,22 +45,28 @@ export const metadata: Metadata = {
   },
 };
 
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
-
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
   const messages = await getMessages();
 
   return (
-    <html lang="en">
-      <body
-        className={`${inter.className} bg-white dark:bg-gray-950 dark:text-white`}
-      >
-        <NextIntlClientProvider messages={messages}>
+    // `dir` is what actually mirrors the layout for Arabic, Hebrew and Persian.
+    // It only produces a correct mirror because the app's spacing, alignment
+    // and borders use CSS logical properties (`ms-*`/`me-*`, `ps-*`/`pe-*`,
+    // `start-*`/`end-*`, `text-start`) rather than physical left/right ones —
+    // see docs/i18n.md before adding a directional utility.
+    // suppressHydrationWarning is required by next-themes: it sets the
+    // `dark` class on this element via an inline script that runs before
+    // React hydrates, so the server-rendered class attribute intentionally
+    // differs from the client's first paint (that's what avoids a
+    // flash-of-wrong-theme).
+    <html lang={locale} dir={dirFor(locale)} suppressHydrationWarning>
+      <body className={inter.className}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <Navbar />
             <main>{children}</main>

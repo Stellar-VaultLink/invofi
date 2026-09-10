@@ -1,0 +1,24 @@
+{
+  "description": "Per-route First Load JS budgets for the invofi frontend (issue #108).",
+  "generatedFrom": "next build",
+  "threshold": 0.1,
+  "routes": {
+    "/": 266,
+    "/_not-found": 87.8,
+    "/403": 109,
+    "/auth/login": 380,
+    "/auth/register": 380,
+    "/dashboard": 364,
+    "/dashboard/health": 281,
+    "/invoices/[id]": 404,
+    "/invoices/[id]/print": 317,
+    "/invoices/new": 350,
+    "/marketplace": 396,
+    "/marketplace/positions": 358,
+    "/portfolio": 360,
+    "/profile": 318,
+    "/settings": 294,
+    "/stats": 280,
+    "/transactions": 360
+  }
+}

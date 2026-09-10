@@ -1,6 +1,7 @@
 import { Horizon } from '@stellar/stellar-sdk';
 import { isMockMode } from './mock-mode';
 import { mockXlmBalance } from './mock';
+import { POSITION_TOKEN_ASSET } from './constants';
 
 const HORIZON_URL =
   process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon-testnet.stellar.org';
@@ -108,4 +109,120 @@ export async function fundAccountViaFriendbot(publicKey: string): Promise<void> 
   }
   // Give Horizon a moment to index the funding transaction
   await new Promise(r => setTimeout(r, 2000));
+}
+
+// ── Position-token transfers (issue #127) ────────────────────────────────────
+// Position tokens (SEP-41 SAC) are a regular Stellar asset (`POS:ISSUER`), so
+// every mint/transfer shows up as a Horizon `payment` operation on that asset.
+// The portfolio panel reads these to show a lender their in/out history and
+// prove their claim. The mapping helpers are pure so the acceptance criteria
+// stay unit-testable without hitting the network.
+
+export interface PositionTransfer {
+  id: string;
+  hash: string;
+  createdAt: string;
+  direction: 'in' | 'out';
+  counterparty: string;
+  amount: string;
+}
+
+/** Parse a "CODE:ISSUER" asset string into its parts, or null if malformed. */
+export function parsePositionTokenAsset(
+  asset: string,
+): { code: string; issuer: string } | null {
+  const idx = asset.indexOf(':');
+  if (idx <= 0) return null;
+  const code = asset.slice(0, idx);
+  const issuer = asset.slice(idx + 1);
+  return code && /^G[A-Z2-7]{55}$/.test(issuer) ? { code, issuer } : null;
+}
+
+/** True when a Horizon operation record is a payment of the given POS asset. */
+export function isPositionTokenPayment(
+  rec: {
+    type?: string;
+    asset_code?: string | null;
+    asset_issuer?: string | null;
+  },
+  asset: { code: string; issuer: string },
+): boolean {
+  return (
+    rec.type === 'payment' &&
+    rec.asset_code === asset.code &&
+    rec.asset_issuer === asset.issuer
+  );
+}
+
+/**
+ * Shape of a payment-operation record as returned by Horizon, restricted to
+ * the fields this panel cares about. The SDK returns a union of operation
+ * types, so callers cast after filtering with `isPositionTokenPayment`.
+ */
+export interface PositionPaymentRecord {
+  id: string;
+  transaction_hash: string;
+  created_at: string;
+  type?: string;
+  asset_code?: string | null;
+  asset_issuer?: string | null;
+  from?: string;
+  to?: string;
+  amount?: string;
+}
+
+/**
+ * Map one Horizon payment record to a compact PositionTransfer, resolved
+ * against the connected wallet. Returns null when the wallet is neither the
+ * sender nor the recipient (e.g. a path-payment intermediary).
+ */
+export function toPositionTransfer(
+  rec: PositionPaymentRecord,
+  publicKey: string,
+): PositionTransfer | null {
+  if (rec.to === publicKey && rec.from && rec.amount !== undefined) {
+    return {
+      id: rec.id,
+      hash: rec.transaction_hash,
+      createdAt: rec.created_at,
+      direction: 'in',
+      counterparty: rec.from,
+      amount: rec.amount,
+    };
+  }
+  if (rec.from === publicKey && rec.to && rec.amount !== undefined) {
+    return {
+      id: rec.id,
+      hash: rec.transaction_hash,
+      createdAt: rec.created_at,
+      direction: 'out',
+      counterparty: rec.to,
+      amount: rec.amount,
+    };
+  }
+  return null;
+}
+
+/**
+ * Fetch the connected wallet's recent position-token transfers (in/out) from
+ * Horizon. Filters to the POS asset only, newest first. Returns [] in mock
+ * mode or when the POS asset is not configured.
+ */
+export async function getPositionTokenTransfers(
+  publicKey: string,
+  limit = 20,
+): Promise<PositionTransfer[]> {
+  if (isMockMode()) return [];
+  const asset = parsePositionTokenAsset(POSITION_TOKEN_ASSET);
+  if (!asset) return [];
+  const response = await horizon()
+    .payments()
+    .forAccount(publicKey)
+    .limit(limit)
+    .order('desc')
+    .call();
+  return response.records
+    .filter(rec => isPositionTokenPayment(rec, asset))
+    .map(rec => toPositionTransfer(rec as PositionPaymentRecord, publicKey))
+    .filter((t): t is PositionTransfer => t !== null);
 }

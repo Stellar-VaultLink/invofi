@@ -3,7 +3,9 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, Copy, Check, Send, RefreshCw, Tag, DollarSign } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useLocale, useTranslations } from 'next-intl';
+import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, Copy, Check, Send, RefreshCw, Tag, DollarSign, Layers } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,15 +13,21 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { TableSkeleton } from '@/components/common/LoadingSkeleton';
 import { useToast } from '@/components/ui/use-toast';
-import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken } from '@/lib/contract';
-import { formatAmount, formatDate, interestRateLabel, durationLabel, OFFER_STATUS_COLORS } from '@/lib/utils';
+import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken, type FinancingOffer } from '@/lib/contract';
+import { OFFER_STATUS_COLORS, toStroopsBigInt, interestRateLabel, durationLabel } from '@/lib/utils';
+import { useFormat } from '@/hooks/useFormat';
 import { STROOPS_PER_XLM } from '@/lib/constants';
 import { toCsv, downloadCsv } from '@/lib/csv';
-import { stroopsToUsd } from '@/lib/live/prices';
+import { getXlmUsdInfo, stroopsToUsd } from '@/lib/live/prices';
+import { formatAmount, formatDate } from '@/lib/formatters';
 import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
 import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
+import { PaginationControls } from '@/components/portfolio/PaginationControls';
+import { PositionTokensPanel } from '@/components/portfolio/PositionTokensPanel';
+import { paginate } from '@/lib/pagination';
 import type { LivePosition } from '@/lib/live/types';
+import { toErrorMessage } from '@/lib/errors';
 
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
@@ -32,6 +40,11 @@ const STATUS_ICONS = {
   Repaid:    CheckCircle2,
   Defaulted: AlertCircle,
 } as const;
+
+/** Total repayment due in stroops: principal + simple yield (matches the contract). */
+function offerTotalDue(offer: FinancingOffer): bigint {
+  return toStroopsBigInt(offer.amount) + (toStroopsBigInt(offer.amount) * BigInt(offer.interest_rate)) / 10_000n;
+}
 
 /** Parse a decimal string (e.g. "12.5") into base units for `decimals` places. */
 function toBaseUnits(amount: string, decimals: number): bigint | null {
@@ -50,12 +63,22 @@ function isStellarAddress(addr: string): boolean {
   return /^G[A-Z2-7]{55}$/.test(addr);
 }
 
-/** Compact "updated Xs ago" for the per-row live timestamp. */
-function relativeUpdate(ts: number): string {
-  const diff = Date.now() - ts;
-  if (diff < 1_000) return 'just now';
-  if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
-  return `${Math.floor(diff / 60_000)}m ago`;
+/**
+ * Compact "updated 12s ago" for the per-row live timestamp, in the reader's
+ * language. `Intl.RelativeTimeFormat` supplies the wording and the right
+ * plural form — English's single rule is wrong for Arabic and for CJK.
+ */
+function useRelativeUpdate() {
+  const locale = useLocale();
+  return useCallback(
+    (ts: number): string => {
+      const diffMs = Date.now() - ts;
+      const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'narrow' });
+      if (diffMs < 60_000) return rtf.format(-Math.floor(diffMs / 1000), 'second');
+      return rtf.format(-Math.floor(diffMs / 60_000), 'minute');
+    },
+    [locale],
+  );
 }
 
 /**
@@ -68,6 +91,7 @@ function relativeUpdate(ts: number): string {
  * seller signs the transfer themselves. The board never mediates it.
  */
 function TransferPositionCard() {
+  const t = useTranslations('Portfolio.transfer');
   const { publicKey } = useWallet();
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -115,11 +139,11 @@ function TransferPositionCard() {
     setAddingTrustline(true);
     try {
       await addPositionTrustline(publicKey);
-      toast({ title: 'Trustline added', description: 'Your wallet can now hold POS position tokens.' });
+      toast({ title: t('trustlineAdded'), description: t('trustlineAddedHint') });
       await refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Trustline setup failed';
-      toast({ title: 'Trustline failed', description: msg, variant: 'destructive' });
+      const msg = toErrorMessage(err, t('trustlineFailedHint'));
+      toast({ title: t('trustlineFailed'), description: msg, variant: 'destructive' });
     } finally {
       setAddingTrustline(false);
     }
@@ -133,16 +157,16 @@ function TransferPositionCard() {
     if (!tokenId || !publicKey) return;
     const to = recipient.trim();
     if (!isStellarAddress(to)) {
-      toast({ title: 'Invalid address', description: 'Enter a valid Stellar address (G…).', variant: 'destructive' });
+      toast({ title: t('invalidAddress'), description: t('invalidAddressHint'), variant: 'destructive' });
       return;
     }
     const units = toBaseUnits(amount, decimals);
     if (units === null || units <= 0n) {
-      toast({ title: 'Invalid amount', description: `Enter an amount with at most ${decimals} decimal places.`, variant: 'destructive' });
+      toast({ title: t('invalidAmount'), description: t('invalidAmountHint', { decimals }), variant: 'destructive' });
       return;
     }
     if (balance !== null && units > balance) {
-      toast({ title: 'Insufficient balance', description: 'You do not hold enough position tokens for this transfer.', variant: 'destructive' });
+      toast({ title: t('insufficient'), description: t('insufficientHint'), variant: 'destructive' });
       return;
     }
     setBusy(true);
@@ -151,22 +175,24 @@ function TransferPositionCard() {
       // transfer can credit them. Pre-check so the failure is friendly.
       if (!(await hasPositionTrustline(to))) {
         toast({
-          title: 'Recipient needs a trustline',
-          description:
-            'The recipient wallet has no POS trustline yet. Ask them to add one (any wallet or this app) before transferring.',
+          title: t('recipientTrustline'),
+          description: t('recipientTrustlineHint'),
           variant: 'destructive',
         });
         setBusy(false);
         return;
       }
       await transferPositionToken(tokenId, publicKey, to, units);
-      toast({ title: 'Position transferred', description: `Sent ${amount} position tokens to ${to.slice(0, 6)}…${to.slice(-4)}.` });
+      toast({
+        title: t('transferred'),
+        description: t('transferredHint', { amount, recipient: `${to.slice(0, 6)}…${to.slice(-4)}` }),
+      });
       setRecipient('');
       setAmount('');
       await refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Transaction failed';
-      toast({ title: 'Transfer failed', description: msg, variant: 'destructive' });
+      const msg = toErrorMessage(err, t('transferFailedHint'));
+      toast({ title: t('transferFailed'), description: msg, variant: 'destructive' });
     } finally {
       setBusy(false);
     }
@@ -181,74 +207,72 @@ function TransferPositionCard() {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Send className="h-4 w-4 text-blue-500" />
-            <h2 className="text-lg font-semibold text-foreground">Transfer Position</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
           </div>
-          <Button size="sm" variant="ghost" onClick={refresh} disabled={loading} aria-label="Refresh balance">
+          <Button size="sm" variant="ghost" onClick={refresh} disabled={loading} aria-label={t('refreshBalance')}>
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mb-2">
-          Position tokens represent your claim on financed invoices (1 token = 1 base unit of
-          principal). Send them to another Stellar wallet to transfer the position.
-        </p>
+        <p className="text-xs text-muted-foreground mb-2">{t('description')}</p>
         <p className="text-xs text-muted-foreground mb-4">
-          <Tag className="inline h-3 w-3 mr-1" />
-          Looking for a buyer?{' '}
-          <Link href="/marketplace/positions" className="text-blue-600 hover:underline">
-            List the position on the secondary board
-          </Link>{' '}
-          — settlement still happens here, with this transfer.
+          <Tag className="inline h-3 w-3 me-1" />
+          {t.rich('secondaryBoard', {
+            link: chunks => (
+              <Link href="/marketplace/positions" className="text-blue-600 hover:underline">
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
         {prefilledAmount && (
           <p className="text-xs text-blue-600 mb-4" role="status">
-            Amount prefilled from your listing ({prefilledAmount} tokens). Enter the buyer&apos;s
-            address to settle.
+            {t('prefilled', { amount: prefilledAmount })}
           </p>
         )}
 
         {!publicKey ? (
-          <p className="text-sm text-muted-foreground">Connect a wallet to view and transfer positions.</p>
+          <p className="text-sm text-muted-foreground">{t('connectWallet')}</p>
         ) : tokenId === null && !loading ? (
-          <p className="text-sm text-muted-foreground">
-            Position tokens are not configured on this deployment yet.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('notConfigured')}</p>
         ) : hasTrustline === false ? (
           <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center gap-3">
-            <p className="text-sm text-amber-800 dark:text-amber-300 flex-1">
-              Position tokens are Stellar assets — add a POS trustline once to
-              receive and transfer them.
-            </p>
+            <p className="text-sm text-amber-800 dark:text-amber-300 flex-1">{t('needsTrustline')}</p>
             <Button size="sm" onClick={setupTrustline} disabled={addingTrustline}>
-              {addingTrustline ? 'Adding…' : 'Add POS trustline'}
+              {addingTrustline ? t('adding') : t('addTrustline')}
             </Button>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-[1fr_auto] items-end">
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Recipient address</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('recipientLabel')}</label>
                 <input
                   value={recipient}
                   onChange={e => setRecipient(e.target.value)}
                   placeholder="G…"
+                  aria-label={t('recipientLabel')}
+                  dir="ltr"
                   className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  Amount <span className="text-muted-foreground/70">(available: {balanceLabel})</span>
+                  {t('amountLabel')}{' '}
+                  <span className="text-muted-foreground/70">{t('available', { balance: balanceLabel })}</span>
                 </label>
                 <input
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
                   placeholder="0.0"
+                  aria-label={t('amountLabel')}
+                  dir="ltr"
                   inputMode="decimal"
                   className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>
             </div>
             <Button onClick={submit} disabled={busy || loading || balance === null || hasTrustline !== true}>
-              {busy ? 'Transferring…' : 'Transfer'}
+              {busy ? t('transferring') : t('transfer')}
             </Button>
           </div>
         )}
@@ -258,6 +282,7 @@ function TransferPositionCard() {
 }
 
 function CopyId({ id }: { id: string }) {
+  const t = useTranslations('Common');
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -269,10 +294,12 @@ function CopyId({ id }: { id: string }) {
   return (
     <button
       onClick={copy}
-      title={copied ? 'Copied!' : 'Copy ID'}
+      title={copied ? t('copied') : t('copy')}
       className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-foreground group"
     >
-      <span className="truncate max-w-[140px]">{id}</span>
+      {/* Contract IDs are base32 identifiers — force LTR so they are not
+          visually reversed inside an RTL layout. */}
+      <span className="truncate max-w-[140px]" dir="ltr">{id}</span>
       {copied
         ? <Check className="h-3 w-3 text-green-500 shrink-0" />
         : <Copy className="h-3 w-3 opacity-0 group-hover:opacity-60 shrink-0 transition-opacity" />
@@ -283,9 +310,12 @@ function CopyId({ id }: { id: string }) {
 
 /** Live position row: value + yields + streaming repayment progress. */
 function PositionCard({ offer }: { offer: LivePosition }) {
+  const t = useTranslations('Portfolio.position');
+  const tStatus = useTranslations('Status');
+  const format = useFormat();
+  const relativeUpdate = useRelativeUpdate();
   const Icon = STATUS_ICONS[offer.status] ?? Clock;
   const active = offer.status === 'Accepted' || offer.status === 'Financed';
-  const pct = Math.round(offer.repaymentProgress * 100);
 
   return (
     <Card key={offer.id}>
@@ -306,21 +336,21 @@ function PositionCard({ offer }: { offer: LivePosition }) {
                 </a>
               </div>
               <p className="text-xs text-muted-foreground">
-                {interestRateLabel(offer.interest_rate)} · {durationLabel(offer.duration)}
-                {offer.funded_at > 0 && ` · Funded ${formatDate(offer.funded_at)}`}
+                {format.percent(offer.interest_rate)} · {t('days', { count: Math.round(offer.duration / 86_400) })}
+                {offer.funded_at > 0 && ` · ${t('funded', { date: format.date(offer.funded_at) })}`}
               </p>
             </div>
           </div>
-          <div className="text-right flex items-center gap-3 shrink-0">
+          <div className="text-end flex items-center gap-3 shrink-0">
             <div>
               <p className="text-sm font-semibold font-mono text-foreground">
-                {formatAmount(offer.amount)} {offer.currency}
+                {format.currency(offer.amount, offer.currency)}
               </p>
               <p className="text-xs text-muted-foreground font-mono">
-                ≈ ${offer.liveValueUsd.toFixed(2)} USD
+                ≈ {format.number(offer.liveValueUsd, { style: 'currency', currency: 'USD' })}
               </p>
             </div>
-            <Badge className={OFFER_STATUS_COLORS[offer.status]}>{offer.status}</Badge>
+            <Badge className={OFFER_STATUS_COLORS[offer.status]}>{tStatus(offer.status)}</Badge>
           </div>
         </div>
 
@@ -328,28 +358,41 @@ function PositionCard({ offer }: { offer: LivePosition }) {
           <>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">APY</p>
-                <p className="text-sm font-semibold font-mono text-foreground">{offer.apy.toFixed(2)}%</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{t('apy')}</p>
+                <p className="text-sm font-semibold font-mono text-foreground">
+                  {format.number(offer.apy / 100, { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Earned to date</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{t('earnedToDate')}</p>
                 <p className="text-sm font-semibold font-mono text-foreground">
-                  {formatAmount(offer.earnedToDate)} {offer.currency}
+                  {format.currency(offer.earnedToDate, offer.currency)}
                   <span className="text-xs text-muted-foreground font-normal">
-                    {' '}≈ ${stroopsToUsd(offer.earnedToDate, offer.currency).toFixed(2)}
+                    {' '}≈ {format.number(stroopsToUsd(offer.earnedToDate, offer.currency), { style: 'currency', currency: 'USD' })}
                   </span>
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Repayment</p>
-                <p className="text-sm font-semibold font-mono text-foreground">{pct}% repaid</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{t('repayment')}</p>
+                <p className="text-sm font-semibold font-mono text-foreground">
+                  {t('percentRepaid', { percent: format.number(offer.repaymentProgress, { style: 'percent' }) })}
+                </p>
               </div>
             </div>
             <div className="mt-3">
-              <RepaymentProgress value={offer.repaymentProgress} label={`${pct}% of total due repaid`} />
+              <RepaymentProgress
+                value={offer.repaymentProgress}
+                label={t('progressLabel', { percent: format.number(offer.repaymentProgress, { style: 'percent' }) })}
+              />
               <p className="text-xs mt-1 text-muted-foreground">
-                {formatAmount(offer.amount_repaid)} repaid · {formatAmount(offer.remaining)} remaining ·{' '}
-                <span className="text-muted-foreground/70">updated {relativeUpdate(offer.updatedAt)}</span>
+                {t('repaidRemaining', {
+                  repaid: format.currency(offer.amount_repaid, offer.currency),
+                  remaining: format.currency(offer.remaining, offer.currency),
+                })}{' '}
+                ·{' '}
+                <span className="text-muted-foreground/70">
+                  {t('updated', { when: relativeUpdate(offer.updatedAt) })}
+                </span>
               </p>
             </div>
           </>
@@ -360,6 +403,9 @@ function PositionCard({ offer }: { offer: LivePosition }) {
 }
 
 export default function PortfolioPage() {
+  const t = useTranslations('Portfolio');
+  const format = useFormat();
+  const relativeUpdate = useRelativeUpdate();
   const {
     positions,
     loading,
@@ -368,30 +414,43 @@ export default function PortfolioPage() {
     refresh,
   } = useLivePortfolio();
 
-  // An offer is active while it is financing an invoice: from acceptance until
-  // it is fully repaid. Partial repayments flip offers to Financed on-chain,
-  // so both statuses count as deployed capital.
-  const active = positions.filter(o => o.status === 'Accepted' || o.status === 'Financed');
-  const repaid = positions.filter(o => o.status === 'Repaid');
-  const pending = positions.filter(o => o.status === 'Pending');
+  // Client-side pagination (issue #190): the contract layer still returns the
+  // full list; we slice it for rendering so a wallet with hundreds of
+  // positions stays smooth. Page size is user-adjustable, and each page is
+  // virtualized below so even 100-row pages only mount visible cards.
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const totalValueUsd = active.reduce((sum, o) => sum + o.liveValueUsd, 0);
-  const totalEarnedToDateUsd = active.reduce(
-    (sum, o) => sum + stroopsToUsd(o.earnedToDate, o.currency),
-    0,
-  );
-  // Repaid positions may be in different currencies — never sum raw yields as
-  // if they were the same asset. Convert each to USD first.
+  // Offer lists derived from live portfolio positions
+  const offers = positions;
+
+  const active = offers.filter(o => o.status === 'Accepted' || o.status === 'Financed');
+  const repaid = offers.filter(o => o.status === 'Repaid');
+  const pending = offers.filter(o => o.status === 'Pending');
+
+  const totalDeployed = active.reduce((sum, o) => sum + Number(o.amount) / STROOPS_PER_XLM, 0);
   const totalEarned = repaid.reduce((sum, o) => {
-    const yield_ = o.totalDue - o.amount;
-    return sum + stroopsToUsd(yield_, o.currency);
+    const principal = Number(o.amount) / STROOPS_PER_XLM;
+    const yield_ = principal * (o.interest_rate / 10000);
+    return sum + yield_;
   }, 0);
 
+  // USD pricing for summary card
+  const xlmUsdInfo = getXlmUsdInfo();
+  const totalValueUsd = offers.reduce((sum, o) => sum + stroopsToUsd(toStroopsBigInt(o.amount), o.currency), 0);
+  const currencyTotalsUsd: [string, number][] = Object.entries(
+    offers.reduce<Record<string, number>>((acc, o) => {
+      acc[o.currency] = (acc[o.currency] ?? 0) + stroopsToUsd(toStroopsBigInt(o.amount), o.currency);
+      return acc;
+    }, {}),
+  );
+  const totalEarnedToDateUsd = offers.reduce((sum, o) => sum + stroopsToUsd(o.earnedToDate, o.currency), 0);
+  const fractionalCount: number | null = offers.length > 0 ? offers.length : null;
+
   const exportOffersCsv = () => {
-    const rows = positions.map(o => ({
+    const rows = offers.map(o => ({
       ...o,
       amount: Number(o.amount) / STROOPS_PER_XLM,
-      amount_repaid: Number(o.amount_repaid) / STROOPS_PER_XLM,
       funded_at: o.funded_at > 0 ? new Date(o.funded_at * 1000).toISOString().slice(0, 10) : '',
     }));
     const csv = toCsv(rows, [
@@ -410,85 +469,122 @@ export default function PortfolioPage() {
   return (
     <AuthGuard>
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+        <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Your Portfolio</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Track your financing offers and returns — updates stream in live
+              {t('description')}
               {lastUpdatedAt
-                ? <span className="text-muted-foreground/70"> · updated {relativeUpdate(lastUpdatedAt)}</span>
+                ? (
+                  <span className="text-muted-foreground/70">
+                    {' '}· {t('position.updated', { when: relativeUpdate(lastUpdatedAt) })}
+                  </span>
+                )
                 : null}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <ConnectionStatus />
-            <Button variant="outline" size="sm" onClick={refresh} aria-label="Refresh portfolio">
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refresh
+            <Button variant="outline" size="sm" onClick={refresh} aria-label={t('refresh')}>
+              <RefreshCw className="me-1.5 h-3.5 w-3.5" /> {t('refresh')}
             </Button>
             {positions.length > 0 && (
               <Button variant="outline" size="sm" onClick={exportOffersCsv}>
-                <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
+                <Download className="me-1.5 h-3.5 w-3.5" /> {t('exportCsv')}
               </Button>
             )}
           </div>
         </div>
-
-        {error && (
-          <div className="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
-            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
-          </div>
-        )}
 
         {/* Summary stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="pt-5">
               <TrendingUp className="h-4 w-4 text-blue-500 mb-2" />
-              <p className="text-2xl font-bold text-foreground">{active.length}</p>
-              <p className="text-xs text-muted-foreground">Active Investments</p>
+              <p className="text-2xl font-bold text-foreground">{format.number(active.length)}</p>
+              <p className="text-xs text-muted-foreground">{t('stats.active')}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5">
               <Clock className="h-4 w-4 text-yellow-500 mb-2" />
-              <p className="text-2xl font-bold text-foreground">{pending.length}</p>
-              <p className="text-xs text-muted-foreground">Pending Offers</p>
+              <p className="text-2xl font-bold text-foreground">{format.number(pending.length)}</p>
+              <p className="text-xs text-muted-foreground">{t('stats.pending')}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5">
               <CheckCircle2 className="h-4 w-4 text-green-500 mb-2" />
-              <p className="text-2xl font-bold text-foreground">{repaid.length}</p>
-              <p className="text-xs text-muted-foreground">Completed</p>
+              <p className="text-2xl font-bold text-foreground">{format.number(repaid.length)}</p>
+              <p className="text-xs text-muted-foreground">{t('stats.completed')}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5">
               <DollarSign className="h-4 w-4 text-muted-foreground mb-2" />
-              <p className="text-lg font-bold text-foreground font-mono">${totalValueUsd.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">Portfolio Value (USD)</p>
+              <p className="text-lg font-bold text-foreground font-mono">
+                {format.number(totalValueUsd, { style: 'currency', currency: 'USD' })}
+              </p>
+              <p className="text-xs text-muted-foreground">{t('stats.value')}</p>
+              {currencyTotalsUsd.length > 0 && (
+                <ul className="mt-2 space-y-1 text-xs text-muted-foreground font-mono">
+                  {currencyTotalsUsd.map(([currency, usd]) => (
+                    <li key={currency} className="flex items-center justify-between gap-3">
+                      <span>{currency}</span>
+                      <span>≈ {format.number(usd, { style: 'currency', currency: 'USD' })}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-[11px] text-muted-foreground/70 mt-2 leading-relaxed">
+                {t('stats.priceNote', {
+                  price: format.number(xlmUsdInfo.price, { maximumFractionDigits: 4 }),
+                  source: t(`stats.priceSource.${xlmUsdInfo.source}`),
+                  asOf:
+                    xlmUsdInfo.updatedAt > 0
+                      ? t('stats.priceAsOf', {
+                          time: format.date(xlmUsdInfo.updatedAt, {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }),
+                        })
+                      : '',
+                })}
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Live earnings strip */}
-        {(active.length > 0 || repaid.length > 0) && (
-          <div className="mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-            <div className="flex flex-wrap gap-x-8 gap-y-1">
+        {/* Fractional positions summary + link
+            Rendered only after a successful fetch (fractionalCount !== null).
+            While loading (null) the panel is hidden so the UI never shows a
+            misleading "0 fractional positions" count. */}
+        {fractionalCount !== null && (
+          <div className="mb-6 flex items-center justify-between rounded-xl border bg-card px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Layers className="h-5 w-5 text-primary shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-green-800 dark:text-green-300">
-                  Est. yield earned to date: ${totalEarnedToDateUsd.toFixed(2)}
+                  {t('yield.estimated', {
+                    amount: format.number(totalEarnedToDateUsd, { style: 'currency', currency: 'USD' }),
+                  })}
                 </p>
-                <p className="text-xs text-green-600 dark:text-green-500">Accruing in real time across {active.length} active position{active.length !== 1 ? 's' : ''}</p>
+                {/* ICU plural: `count` selects the form, so Arabic supplies
+                    its six and Japanese its one. */}
+                <p className="text-xs text-green-600 dark:text-green-500">
+                  {t('yield.accruing', { count: active.length })}
+                </p>
               </div>
               {repaid.length > 0 && (
                 <div>
                   <p className="text-sm font-semibold text-green-800 dark:text-green-300">
-                    Realized yield: ${totalEarned.toFixed(2)} USD
+                    {t('yield.realized', {
+                      amount: format.number(totalEarned, { style: 'currency', currency: 'USD' }),
+                    })}
                   </p>
-                  <p className="text-xs text-green-600 dark:text-green-500">Across {repaid.length} repaid offer{repaid.length !== 1 ? 's' : ''}</p>
+                  <p className="text-xs text-green-600 dark:text-green-500">
+                    {t('yield.acrossRepaid', { count: repaid.length })}
+                  </p>
                 </div>
               )}
             </div>
@@ -499,29 +595,75 @@ export default function PortfolioPage() {
         {loading && <TableSkeleton rows={4} />}
 
         {/* Empty state */}
-        {!loading && positions.length === 0 && (
+        {!loading && offers.length === 0 && (
           <div className="text-center py-20 border-2 border-dashed border-border rounded-xl">
             <TrendingUp className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground mb-4">No financing offers yet.</p>
+            <p className="text-muted-foreground mb-4">{t('empty.title')}</p>
             <Link
               href="/marketplace"
               className="text-blue-600 hover:underline text-sm font-medium"
             >
-              Browse the marketplace →
+              {t('empty.browse')} <span aria-hidden className="rtl:hidden">→</span>
+              <span aria-hidden className="hidden rtl:inline">←</span>
             </Link>
           </div>
         )}
 
         <div className="space-y-3">
-          {positions.map(offer => (
-            <PositionCard key={offer.id} offer={offer} />
-          ))}
+          {offers.map(offer => {
+            const Icon = STATUS_ICONS[offer.status] ?? Clock;
+            return (
+              <Card key={offer.id}>
+                <CardContent className="flex items-center justify-between py-4">
+                  <div className="flex items-center gap-4">
+                    <Icon className="h-5 w-5 text-muted-foreground shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <CopyId id={offer.invoice_id} />
+                        <a
+                          href={`https://stellar.expert/explorer/${NETWORK}/contract/${offer.invoice_id}`}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="text-xs text-blue-500 hover:underline"
+                        >
+                          ↗
+                        </a>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {interestRateLabel(offer.interest_rate)} · {durationLabel(offer.duration)}
+                        {offer.funded_at > 0 && ` · Funded ${formatDate(offer.funded_at)}`}
+                      </p>
+                      {(offer.status === 'Accepted' || offer.status === 'Financed') &&
+                        toStroopsBigInt(offer.amount_repaid) > 0n && (
+                        <p className="text-xs mt-1 text-green-600">
+                          {formatAmount(toStroopsBigInt(offer.amount_repaid))} repaid ·{' '}
+                          {formatAmount(offerTotalDue(offer) - toStroopsBigInt(offer.amount_repaid))} remaining
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right flex items-center gap-3">
+                    <div>
+                      <p className="text-sm font-semibold font-mono text-foreground">
+                        {formatAmount(offer.amount)} {offer.currency}
+                      </p>
+                    </div>
+                    <Badge className={OFFER_STATUS_COLORS[offer.status]}>{offer.status}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* useSearchParams (the listing hand-off prefill) needs a Suspense boundary. */}
         <Suspense fallback={null}>
           <TransferPositionCard />
         </Suspense>
+
+        {/* Position token balance + transfer history (issue #127). The
+            transfer form lives in the card above; this panel links to it. */}
+        <PositionTokensPanel />
       </div>
     </AuthGuard>
   );

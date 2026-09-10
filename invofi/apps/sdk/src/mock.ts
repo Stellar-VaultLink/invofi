@@ -30,7 +30,7 @@
 //     `./testing.ts` (re-exported from the package root) for composing
 //     custom pre-seeded data.
 
-import type { InvofiClient, InvofiClientMethods } from './client';
+import type { InvofiClient, InvofiClientMethods, SendCall, SendEnvelope } from './client';
 import type { Currency, FinancingOffer, Invoice } from './types';
 import type { CacheEntry, CacheHandle, CacheScope, StaleWhileRevalidateResult } from './cache';
 import { ContractError, ContractErrorType } from './errors';
@@ -613,6 +613,39 @@ export function createMockClient(options: MockClientOptions = {}): MockClient {
       // Real batch execution is network-dependent and cannot be simulated
       // without a Soroban RPC endpoint.
       return calls.map(() => xdr.ScVal.scvVoid());
+    },
+
+    // ── Typed envelope wrapper (#188) — parity with the real client ─────────
+    // `send()` returns a `SendEnvelope` instead of throwing. Injected failures
+    // (via `failNext`/`failures`) surface as `{ ok: false, error }`; otherwise
+    // a void result is returned, mirroring `batch()`'s in-memory semantics.
+    send: async <T = xdr.ScVal>(
+      call: SendCall,
+      sourceAddress: string,
+      decode?: (val: xdr.ScVal) => T,
+    ): Promise<SendEnvelope<T>> => {
+      validateStellarAddress(sourceAddress, 'sourceAddress');
+      const injected = takeFailure('send');
+      if (injected) {
+        // Match the real client's contract: decoded domain failures appear
+        // inside the envelope, typed as `InvofiError` (a `ContractError`).
+        const error =
+          injected instanceof ContractError
+            ? injected
+            : new ContractError(
+                -1,
+                ContractErrorType.UNKNOWN,
+                injected.message || 'Simulated send failure',
+                undefined,
+                injected,
+              );
+        return { ok: false, error };
+      }
+      // As with `batch()`, in-memory simulation returns a void result. The
+      // decode mapper (when supplied) is still invoked so the calling
+      // contract — decode always runs on success — matches the real client.
+      const voidVal = xdr.ScVal.scvVoid();
+      return { ok: true, value: decode ? decode(voidVal) : (voidVal as unknown as T) };
     },
 
     // ── Offline cache (Task 218) ─────────────────────────────────────────────

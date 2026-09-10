@@ -1,9 +1,11 @@
+import { memo } from 'react';
 import Link from 'next/link';
 import { Calendar, DollarSign, ArrowRight, ExternalLink, Clock, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatAmount, formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
+import { formatAmount } from '@/lib/formatters';
+import { formatDate, formatAddress, INVOICE_STATUS_COLORS } from '@/lib/utils';
 import type { Invoice } from '@/types';
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
@@ -40,7 +42,7 @@ interface MarketplaceCardProps {
   invoice: Invoice;
 }
 
-export function MarketplaceCard({ invoice }: MarketplaceCardProps) {
+export const MarketplaceCard = memo(function MarketplaceCard({ invoice }: MarketplaceCardProps) {
   return (
     <Card className="flex flex-col hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all">
       <CardContent className="pt-5 flex-1 flex flex-col">
@@ -62,10 +64,10 @@ export function MarketplaceCard({ invoice }: MarketplaceCardProps) {
         </div>
 
         <div className="space-y-2 flex-1 mb-4">
-          <div className="flex items-center gap-1.5 text-foreground">
+          <div className="flex items-center gap-1.5 text-foreground min-w-0">
             <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="font-semibold text-lg">
-              {formatAmount(invoice.amount)} {invoice.currency}
+            <span className="font-semibold text-lg truncate">
+              {formatAmount(invoice.amount, invoice.currency)}
             </span>
           </div>
 
@@ -74,7 +76,7 @@ export function MarketplaceCard({ invoice }: MarketplaceCardProps) {
             <DueLabel dueDateUnix={invoice.due_date} />
           </div>
 
-          <p className="text-xs text-muted-foreground font-mono">
+          <p className="text-xs text-muted-foreground font-mono truncate">
             Originator:{' '}
             <a
               href={`${STELLAR_EXPERT}/account/${invoice.originator}`}
@@ -89,10 +91,10 @@ export function MarketplaceCard({ invoice }: MarketplaceCardProps) {
 
         <Button asChild size="sm" className="w-full">
           <Link href={`/invoices/${invoice.id}`}>
-            Make Offer <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            Make Offer <ArrowRight className="ms-1.5 h-3.5 w-3.5 rtl:rotate-180" />
           </Link>
         </Button>
       </CardContent>
     </Card>
   );
-}
+});

@@ -6,6 +6,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { toErrorMessage } from '@/lib/errors';
 import { CardSkeleton } from '@/components/common/LoadingSkeleton';
 import { InitiateTransactionForm } from '@/components/multisig/InitiateTransactionForm';
 import { PendingTransactionCard } from '@/components/multisig/PendingTransactionCard';
@@ -54,7 +55,7 @@ export default function TransactionsPage() {
       await approve.mutateAsync({ tx, approverAddress: publicKey, approverId: userId });
       toast({ title: 'Approval recorded', description: 'Your signature was added to the transaction.' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not record your approval';
+      const msg = toErrorMessage(err, 'Could not record your approval');
       toast({ title: 'Approval failed', description: msg, variant: 'destructive' });
     } finally {
       setBusyId(null);
@@ -72,7 +73,7 @@ export default function TransactionsPage() {
           : 'Submitted to the network.',
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not submit the transaction';
+      const msg = toErrorMessage(err, 'Could not submit the transaction');
       toast({ title: 'Execution failed', description: msg, variant: 'destructive' });
     } finally {
       setBusyId(null);
@@ -86,7 +87,7 @@ export default function TransactionsPage() {
       await reject.mutateAsync(tx.id);
       toast({ title: 'Transaction rejected', description: 'The request was removed from the queue.' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not reject the transaction';
+      const msg = toErrorMessage(err, 'Could not reject the transaction');
       toast({ title: 'Rejection failed', description: msg, variant: 'destructive' });
     } finally {
       setBusyId(null);
@@ -113,7 +114,7 @@ export default function TransactionsPage() {
           </div>
           {publicKey && (
             <Button size="sm" variant="outline" onClick={() => setShowForm(v => !v)}>
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              <Plus className="me-1.5 h-3.5 w-3.5" />
               {showForm ? 'Close' : 'New transaction'}
             </Button>
           )}

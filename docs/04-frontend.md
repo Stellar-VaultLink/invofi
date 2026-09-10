@@ -16,6 +16,15 @@ The public homepage. No authentication required.
 - Call-to-action directing businesses and lenders to register
 - Footer with GitHub link
 
+**Demo mode (issue #107):** when `NEXT_PUBLIC_DEMO_MODE=1` (or the app runs on
+the offline mock stack, `NEXT_PUBLIC_USE_MOCK=1`) the hero shows a
+**"Try the demo"** button linking to `/portfolio`, labeled as testnet-only. The
+demo experience reuses the seeded offline mock data — invoices, offers, and a
+position token — so a visiting reviewer can reach a portfolio containing seeded
+data without creating an account or connecting a wallet. See
+[`src/lib/mock-mode.ts`](invofi/apps/frontend/src/lib/mock-mode.ts) and
+[`docs/08-environment-variables.md`](./08-environment-variables.md).
+
 ### Login — `/auth/login`
 
 Two sign-in methods on one page:

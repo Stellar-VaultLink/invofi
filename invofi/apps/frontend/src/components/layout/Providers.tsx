@@ -3,7 +3,19 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { WalletProvider } from '@/components/auth/WalletProvider';
-import { NotificationProvider } from '@/components/notifications/NotificationProvider';
+import { ThemeProvider } from '@/components/layout/ThemeProvider';
+import { useNotificationSeeder } from '@/hooks/useNotifications';
+
+/**
+ * Mounts the notification seeder once at the app root. It subscribes to the
+ * global protocol event stream and persists user-facing notifications
+ * (issue #179). Rendered inside QueryClientProvider so react-query hooks
+ * have a client available.
+ */
+function NotificationSeeder() {
+  useNotificationSeeder();
+  return null;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -14,11 +26,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <WalletProvider>
-        <NotificationProvider>{children}</NotificationProvider>
-      </WalletProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="theme">
+      <QueryClientProvider client={queryClient}>
+        <WalletProvider>
+          {children}
+          <NotificationSeeder />
+        </WalletProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

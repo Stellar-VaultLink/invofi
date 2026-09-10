@@ -1,6 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/utils/supabase/middleware';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import {
+  LOCALE_COOKIE,
+  LOCALE_COOKIE_MAX_AGE,
+  isLocale,
+  negotiateLocale,
+} from '@/i18n/config';
 
 /**
  * Rate-limit config for auth and wallet-sign endpoints (roadmap v0.4).
@@ -53,7 +59,31 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return await updateSession(request);
+  const response = await updateSession(request);
+  persistNegotiatedLocale(request, response);
+  return response;
+}
+
+/**
+ * Browser-language auto-detection (issue #227).
+ *
+ * On a reader's first request there is no locale cookie, so the best supported
+ * match for their `Accept-Language` header is written to one. Doing it here
+ * rather than in a Server Component means the very first HTML response already
+ * carries the right `lang`/`dir`, so an Arabic reader never sees a flash of
+ * left-to-right English.
+ *
+ * An existing cookie is never overwritten: once a reader has chosen a language
+ * in Settings, their browser's header must not silently override it.
+ */
+function persistNegotiatedLocale(request: NextRequest, response: NextResponse): void {
+  if (isLocale(request.cookies.get(LOCALE_COOKIE)?.value)) return;
+
+  response.cookies.set(LOCALE_COOKIE, negotiateLocale(request.headers.get('accept-language')), {
+    maxAge: LOCALE_COOKIE_MAX_AGE,
+    sameSite: 'lax',
+    path: '/',
+  });
 }
 
 export const config = {

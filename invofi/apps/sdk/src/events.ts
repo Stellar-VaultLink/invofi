@@ -921,21 +921,23 @@ export async function replayEvents(
 
   const rpcServer = new SorobanRpc.Server(rpcUrl, { allowHttp: rpcUrl.startsWith('http://') });
 
-  let targetTo = to;
+  let targetTo: number | undefined = to;
   if (targetTo === undefined) {
     const latestLedgerRes = await rpcServer.getLatestLedger();
     targetTo = latestLedgerRes.sequence;
-    if (targetTo < from) {
+    if (targetTo! < from) {
       return [];
     }
   }
+  // After the block above, targetTo is guaranteed to be defined.
+  const targetToLedger = targetTo as number;
 
   let currentWindowStart = from;
   const allEvents: ProtocolEvent[] = [];
   const seenPagingTokens = new Set<string>();
 
-  while (currentWindowStart <= targetTo) {
-    const currentWindowEnd = Math.min(currentWindowStart + batchSizeLedgers - 1, targetTo);
+  while (currentWindowStart <= targetToLedger) {
+    const currentWindowEnd = Math.min(currentWindowStart + batchSizeLedgers - 1, targetToLedger);
     let cursor: string | undefined = undefined;
     let hasMorePagesInWindow = true;
     const pageStartLedger = currentWindowStart;
@@ -984,7 +986,7 @@ export async function replayEvents(
           ? rawEvent.ledger
           : parseInt(String(rawEvent.ledger ?? '0'), 10);
 
-        if (rawLedger > targetTo) {
+        if (rawLedger > targetToLedger) {
           hasMorePagesInWindow = false;
           break;
         }

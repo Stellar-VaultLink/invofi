@@ -10,6 +10,47 @@
 > [trustless-work-integration.md → Part 7](./trustless-work-integration.md#part-7--bug-report-to-trustless-work-2026-09-09)
 > so the TW conversation has a single paper trail.
 
+> **⚠️ Re-verified 2026-09-10 — bug REPRODUCED on a brand-new escrow.**
+> Everything below remains accurate; a second, independent repro with fresh
+> tx hashes is in the [Re-verification section](#re-verification-2026-09-10--bug-still-live).
+> A **second defect** was also confirmed: their indexer did not index a new
+> escrow deploy for 40+ minutes, so `fund-escrow` via the API returns
+> "Escrow not found" for escrows that exist on-chain.
+
+---
+
+## Re-verification (2026-09-10) — bug still live
+
+**Method:** deployed a completely fresh single-release escrow through TW's
+own `/deployer/single-release` on 2026-09-10 (~00:08 UTC), drove it to the
+releasable state directly on-chain, and re-attempted the release build.
+
+| Item | Value |
+|---|---|
+| Escrow contract | `CDNY5U5VFWZXX5DCCQIWY2Q5ZOBD3LSVUQQWHALYDLZOGAR7QUP3EMR3` |
+| Engagement | `invofi-e2e-escrow-003-o1` · 250 units · platformFee 0.5 |
+| Deploy tx (lender) | `d880ab0edfc2a4369196d6083ad5cf7a7171efdbb7b49daefc5f59494c1f9629` |
+| Fund tx (250 units, direct on-chain) | `c014105d2cd04279c2036432b2311ec6b64730039e41015a5a5bc61d66e1cbf2` |
+| Approve milestone (platform) | `9d6eec45697724dbc05b6afcaba9d67c89eafd7086ad05b6f387acf3e222660f` |
+| Milestone → completed (originator) | `62918df22545e14feadb1f2e22563003e337eec1f6a6437b5f5ab166da304a32` |
+| Release build attempt (API) | **HTTP 400 "Escrow already in dispute"** at 00:47:05 and 00:48:03 UTC |
+| Direct release tx (platform) | `5058b6f7a9490ce32ddaaa2b3b95e5f8a2515bdfeda029747107b9d2095a57f4` |
+
+- On-chain state at both failed attempts (`get_escrow`): `flags.disputed =
+  false`, `flags.released = false`, milestone `approved: true`, `status:
+  "completed"` — provably releasable; the contract itself agreed (direct
+  `release_funds` succeeded immediately and moved funds correctly:
+  receiver +248, platform fee +1.25, TW fee +0.75, `tw_release` event).
+- Variants tried: retry after 30s (same 400), and passing the escrow
+  factory/base ID instead ("Escrow not found"). No API path to release.
+- **Second defect (indexer):** TW's read model did not index the new
+  escrow for 40+ minutes after its successful deploy tx —
+  `helper/get-escrows-by-signer` omitted it and `fund-escrow` returned
+  "Escrow not found". On 2026-09-09 the same deploy path indexed in <60s.
+  We funded via direct contract invocation instead. (The read model also
+  still shows yesterday's escrow 002 as `released: false` although
+  on-chain `released: true` since 2026-09-09.)
+
 ---
 
 ## Message to send (copy everything below this line as-is)

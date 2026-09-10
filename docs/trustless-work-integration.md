@@ -5,7 +5,7 @@
 
 ---
 
-## Part 0 — Current status (read this first, updated 2026-09-09)
+## Part 0 — Current status (read this first, updated 2026-09-10)
 
 ### What is DONE and merged
 
@@ -121,13 +121,30 @@ To go live, complete these in order:
    mis-reports "Escrow already in dispute"** for a fully releasable escrow
    (on-chain flags: `disputed:false`, milestone `approved+completed`,
    balance > 0 — verified via `validateOnChain=true` and a direct
-   `get_escrow` contract read). Workaround used for the verification:
+   `get_escrow` contract read). **Re-verified 2026-09-10: still live —**
+   reproduced on a brand-new escrow deployed through their own factory
+   (`CDNY5U5V…EMR3`, engagement `invofi-e2e-escrow-003-o1`); the API
+   rejected the release build at 00:47 and 00:48 UTC while the direct
+   on-chain `release_funds` succeeded immediately and moved all funds
+   correctly. Workaround used for the verification:
    invoke `release_funds(release_signer, trustless_work_address =
    escrow factory)` directly on the escrow contract. **Impact on #381:
    the UI release step needs either this TW fix or the same direct
    contract invocation.** Full bug report drafted for their team:
-   **[Part 7 — Bug report (2026-09-09)](#part-7--bug-report-to-trustless-work-2026-09-09)**.
-5. The escrow's **`get_escrow` on-chain read is authoritative** and
+   **[Part 7 — Bug report (2026-09-09)](#part-7--bug-report-to-trustless-work-2026-09-09)**,
+   re-verification evidence in the
+   [bug report's Re-verification section](./trustless-work-bug-report.md#re-verification-2026-09-10--bug-still-live).
+5. ⚠️ **Their indexer can lag a fresh deploy by 40+ minutes (observed
+   2026-09-10).** A new escrow deployed via `/deployer/single-release` was
+   absent from `helper/get-escrows-by-signer` and
+   `helper/get-escrow-by-contract-ids` for 40+ min, so API-level
+   `fund-escrow` returned "Escrow not found" for a contract that verifiably
+   existed on-chain (direct `get_escrow` returned full state). On 2026-09-09
+   the same path indexed in <60s, so this may be intermittent — but
+   integrators must treat the read model as **eventually consistent** and
+   fall back to direct contract reads. Our SDK's `resolveContractId`
+   retry/backoff (shipped 2026-09-10) covers the resolve path.
+6. The escrow's **`get_escrow` on-chain read is authoritative** and
    matched every step — useful as a fallback when the indexer lags.
 
 ### Meeting brief (TL;DR if talking to the Trustless Work team)
@@ -388,7 +405,7 @@ All Trustless Work calls sit behind **one adapter file** in `@invofi/sdk` so a T
 
 ---
 
-## Part 7 — Bug report to Trustless Work (2026-09-09)
+## Part 7 — Bug report to Trustless Work (2026-09-09, re-verified 2026-09-10)
 
 > **Status:** drafted, ready to send via their Telegram/Discord (linked from
 > their docs). Once sent, record the channel + date here so the TW
@@ -396,9 +413,18 @@ All Trustless Work calls sit behind **one adapter file** in `@invofi/sdk` so a T
 > message — copy-paste as-is. Evidence is all public testnet, independently
 > verifiable on Horizon / Stellar Expert.
 >
+> **⚠️ 2026-09-10 re-verification: bug still live.** Reproduced on a
+> brand-new escrow (`CDNY5U5V…EMR3`) deployed through their own factory —
+> release build rejected twice (00:47, 00:48 UTC) while the direct on-chain
+> `release_funds` succeeded instantly. A **second defect** was confirmed the
+> same session: their indexer missed a fresh deploy for 40+ minutes (API
+> `fund-escrow` → "Escrow not found" for an on-chain-existing escrow).
+> Full evidence tables: [bug report → Re-verification section](./trustless-work-bug-report.md#re-verification-2026-09-10--bug-still-live).
+>
 > **📄 Standalone copy:** the report also lives on its own for download/sharing
 > as a document: [trustless-work-bug-report.md](./trustless-work-bug-report.md)
-> (kept byte-identical to the message below).
+> (the message below is unchanged and remains accurate; the re-verification
+> evidence is appended above its message body).
 
 ````markdown
 Subject: Bug report — release-funds build endpoint returns "Escrow already in dispute" for a fully releasable escrow (testnet, repro + tx hashes)

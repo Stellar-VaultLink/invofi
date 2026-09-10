@@ -377,6 +377,30 @@
         "description": "Revise os efeitos esperados antes de marcar esta oferta como inadimplente on-chain. O principal já foi pago na aceitação — isto não devolve fundos e não pode ser desfeito.",
         "confirm": "Reivindicar"
       }
+    },
+    "escrow": {
+      "title": "Desembolso em custódia",
+      "viewer": "Ver no explorador de custódia",
+      "loading": "Carregando estado da custódia…",
+      "txHash": "Transação de liberação",
+      "confirmDelivery": "Confirmar entrega",
+      "approveDelivery": "Aprovar entrega",
+      "releaseFunds": "Liberar fundos",
+      "deliveryConfirmed": "Entrega confirmada",
+      "deliveryConfirmedHint": "A plataforma foi notificada para aprovar a liberação.",
+      "approved": "Entrega aprovada",
+      "approvedHint": "Você já pode liberar os fundos para a empresa.",
+      "released": "Fundos liberados",
+      "releasedHint": "O desembolso foi pago à empresa.",
+      "actionFailed": "Falha na ação de custódia",
+      "missingBaseId": "Ainda não é possível liberar: o id do contrato base está indisponível — tente em breve.",
+      "step": {
+        "awaitingDelivery": "Aguardando a empresa confirmar a entrega.",
+        "awaitingApproval": "Entrega confirmada — aguardando aprovação da plataforma.",
+        "releasable": "Entrega verificada — os fundos estão prontos para liberação.",
+        "released": "Fundos liberados para a empresa.",
+        "disputed": "Esta custódia está em disputa — contate o suporte."
+      }
     }
   },
   "Notifications": {

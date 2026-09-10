@@ -479,6 +479,30 @@
         "description": "Review the expected effects before marking this offer Defaulted on-chain. Principal was already paid at acceptance — this does not return funds, and cannot be undone.",
         "confirm": "Reclaim"
       }
+    },
+    "escrow": {
+      "title": "Escrow-protected disbursement",
+      "viewer": "View on Escrow Explorer",
+      "loading": "Loading escrow state…",
+      "txHash": "Release transaction",
+      "confirmDelivery": "Confirm Delivery",
+      "approveDelivery": "Approve Delivery",
+      "releaseFunds": "Release Funds",
+      "deliveryConfirmed": "Delivery confirmed",
+      "deliveryConfirmedHint": "The platform has been notified to approve the release.",
+      "approved": "Delivery approved",
+      "approvedHint": "You can now release the funds to the business.",
+      "released": "Funds released",
+      "releasedHint": "The disbursement has been paid out to the business.",
+      "actionFailed": "Escrow action failed",
+      "missingBaseId": "Cannot release yet: the escrow's base contract id is unavailable — try again shortly.",
+      "step": {
+        "awaitingDelivery": "Waiting for the business to confirm delivery.",
+        "awaitingApproval": "Delivery confirmed — awaiting platform approval.",
+        "releasable": "Delivery verified — funds are ready to release.",
+        "released": "Funds released to the business.",
+        "disputed": "This escrow is in dispute — contact support."
+      }
     }
   }
 }

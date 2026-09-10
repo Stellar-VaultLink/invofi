@@ -377,6 +377,30 @@
         "description": "このオファーをオンチェーンでデフォルトとして記録する前に、想定される影響を確認してください。元本は承諾時にすでに支払われています——資金は戻らず、取り消しもできません。",
         "confirm": "回収"
       }
+    },
+    "escrow": {
+      "title": "エスクロー保護された送金",
+      "viewer": "エスクローエクスプローラーで見る",
+      "loading": "エスクロー状態を読み込み中…",
+      "txHash": "リリース取引",
+      "confirmDelivery": "納品を確認",
+      "approveDelivery": "納品を承認",
+      "releaseFunds": "資金をリリース",
+      "deliveryConfirmed": "納品を確認しました",
+      "deliveryConfirmedHint": "プラットフォームにリリース承認を通知しました。",
+      "approved": "納品を承認しました",
+      "approvedHint": "企業への資金リリースが可能になりました。",
+      "released": "資金をリリースしました",
+      "releasedHint": "送金は企業へ支払われました。",
+      "actionFailed": "エスクロー操作に失敗しました",
+      "missingBaseId": "まだリリースできません：ベースコントラクトIDが利用できないため、しばらくしてから再試行してください。",
+      "step": {
+        "awaitingDelivery": "企業による納品確認を待っています。",
+        "awaitingApproval": "納品確認済み — プラットフォームの承認待ち。",
+        "releasable": "納品検証済み — 資金をリリースできます。",
+        "released": "資金は企業にリリースされました。",
+        "disputed": "このエスクローは係争中です — サポートに連絡してください。"
+      }
     }
   },
   "Notifications": {

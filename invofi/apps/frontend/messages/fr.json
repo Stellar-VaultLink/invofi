@@ -377,6 +377,30 @@
         "description": "Vérifiez les effets attendus avant de marquer cette offre en défaut on-chain. Le principal a déjà été versé à l’acceptation — cela ne restitue pas les fonds et est irréversible.",
         "confirm": "Récupérer"
       }
+    },
+    "escrow": {
+      "title": "Décaissement sous séquestre",
+      "viewer": "Voir sur l’explorateur d’escrow",
+      "loading": "Chargement de l’état du séquestre…",
+      "txHash": "Transaction de libération",
+      "confirmDelivery": "Confirmer la livraison",
+      "approveDelivery": "Approuver la livraison",
+      "releaseFunds": "Libérer les fonds",
+      "deliveryConfirmed": "Livraison confirmée",
+      "deliveryConfirmedHint": "La plateforme a été notifiée pour approuver la libération.",
+      "approved": "Livraison approuvée",
+      "approvedHint": "Vous pouvez maintenant libérer les fonds à l’entreprise.",
+      "released": "Fonds libérés",
+      "releasedHint": "Le décaissement a été versé à l’entreprise.",
+      "actionFailed": "Échec de l’action d’escrow",
+      "missingBaseId": "Libération impossible pour l’instant : l’identifiant du contrat de base est indisponible — réessayez sous peu.",
+      "step": {
+        "awaitingDelivery": "En attente de la confirmation de livraison par l’entreprise.",
+        "awaitingApproval": "Livraison confirmée — en attente d’approbation de la plateforme.",
+        "releasable": "Livraison vérifiée — les fonds sont prêts à être libérés.",
+        "released": "Fonds libérés à l’entreprise.",
+        "disputed": "Ce séquestre est en litige — contactez le support."
+      }
     }
   },
   "Notifications": {

@@ -14,6 +14,7 @@
 import {
   createTrustlessWorkClient,
   usdcTestnetTrustline,
+  submitDirectRelease,
   TrustlessWorkError,
   type DisbursementEscrowParams,
   type EscrowTrustline,
@@ -36,6 +37,10 @@ const TW_ENV = (process.env.NEXT_PUBLIC_TRUSTLESS_WORK_ENV ?? 'testnet') as 'tes
 const TW_BASE_URL = process.env.NEXT_PUBLIC_TRUSTLESS_WORK_BASE_URL ?? '';
 const TW_PLATFORM_ADDRESS = process.env.NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS ?? '';
 const TW_PLATFORM_FEE = Number(process.env.NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_FEE ?? '0.5');
+/** Optional override for the Escrow Viewer link template (see SDK escrowViewerUrl). */
+export const ESCROW_VIEWER_URL_TEMPLATE = process.env.NEXT_PUBLIC_ESCROW_VIEWER_URL ?? '';
+/** InvoFi platform wallet — the escrow's approver / release signer / dispute resolver. */
+export const ESCROW_PLATFORM_ADDRESS = TW_PLATFORM_ADDRESS;
 
 /** True when the escrow rail is configured and should appear in the UI. */
 export function isEscrowEnabled(): boolean {
@@ -54,7 +59,7 @@ export function escrowTrustlineForCurrency(currency: 'XLM' | 'USDC'): EscrowTrus
   return usdcTestnetTrustline(USDC_ISSUER_TESTNET);
 }
 
-type EscrowAction = 'deploy' | 'fund' | 'release' | 'resolve';
+type EscrowAction = 'deploy' | 'fund' | 'release' | 'resolve' | 'approve' | 'change-status';
 
 /**
  * Calls the Next.js API proxy (`/api/escrow/[action]`), which injects the
@@ -205,6 +210,85 @@ export async function releaseEscrow(contractId: string, platformAddress: string)
 }
 
 /**
+ * Builds AND executes the milestone-approval tx — the PLATFORM wallet signs
+ * (it is the escrow's approver role). Delivery approval is what makes the
+ * escrow releasable.
+ */
+export async function approveMilestone(contractId: string, milestoneIndex: number, platformAddress: string): Promise<SendTransactionResult> {
+  const built = await buildViaProxy('approve', { contractId, milestoneIndex, approver: platformAddress });
+  return signAndSubmitViaProxy(built.unsignedXdr);
+}
+
+/**
+ * Builds AND executes the milestone status change — the ORIGINATOR's wallet
+ * signs (it is the escrow's service-provider role) to confirm delivery,
+ * attaching free-form evidence (e.g. a delivery reference or IPFS cid).
+ */
+export async function confirmDelivery(contractId: string, milestoneIndex: number, originatorAddress: string, evidence = ''): Promise<SendTransactionResult> {
+  const built = await buildViaProxy('change-status', { contractId, milestoneIndex, serviceProvider: originatorAddress, newStatus: 'completed', newEvidence: evidence });
+  return signAndSubmitViaProxy(built.unsignedXdr);
+}
+
+/**
+ * Builds AND executes the release DIRECTLY on-chain (Soroban RPC), bypassing
+ * TW's release-funds build endpoint. This is the documented workaround for
+ * TW's "Escrow already in dispute" bug, which rejects fully releasable
+ * escrows (see docs/trustless-work-bug-report.md). `contractBaseId` comes
+ * from the escrow read-model snapshot (extractContractBaseId).
+ */
+export async function releaseEscrowDirect(
+  contractId: string,
+  contractBaseId: string,
+  platformAddress: string,
+): Promise<SendTransactionResult> {
+  // Only the config is needed — the standalone builder uses the RPC + wallet
+  // signer directly and never calls the TW API.
+  return submitDirectRelease(
+    {
+      env: TW_ENV,
+      ...(TW_BASE_URL ? { baseUrl: TW_BASE_URL } : {}),
+      apiKey: FLAG,
+      networkPassphrase: TW_ENV === 'mainnet' ? 'Public Global Stellar Network ; September 2015' : 'Test SDF Network ; September 2015',
+      signTransaction: async (txXdr, passphrase) => {
+        const { signTransactionWithActiveWallet } = await import('./walletkit');
+        return signTransactionWithActiveWallet(txXdr, passphrase);
+      },
+    },
+    contractId,
+    contractBaseId,
+    platformAddress,
+  );
+}
+
+/** UI-facing view of an escrow's milestone state (parsed from the read model). */
+export interface EscrowStatus {
+  contractId: string;
+  contractBaseId: string | null;
+  flags: { disputed: boolean; released: boolean; resolved: boolean };
+  milestone: { approved: boolean; status: string } | null;
+  amount: number | null;
+}
+
+/** Parses a TW read-model row into the UI-facing snapshot. */
+export function parseEscrowStatus(snapshot: Record<string, unknown>, contractId: string): EscrowStatus {
+  const flags = (snapshot.flags ?? {}) as Record<string, unknown>;
+  const ms = (snapshot.milestone ?? null) as Record<string, unknown> | null;
+  return {
+    contractId,
+    contractBaseId: typeof snapshot.contractBaseId === 'string' && snapshot.contractBaseId.length > 0 ? snapshot.contractBaseId : null,
+    flags: {
+      disputed: flags.disputed === true,
+      released: flags.released === true,
+      resolved: flags.resolved === true,
+    },
+    milestone: ms
+      ? { approved: ms.approved === true, status: typeof ms.status === 'string' ? ms.status : 'unknown' }
+      : null,
+    amount: typeof snapshot.amount === 'number' ? snapshot.amount : null,
+  };
+}
+
+/**
  * Reads the authoritative escrow snapshot from TW's read-model (via proxy).
  */
 export async function getEscrowSnapshot(contractId: string): Promise<Record<string, unknown>> {
@@ -222,3 +306,4 @@ export async function getEscrowSnapshot(contractId: string): Promise<Record<stri
 // Re-exports so components import escrow types from one place.
 export type { DisbursementEscrowParams, EscrowTrustline, UnsignedTransaction, SendTransactionResult };
 export { TrustlessWorkError };
+export { escrowViewerUrl, contractIdMatchesBase } from '@invofi/sdk';

@@ -74,11 +74,21 @@ jobs:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       INPUT_PR: ${{ inputs.pr }}
       # Job names (check-run names) that must pass before auto-merge.
+      # Lockfile-sync matrix (check-lockfile.yml) only reports on PRs
+      # touching **/package*.json — the merge gate treats an absent check
+      # as n/a, so listing all three variants is safe for every other PR.
+      # 2026-09-11: PR #389 merged with a drifted lockfile and broke
+      # keeper + health-collector for hours; this prevents a repeat.
+      # NOTE: no `#` comments inside the block below — it is a literal
+      # string, not YAML comments.
       REQUIRED_CHECKS: |-
         Frontend / Lint & Type Check
         Frontend / Build
         Frontend / Unit Tests
         Conventional Commits
+        Verify package-lock.json is in sync (frontend)
+        Verify package-lock.json is in sync (sdk)
+        Verify package-lock.json is in sync (scripts)
       # Top-level path prefixes PRs normally touch. Files outside these
       # are flagged by the diff-review gate (never auto-merged).
       SCOPE_PREFIXES: |-

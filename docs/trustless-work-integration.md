@@ -12,9 +12,10 @@
 | Item | Where | State |
 |---|---|---|
 | **TW Core API research** — build→sign→submit loop, endpoint paths, deploy/fund/release body shapes, auth (`x-api-key: id.secret`), RFC 9457 error shape | this doc, §Parts 1–2 (desk research) + **Part 0 (live-verified contract — supersedes the desk research)** | ✅ verified against the **live production API** (`dev.api.trustlesswork.com`): real deploy build returned HTTP 201 with `unsignedTransaction` XDR |
-| **Typed TW client in `@invofi/sdk`** — `createTrustlessWorkClient` (deploy/fund builds, sign+submit, `resolveContractId`/read-model helpers), InvoFi→TW role mapping, `TrustlessWorkError`, `usdcTestnetTrustline` | `invofi/apps/sdk/src/escrow.ts` | ✅ rewritten to the live API contract (2026-09-09), full SDK typecheck clean, **349/349 SDK tests green** |
-| **Server proxy** `/api/escrow/[action]` — injects the server-only key (`TW_ESCROW_API_KEY`), forwards deploy/fund/release/submit/status; SSRF-guard on `baseUrl`; never signs | `invofi/apps/frontend/src/app/api/escrow/[action]/route.ts` | ✅ merged, lint+typecheck clean |
-| **Frontend binding** — `lib/escrow.ts`: feature-flagged (`NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY`), USDC-only, wallet signer lazy-imported (test-safe) | `invofi/apps/frontend/src/lib/escrow.ts` | ✅ merged |
+| **Typed TW client in `@invofi/sdk`** — `createTrustlessWorkClient` (deploy/fund/milestone-approve/milestone-status builds, sign+submit, `resolveContractId`/read-model helpers, **direct-invoke `submitDirectRelease` workaround**, `escrowViewerUrl`), InvoFi→TW role mapping, `TrustlessWorkError`, `usdcTestnetTrustline` | `invofi/apps/sdk/src/escrow.ts` | ✅ rewritten to the live API contract (2026-09-09), extended for Epic 3.2 (commit `fbe9db1`), **368/368 SDK tests green** |
+| **Server proxy** `/api/escrow/[action]` — injects the server-only key (`TW_ESCROW_API_KEY`), forwards deploy/fund/release/approve/change-status/submit/resolve/status; SSRF-guard on `baseUrl`; never signs | `invofi/apps/frontend/src/app/api/escrow/[action]/route.ts` | ✅ merged, lint+typecheck clean |
+| **Frontend binding** — `lib/escrow.ts`: feature-flagged (`NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY`), USDC-only, wallet signer lazy-imported (test-safe); milestone helpers `approveMilestone`/`confirmDelivery`/`releaseEscrowDirect` + `parseEscrowStatus` | `invofi/apps/frontend/src/lib/escrow.ts` | ✅ merged |
+| **Milestone-approval UI (Epic 3.2, #381)** — per-offer escrow panel in `OfferList`: live status step (awaiting delivery → awaiting approval → releasable → released / disputed), Escrow Viewer link, release tx hash; role-gated actions — originator **Confirm Delivery** (`change-milestone-status`, originator signs as serviceProvider), platform **Approve Delivery** (`approve-milestone`, platform signs), platform **Release Funds** (direct on-chain `release_funds` — workaround for TW's release-build bug); i18n in all 12 locales | `invofi/apps/frontend/src/components/invoices/OfferList.tsx` | ✅ merged (commit `fbe9db1`, CI green), frontend 591/591 tests |
 | **`accept_offer` wiring** — after a successful accept, best-effort deploy+fund of the disbursement escrow; failure never rolls back the accepted offer; escrow contract id persisted | `OfferList.tsx` + `migrations/003_escrow.sql` (`financing_offers.escrow_contract_id`) | ✅ merged, CI green (commit `316a90b6` + fix `1-fix`) |
 | **i18n** — escrow toasts in all 12 locales | `messages/*.json` | ✅ merged |
 | **Env vars on Vercel** (`invofi` project, production+preview): `NEXT_PUBLIC_TRUSTLESS_WORK_ENV=testnet`, `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS=GBDDLOWR…EVZR` (deployer/platform wallet), `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_FEE=0.5` | Vercel | ✅ set 2026-09-08 |
@@ -67,10 +68,17 @@ To go live, complete these in order:
    escrow) · originator 500 → **748** (+248 = 250 − 0.5% fee) · platform
    +**1.25** fee · escrow drained to 0 · on-chain flags after release:
    `released: true, disputed: false`. `tw_release` event published.
-5. **Milestone-approval UI** — tracked in
-   [#381 — Milestone-approval UI (Epic 3.2)](https://github.com/Stellar-VaultLink/invofi/issues/381);
-   the approve step currently happens via the TW Backoffice/CLI, and the
-   product UI for "confirm delivery → release" is the remaining Epic-3 item.
+5. **Milestone-approval UI** — ✅ **shipped (commit `fbe9db1`, 2026-09-10)**:
+   [#381 — Milestone-approval UI (Epic 3.2)](https://github.com/Stellar-VaultLink/invofi/issues/381).
+   The offer row now carries the full delivery → approve → release surface.
+   **Role note (per TW's contract, verified on-chain):** the milestone *status
+   change* belongs to the service provider — the **originator** confirms
+   delivery — while the *approval + release* belong to the approver/release
+   signer — the **platform**. (The original issue draft assumed the platform
+   does both; the contract's role model says otherwise.) The release step
+   invokes `release_funds` **directly on-chain** because TW's release-funds
+   build endpoint still rejects releasable escrows (Part 7 bug report) — the
+   workaround is typed, tested, and documented in the SDK.
 
 ### Status of the TW API itself (live-verified 2026-09-08/09 against the REAL API)
 
@@ -330,10 +338,10 @@ All Trustless Work calls sit behind **one adapter file** in `@invofi/sdk` so a T
    - ✅ Already done: platform wallet chosen (`GBDDLOWR…EVZR`, the contracts' deployer/admin) and all three public env vars set on Vercel (production+preview).
 2. **Add the dependency** — ✅ **superseded by a better approach:** no npm dependency at all. The adapter is a typed `fetch` client (`@invofi/sdk/src/escrow.ts`) against the Core API v2 — the React SDK (`@trustless-work/escrow`) is React-Query-coupled and would fight our framework-agnostic SDK. Env vars are documented in `.env.local.example` and set on Vercel.
 3. **Spike the flow on testnet** — ✅ effectively done: the adapter's 15 unit tests cover the full build→sign→submit loop against the documented v2 contract shapes; the first live call against `beta.api.trustlesswork.com` returned the exact documented error shape (401 `AUTH_CREDENTIAL_MISSING`), confirming endpoint + payload contract. Remaining: one manual funded-escrow pass once the key arrives (step 1).
-4. **Build the adapter** — ✅ **done** (`escrow.ts`, not `escrowAdapter.ts`): `createTrustlessWorkClient` exposes `buildDeploy`/`buildFund`/`buildRelease`/`sign`/`submit`/`buildSignSubmit`/`getEscrow`/`buildDisbursementEscrow`, with the InvoFi role mapping in `mapToDeployPayload` and typed `TrustlessWorkError` Problem-Details mapping. Milestone-approve/dispute builds are not wrapped yet (no UI for them; trivial to add on the same `build()` helper when Epic 3.2 starts).
+4. **Build the adapter** — ✅ **done** (`escrow.ts`, not `escrowAdapter.ts`): `createTrustlessWorkClient` exposes `buildDeploy`/`buildFund`/`buildRelease`/`buildApproveMilestone`/`buildChangeMilestoneStatus`/`sign`/`submit`/`buildSignSubmit`/`getEscrow`/`buildDisbursementEscrow`/`resolveContractId`/`submitDirectRelease`, with the InvoFi role mapping in `mapToDeployPayload` and typed `TrustlessWorkError` Problem-Details mapping. Dispute builds remain unwrapped (no UI; trivial to add on the same `build()` helper when dispute flows ship).
 5. **Wire `accept_offer`** — ✅ **done:** after a successful accept, `OfferList.handleAccept` best-effort deploys + funds the disbursement escrow (USDC only, env-gated), persisting `escrow_contract_id` (migration 003). Failure never rolls back the accepted offer.
-6. **Milestone UX** — ⬜ **not started** (Epic 3.2/3.3): the approve/release step is currently only doable via the TW Backoffice or a CLI call with the platform wallet. Needs the "confirm delivery → release" surface on invoice detail + portfolio.
-7. **Verify on testnet** — ⬜ pending the API key (step 1). DoD: balance moves only *after* milestone approval; escrow visible on the Escrow Viewer; tx hashes recorded in Part 0.
+6. **Milestone UX** — ✅ **done** (Epic 3.2, commit `fbe9db1`): "confirm delivery → approve → release" lives in the offer row (see the Part-0 table row "Milestone-approval UI"). The release action routes through `submitDirectRelease` until TW fixes their release-funds build endpoint (Part 7).
+7. **Verify on testnet** — ✅ **verified end-to-end** (2026-09-09/10): deploy → fund → approve → complete → release all executed against the live testnet API + chain; balance proof and tx hashes recorded in Part 0. The in-app UI pass (clicking the new buttons against a fresh escrow) is the remaining optional check.
 8. **Keeper/indexer** — ⬜ Phase-2b (Epic 4.4), also gated on the indexer re-enable (#95) after the Neon migration.
 9. **Docs** — ✅ this doc + ADR-0010 + README Phase-2 section current as of 2026-09-08. GitBook sync happens from the repo docs.
 

@@ -1,12 +1,31 @@
 version: 2
 updates:
+  # ── Frontend npm dependencies ─────────────────────────────────────────────
   - package-ecosystem: "npm"
     directory: "/invofi/apps/frontend"
     schedule:
       interval: "weekly"
+      # Batch everything into one Monday-morning wave (16:00 Sun UTC = Mon
+      # 00:00 WAT): one review/merge cycle per week instead of a PR per
+      # dependency all week long.
+      day: "monday"
+      time: "16:00"
+      timezone: "Etc/UTC"
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(frontend)"
+    # One grouped PR for all minor+patch bumps that need no migration.
+    groups:
+      # Security-only updates get their own PR (kept small for fast,
+      # focused review; dependabot raises these immediately, outside the
+      # weekly wave, when a vulnerability is disclosed).
+      security-updates:
+        applies-to: security-updates
+      # Everything else minor/patch lands together in a single weekly PR.
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       # Major bumps need a deliberate migration (breaking API/config changes),
       # not an automated PR — see React 18->19, ESLint 8->9 /
@@ -19,9 +38,18 @@ updates:
   # (the contracts repo owns its own dependabot config) as part of the
   # two-repo topology migration.
 
+  # ── GitHub Actions versions ──────────────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "16:00"
+      timezone: "Etc/UTC"
     commit-message:
       prefix: "chore(ci)"
+    # All action bumps land together in a single weekly PR.
+    groups:
+      all-actions:
+        patterns:
+          - "*"

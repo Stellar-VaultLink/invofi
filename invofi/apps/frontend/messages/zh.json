@@ -377,6 +377,30 @@
         "description": "在链上把该报价标记为违约前，请先查看预期影响。本金在接受时已支付——这不会退还资金，且无法撤销。",
         "confirm": "追索"
       }
+    },
+    "escrow": {
+      "title": "资金托管放款",
+      "viewer": "在托管浏览器中查看",
+      "loading": "正在加载托管状态…",
+      "txHash": "放款交易",
+      "confirmDelivery": "确认交付",
+      "approveDelivery": "批准交付",
+      "releaseFunds": "释放资金",
+      "deliveryConfirmed": "交付已确认",
+      "deliveryConfirmedHint": "已通知平台批准放款。",
+      "approved": "交付已批准",
+      "approvedHint": "你现在可以向企业释放资金了。",
+      "released": "资金已释放",
+      "releasedHint": "放款已支付给企业。",
+      "actionFailed": "托管操作失败",
+      "missingBaseId": "暂时无法释放：基础合约 ID 尚不可用 — 请稍后重试。",
+      "step": {
+        "awaitingDelivery": "等待企业确认交付。",
+        "awaitingApproval": "交付已确认 — 等待平台批准。",
+        "releasable": "交付已核验 — 资金可以释放。",
+        "released": "资金已释放给企业。",
+        "disputed": "该托管存在争议 — 请联系客服。"
+      }
     }
   },
   "Notifications": {

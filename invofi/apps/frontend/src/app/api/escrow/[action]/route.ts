@@ -35,6 +35,10 @@ const ACTION_SCHEMA = {
   deploy: ['invoiceId', 'offerId', 'amountHuman', 'lenderAddress', 'originatorAddress', 'platformAddress', 'platformFeePercent', 'trustline'],
   fund: ['contractId', 'signer', 'amount'],
   release: ['contractId', 'releaseSigner'],
+  /** Platform approves the delivery milestone (builds the TW tx for the platform wallet to sign). */
+  approve: ['contractId', 'milestoneIndex', 'approver'],
+  /** Originator marks the delivery milestone completed with evidence (build for the originator's wallet). */
+  'change-status': ['contractId', 'milestoneIndex', 'serviceProvider', 'newStatus'],
   submit: ['signedXdr'],
   resolve: ['invoiceId', 'offerId', 'signer'],
 } as const;
@@ -145,6 +149,24 @@ export async function POST(
       }
       case 'release': {
         const built = await client.buildRelease(String(body.contractId), String(body.releaseSigner));
+        return NextResponse.json(built);
+      }
+      case 'approve': {
+        const built = await client.buildApproveMilestone(
+          String(body.contractId),
+          Number(body.milestoneIndex),
+          String(body.approver),
+        );
+        return NextResponse.json(built);
+      }
+      case 'change-status': {
+        const built = await client.buildChangeMilestoneStatus(
+          String(body.contractId),
+          Number(body.milestoneIndex),
+          String(body.serviceProvider),
+          String(body.newStatus),
+          typeof body.newEvidence === 'string' ? body.newEvidence : '',
+        );
         return NextResponse.json(built);
       }
       case 'submit': {

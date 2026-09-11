@@ -377,6 +377,30 @@
         "description": "Revisa los efectos esperados antes de marcar esta oferta como en impago on-chain. El principal ya se pagó al aceptarla: esto no devuelve fondos y no se puede deshacer.",
         "confirm": "Reclamar"
       }
+    },
+    "escrow": {
+      "title": "Desembolso en custodia",
+      "viewer": "Ver en el explorador de custodia",
+      "loading": "Cargando estado de la custodia…",
+      "txHash": "Transacción de liberación",
+      "confirmDelivery": "Confirmar entrega",
+      "approveDelivery": "Aprobar entrega",
+      "releaseFunds": "Liberar fondos",
+      "deliveryConfirmed": "Entrega confirmada",
+      "deliveryConfirmedHint": "La plataforma ha sido notificada para aprobar la liberación.",
+      "approved": "Entrega aprobada",
+      "approvedHint": "Ya puedes liberar los fondos a la empresa.",
+      "released": "Fondos liberados",
+      "releasedHint": "El desembolso ha sido pagado a la empresa.",
+      "actionFailed": "Falló la acción de custodia",
+      "missingBaseId": "Aún no se puede liberar: el id del contrato base no está disponible — inténtalo en breve.",
+      "step": {
+        "awaitingDelivery": "Esperando que la empresa confirme la entrega.",
+        "awaitingApproval": "Entrega confirmada — pendiente de aprobación de la plataforma.",
+        "releasable": "Entrega verificada — los fondos están listos para liberarse.",
+        "released": "Fondos liberados a la empresa.",
+        "disputed": "Esta custodia está en disputa — contacta a soporte."
+      }
     }
   },
   "Notifications": {

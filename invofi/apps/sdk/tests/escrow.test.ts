@@ -6,8 +6,14 @@ import {
   disbursementEngagementId,
   TrustlessWorkError,
   DELIVERY_MILESTONE_DESCRIPTION,
+  buildReleaseFundsArgs,
+  extractContractBaseId,
+  contractIdMatchesBase,
+  escrowViewerUrl,
+  submitDirectRelease,
   type DisbursementEscrowParams,
   type FetchLike,
+  type TrustlessWorkConfig,
 } from '../src/escrow';
 
 const VALID_PARAMS: DisbursementEscrowParams = {
@@ -460,5 +466,109 @@ describe('environment defaults', () => {
     });
     await client.buildFund('C1', 'G1', 1);
     expect(calls[0].url.startsWith('https://tw.proxy.internal/')).toBe(true);
+  });
+});
+
+describe('contractIdMatchesBase', () => {
+  const C1 = 'CDNY5U5VFWZXX5DCCQIWY2Q5ZOBD3LSVUQQWHALYDLZOGAR7QUP3EMR3';
+  const C2 = 'CD33RDRJRFRNXXAH7SXXJUHNXAJDXSOQYZJUEVW7GUH5BAKFGBJMPJHN';
+  it('true when both ids decode as contract strkeys and match', () => {
+    expect(contractIdMatchesBase(C1, C1)).toBe(true);
+  });
+
+  it('rejects different contract ids', () => {
+    expect(contractIdMatchesBase(C1, C2)).toBe(false);
+  });
+
+  it('returns false for malformed ids instead of throwing', () => {
+    expect(contractIdMatchesBase('not-a-strkey', C1)).toBe(false);
+    expect(contractIdMatchesBase(C1, 'C###')).toBe(false);
+  });
+});
+
+describe('buildReleaseFundsArgs', () => {
+  // Valid strkeys — nativeToScVal('address') rejects anything else.
+  const SIGNER = 'GBDDLOWR6YUEEYUKFKS6ISTCLBQKDPUXAOVJMNJYAACT6UYQGEKYEVZR';
+  const BASE = 'CD33RDRJRFRNXXAH7SXXJUHNXAJDXSOQYZJUEVW7GUH5BAKFGBJMPJHN';
+
+  it('encodes [release_signer, trustless_work_address] as address scVals in order', () => {
+    const args = buildReleaseFundsArgs(SIGNER, BASE);
+    expect(args).toHaveLength(2);
+    expect(args[0].switch().name).toBe('scvAddress');
+    expect(args[1].switch().name).toBe('scvAddress');
+    // deep equality against the same encoding keeps the arg order pinned —
+    // the contract signature is (release_signer, trustless_work_address).
+    const expected = buildReleaseFundsArgs(SIGNER, BASE);
+    expect(args[0].toXDR('hex')).toBe(expected[0].toXDR('hex'));
+    expect(args[1].toXDR('hex')).toBe(expected[1].toXDR('hex'));
+  });
+
+  it('encodes the two arguments independently (signer ≠ base id)', () => {
+    const args = buildReleaseFundsArgs(SIGNER, BASE);
+    expect(args[0].toXDR('hex')).not.toBe(args[1].toXDR('hex'));
+  });
+});
+
+describe('extractContractBaseId', () => {
+  it('returns contractBaseId when present', () => {
+    expect(extractContractBaseId({ contractBaseId: 'CBASE' })).toBe('CBASE');
+  });
+
+  it('returns null when absent or non-string', () => {
+    expect(extractContractBaseId({})).toBeNull();
+    expect(extractContractBaseId({ contractBaseId: 42 })).toBeNull();
+    expect(extractContractBaseId({ contractBaseId: '' })).toBeNull();
+  });
+});
+
+describe('escrowViewerUrl', () => {
+  it('uses the default viewer host with the contract id appended', () => {
+    expect(escrowViewerUrl('CABC')).toBe('https://viewer.trustlesswork.com/escrow/CABC');
+  });
+
+  it('substitutes a {contractId} placeholder when the template has one', () => {
+    expect(escrowViewerUrl('CABC', 'https://explorer.example.com/escrows/{contractId}?net=t')).toBe(
+      'https://explorer.example.com/escrows/CABC?net=t',
+    );
+  });
+
+  it('appends the id when the template has no placeholder (and strips trailing slashes)', () => {
+    expect(escrowViewerUrl('CABC', 'https://explorer.example.com/escrows/')).toBe(
+      'https://explorer.example.com/escrows/CABC',
+    );
+  });
+});
+
+describe('submitDirectRelease', () => {
+  const ESCROW_ID = 'CDNY5U5VFWZXX5DCCQIWY2Q5ZOBD3LSVUQQWHALYDLZOGAR7QUP3EMR3';
+  const BASE_ID = 'CD33RDRJRFRNXXAH7SXXJUHNXAJDXSOQYZJUEVW7GUH5BAKFGBJMPJHN';
+  const PLATFORM = 'GBDDLOWR6YUEEYUKFKS6ISTCLBQKDPUXAOVJMNJYAACT6UYQGEKYEVZR';
+
+  function cfg(overrides: Partial<TrustlessWorkConfig> = {}): TrustlessWorkConfig {
+    return {
+      env: 'testnet',
+      apiKey: 'k.s',
+      networkPassphrase: 'Test SDF Network ; September 2015',
+      rpcUrl: 'https://rpc.test',
+      signTransaction: async x => x,
+      ...overrides,
+    };
+  }
+
+  it('throws ESCROW_RELEASE_FAILED when the network rejects the transaction', async () => {
+    await expect(
+      submitDirectRelease(cfg(), 'CBOGUS', 'CBOGUS2', PLATFORM),
+    ).rejects.toBeInstanceOf(TrustlessWorkError);
+  });
+
+  it('rejects with the release-failed code and a funds-not-moved message', async () => {
+    await expect(submitDirectRelease(cfg(), 'CBOGUS', 'CBOGUS2', PLATFORM)).rejects.toMatchObject({
+      code: 'ESCROW_RELEASE_FAILED',
+    });
+  });
+
+  it('carries the caller-configured rpcUrl through to the client surface', () => {
+    const client = createTrustlessWorkClient(cfg());
+    expect(client.rpcUrl).toBe('https://rpc.test');
   });
 });

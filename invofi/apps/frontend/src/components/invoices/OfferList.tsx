@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Fragment, useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Plus, Download } from 'lucide-react';
+import { Loader2, Plus, Download, ShieldCheck, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ import {
   encodeI128,
 } from '@/lib/simulate';
 import { supabase } from '@/lib/supabase';
-import { isEscrowEnabled, createDisbursementEscrow, resolveDisbursementEscrow, fundEscrow, escrowTrustlineForCurrency, TrustlessWorkError } from '@/lib/escrow';
+import { isEscrowEnabled, createDisbursementEscrow, resolveDisbursementEscrow, fundEscrow, escrowTrustlineForCurrency, approveMilestone, confirmDelivery, releaseEscrowDirect, getEscrowSnapshot, parseEscrowStatus, escrowViewerUrl, ESCROW_VIEWER_URL_TEMPLATE, ESCROW_PLATFORM_ADDRESS, TrustlessWorkError, type EscrowStatus } from '@/lib/escrow';
 import { formatAmount as formatUnits, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import {
@@ -109,6 +109,23 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   /** IDs of offers currently being submitted/accepted on-chain (optimistic UI). */
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [repayAmounts, setRepayAmounts] = useState<Record<string, string>>({});
+
+  // ── Escrow milestone state (Epic 3.2, issue #381) ───────────────────────
+  // Loaded for every USDC offer with an escrow id once the rail is enabled.
+  // Absent row (404) = the escrow mapping is stale — never treated as fatal.
+  const [escrowStatus, setEscrowStatus] = useState<Record<string, EscrowStatus | null>>({});
+  const [escrowBusy, setEscrowBusy] = useState<Record<string, string | null>>({});
+  const [escrowError, setEscrowError] = useState<Record<string, string | null>>({});
+  const [txHashes, setTxHashes] = useState<Record<string, string | undefined>>({});
+
+  const loadEscrowStatus = useCallback(async (contractId: string, key: string) => {
+    try {
+      const snap = await getEscrowSnapshot(contractId);
+      setEscrowStatus(prev => ({ ...prev, [key]: parseEscrowStatus(snap, contractId) }));
+    } catch {
+      setEscrowStatus(prev => ({ ...prev, [key]: null }));
+    }
+  }, []);
 
   // ── Simulation state: non-null while a preview dialog is open ───────────
   const [simTarget, setSimTarget] = useState<SimTarget | null>(null);
@@ -478,6 +495,97 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
     invoice.status === 'Overdue' && (offer.status === 'Accepted' || offer.status === 'Financed') && publicKey === offer.lender &&
     nowSecs >= invoice.due_date + GRACE_PERIOD_SECS;
 
+  // ── Escrow milestone flow (issue #381) ──────────────────────────────────
+  // Load state for each USDC offer with a persisted escrow id, and derive
+  // who can do what: the originator confirms delivery; the platform approves
+  // then releases (direct on-chain, working around TW's release-bug).
+  useEffect(() => {
+    if (!isEscrowEnabled()) return;
+    for (const o of offers) {
+      if (o.currency !== 'USDC') continue;
+      const key = `${o.id}:${invoiceId}`;
+      const contractId = (o as FinancingOfferRow).escrow_contract_id;
+      if (!contractId || escrowStatus[key] !== undefined) continue;
+      void loadEscrowStatus(contractId, key);
+    }
+  }, [offers, invoiceId, escrowStatus, loadEscrowStatus]);
+
+  const setEscrowBusyFor = (key: string, action: string | null) =>
+    setEscrowBusy(prev => ({ ...prev, [key]: action }));
+  const setEscrowErrorFor = (key: string, message: string | null) =>
+    setEscrowError(prev => ({ ...prev, [key]: message }));
+
+  const handleConfirmDelivery = async (offer: FinancingOffer) => {
+    const key = `${offer.id}:${invoiceId}`;
+    const contractId = (offer as FinancingOfferRow).escrow_contract_id;
+    if (!publicKey || !contractId) return;
+    setEscrowBusyFor(key, 'confirm');
+    setEscrowErrorFor(key, null);
+    try {
+      const result = await confirmDelivery(contractId, 0, publicKey);
+      setTxHashes(prev => ({ ...prev, [key]: extractTxHash(result.raw) }));
+      await loadEscrowStatus(contractId, key);
+      toast({ title: t('escrow.deliveryConfirmed'), description: t('escrow.deliveryConfirmedHint') });
+    } catch (err: unknown) {
+      setEscrowErrorFor(key, toErrorMessage(err, t('escrow.actionFailed')));
+    } finally {
+      setEscrowBusyFor(key, null);
+    }
+  };
+
+  const handleApprove = async (offer: FinancingOffer) => {
+    const key = `${offer.id}:${invoiceId}`;
+    const contractId = (offer as FinancingOfferRow).escrow_contract_id;
+    if (!publicKey || !contractId) return;
+    setEscrowBusyFor(key, 'approve');
+    setEscrowErrorFor(key, null);
+    try {
+      const result = await approveMilestone(contractId, 0, publicKey);
+      setTxHashes(prev => ({ ...prev, [key]: extractTxHash(result.raw) }));
+      await loadEscrowStatus(contractId, key);
+      toast({ title: t('escrow.approved'), description: t('escrow.approvedHint') });
+    } catch (err: unknown) {
+      setEscrowErrorFor(key, toErrorMessage(err, t('escrow.actionFailed')));
+    } finally {
+      setEscrowBusyFor(key, null);
+    }
+  };
+
+  const handleRelease = async (offer: FinancingOffer) => {
+    const key = `${offer.id}:${invoiceId}`;
+    const contractId = (offer as FinancingOfferRow).escrow_contract_id;
+    if (!publicKey || !contractId) return;
+    const status = escrowStatus[key];
+    const baseId = status?.contractBaseId ?? null;
+    if (!baseId) {
+      setEscrowErrorFor(key, t('escrow.missingBaseId'));
+      return;
+    }
+    setEscrowBusyFor(key, 'release');
+    setEscrowErrorFor(key, null);
+    try {
+      const result = await releaseEscrowDirect(contractId, baseId, publicKey);
+      setTxHashes(prev => ({ ...prev, [key]: extractTxHash(result.raw) }));
+      await loadEscrowStatus(contractId, key);
+      toast({ title: t('escrow.released'), description: t('escrow.releasedHint') });
+    } catch (err: unknown) {
+      setEscrowErrorFor(key, toErrorMessage(err, t('escrow.actionFailed')));
+    } finally {
+      setEscrowBusyFor(key, null);
+    }
+  };
+
+  const escrowRowFor = (offer: FinancingOffer): EscrowStatus | null | undefined => {
+    const contractId = (offer as FinancingOfferRow).escrow_contract_id;
+    return contractId ? escrowStatus[`${offer.id}:${invoiceId}`] : undefined;
+  };
+  const isPlatformViewer = publicKey === ESCROW_PLATFORM_ADDRESS;
+  const escrowActionable = (offer: FinancingOffer): boolean => {
+    if (!isEscrowEnabled() || offer.currency !== 'USDC') return false;
+    const contractId = (offer as FinancingOfferRow).escrow_contract_id;
+    return Boolean(contractId);
+  };
+
   const exportOffersCsv = () => {
     if (offers.length === 0) return;
     const rows = offers.map(o => ({
@@ -606,7 +714,8 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
           const repaid = toStroopsBigInt(offer.amount_repaid);
           const remaining = totalDue(offer) - repaid;
           return (
-          <div key={offer.id} className={`flex items-center justify-between border rounded-lg p-3 ${pendingIds.has(offer.id) ? 'opacity-60' : ''}`}>
+          <Fragment key={offer.id}>
+          <div className={`flex items-center justify-between border rounded-lg p-3 ${pendingIds.has(offer.id) ? 'opacity-60' : ''}`}>
             <div>
               {/* Strkeys are ASCII identifiers — pinned LTR inside RTL text. */}
               <p className="text-sm font-mono text-gray-600 dark:text-gray-300" dir="ltr">{formatAddress(offer.lender)}</p>
@@ -702,6 +811,20 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
               )}
             </div>
           </div>
+          {escrowActionable(offer) && (
+            <EscrowPanel
+              status={escrowRowFor(offer)}
+              busy={escrowBusy[`${offer.id}:${invoiceId}`] ?? null}
+              error={escrowError[`${offer.id}:${invoiceId}`] ?? null}
+              txHash={txHashes[`${offer.id}:${invoiceId}`]}
+              isOriginator={isOriginator}
+              isPlatform={isPlatformViewer}
+              onConfirmDelivery={() => handleConfirmDelivery(offer)}
+              onApprove={() => handleApprove(offer)}
+              onRelease={() => handleRelease(offer)}
+            />
+          )}
+          </Fragment>
           );
         })}
       </CardContent>
@@ -722,6 +845,22 @@ export function OfferList({ invoiceId, invoice, onUpdate }: OfferListProps) {
   );
 }
 
+/**
+ * Mirror-backed offer row: financing_offers carries the persisted escrow
+ * mapping (migration 003) that pure on-chain reads don't have.
+ */
+type FinancingOfferRow = FinancingOffer & { escrow_contract_id?: string | null };
+
+/** Pulls the transaction hash out of a TW submit response (best-effort). */
+function extractTxHash(raw: unknown): string | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.txHash === 'string') return r.txHash;
+  if (typeof r.hash === 'string') return r.hash;
+  if (r.data && typeof r.data === 'object') return extractTxHash(r.data);
+  return undefined;
+}
+
 function formatAddress(address: string): string {
   if (!address || address.length < 10) return address;
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
@@ -736,4 +875,102 @@ function totalDue(offer: FinancingOffer): bigint {
 function remainingBalance(offer: FinancingOffer): bigint {
   const remaining = totalDue(offer) - toStroopsBigInt(offer.amount_repaid);
   return remaining < 0n ? 0n : remaining;
+}
+
+// ── Escrow milestone panel (issue #381, Epic 3.2) ───────────────────────────
+//
+// Renders the disbursement escrow's live state under the offer row and the
+// role-gated actions:
+//
+//   originator  Confirm Delivery  → change-milestone-status → completed
+//   platform    Approve Delivery  → approve-milestone (makes the escrow releasable)
+//   platform    Release Funds     → DIRECT on-chain release_funds invocation
+//
+// The release goes direct-to-chain (Soroban RPC) because TW's release-funds
+// build endpoint rejects fully releasable escrows with "Escrow already in
+// dispute" — reproduced twice on testnet; see docs/trustless-work-bug-report.md.
+// Everything else keeps using the TW API through /api/escrow/*.
+function escrowStepOf(status: EscrowStatus): 'awaitingDelivery' | 'awaitingApproval' | 'releasable' | 'released' | 'disputed' {
+  if (status.flags.released) return 'released';
+  if (status.flags.disputed) return 'disputed';
+  if (status.milestone?.approved) return 'releasable';
+  if (status.milestone?.status === 'completed') return 'awaitingApproval';
+  return 'awaitingDelivery';
+}
+
+interface EscrowPanelProps {
+  /** undefined = still loading; null = read-model row absent (stale mapping). */
+  status: EscrowStatus | null | undefined;
+  busy: string | null;
+  error: string | null;
+  txHash?: string;
+  isOriginator: boolean;
+  isPlatform: boolean;
+  onConfirmDelivery: () => void;
+  onApprove: () => void;
+  onRelease: () => void;
+}
+
+function EscrowPanel({ status, busy, error, txHash, isOriginator, isPlatform, onConfirmDelivery, onApprove, onRelease }: EscrowPanelProps) {
+  const t = useTranslations('Offers.escrow');
+  const step = status ? escrowStepOf(status) : null;
+  const viewerHref = status ? escrowViewerUrl(status.contractId, ESCROW_VIEWER_URL_TEMPLATE) : null;
+
+  return (
+    <div className="mt-2 border rounded-md bg-gray-50 dark:bg-gray-900 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          {t('title')}
+        </p>
+        {viewerHref && (
+          <a
+            href={viewerHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1"
+          >
+            {t('viewer')} <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        {status && step ? t(`step.${step}`) : t('loading')}
+      </p>
+
+      {status && status.flags.released && txHash && (
+        <p className="text-xs text-gray-400 dark:text-gray-500 font-mono break-all" dir="ltr">
+          {t('txHash')}: {txHash}
+        </p>
+      )}
+
+      {error && (
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
+
+      {status && !status.flags.released && !status.flags.disputed && (
+        <div className="flex flex-wrap items-center gap-2">
+          {isOriginator && status.milestone?.status !== 'completed' && (
+            <Button size="sm" variant="outline" onClick={onConfirmDelivery} disabled={busy !== null}>
+              {busy === 'confirm' && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
+              {t('confirmDelivery')}
+            </Button>
+          )}
+          {isPlatform && status.milestone?.status === 'completed' && !status.milestone.approved && (
+            <Button size="sm" variant="outline" onClick={onApprove} disabled={busy !== null}>
+              {busy === 'approve' && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
+              {t('approveDelivery')}
+            </Button>
+          )}
+          {isPlatform && status.milestone?.approved && (
+            <Button size="sm" onClick={onRelease} disabled={busy !== null}>
+              {busy === 'release' && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
+              {t('releaseFunds')}
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }

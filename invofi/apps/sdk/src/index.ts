@@ -146,6 +146,13 @@ export {
   TrustlessWorkError,
   DELIVERY_MILESTONE_DESCRIPTION,
   RESOLVE_CONTRACT_ID_DEFAULTS,
+  // Direct-invoke release workaround (TW release-funds build bug — see
+  // docs/trustless-work-bug-report.md in the invofi repo).
+  buildReleaseFundsArgs,
+  extractContractBaseId,
+  contractIdMatchesBase,
+  escrowViewerUrl,
+  submitDirectRelease,
 } from './escrow';
 export type {
   TrustlessWorkConfig,
@@ -159,6 +166,7 @@ export type {
   UnsignedTransaction,
   SendTransactionResult,
   ResolveContractIdOptions,
+  SubmitDirectReleaseFn,
 } from './escrow';
 
 // ── Event stream (listenToEvents) ───────────────────────────────────────────

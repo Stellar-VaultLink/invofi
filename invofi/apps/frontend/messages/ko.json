@@ -377,6 +377,30 @@
         "description": "이 제안을 온체인에서 부도로 표시하기 전에 예상되는 영향을 확인하세요. 원금은 수락 시 이미 지급되었습니다 — 자금이 반환되지 않으며 되돌릴 수 없습니다.",
         "confirm": "회수"
       }
+    },
+    "escrow": {
+      "title": "에스크로 보호 지급",
+      "viewer": "에스크로 익스플로러에서 보기",
+      "loading": "에스크로 상태 로드 중…",
+      "txHash": "지급 트랜잭션",
+      "confirmDelivery": "납품 확인",
+      "approveDelivery": "납품 승인",
+      "releaseFunds": "자금 지급",
+      "deliveryConfirmed": "납품 확인됨",
+      "deliveryConfirmedHint": "플랫폼에 지급 승인을 요청했습니다.",
+      "approved": "납품 승인됨",
+      "approvedHint": "이제 기업에 자금을 지급할 수 있습니다.",
+      "released": "자금 지급됨",
+      "releasedHint": "지급 대금이 기업에 지불되었습니다.",
+      "actionFailed": "에스크로 작업 실패",
+      "missingBaseId": "아직 지급할 수 없습니다: 베이스 컨트랙트 ID를 사용할 수 없습니다 — 잠시 후 다시 시도하세요.",
+      "step": {
+        "awaitingDelivery": "기업의 납품 확인을 기다리는 중입니다.",
+        "awaitingApproval": "납품 확인됨 — 플랫폼 승인 대기 중.",
+        "releasable": "납품 검증 완료 — 자금을 지급할 수 있습니다.",
+        "released": "기업에 자금이 지급되었습니다.",
+        "disputed": "이 에스크로는 분쟁 중입니다 — 고객 지원에 문의하세요."
+      }
     }
   },
   "Notifications": {

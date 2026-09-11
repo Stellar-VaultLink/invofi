@@ -33,6 +33,17 @@
 //     here; the platform is the approver so an absent external lender can
 //     never strand the originator's funds. See the integration doc, §Roles.
 
+import {
+  Contract,
+  Transaction,
+  TransactionBuilder,
+  StrKey,
+  nativeToScVal,
+  rpc as SorobanRpc,
+  xdr,
+  BASE_FEE,
+} from '@stellar/stellar-sdk';
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 /** Environments documented by Trustless Work. */
@@ -57,6 +68,11 @@ export interface TrustlessWorkConfig {
   signTransaction: (txXdr: string, networkPassphrase: string) => Promise<string>;
   /** Network passphrase handed to `signTransaction` (e.g. Networks.TESTNET). */
   networkPassphrase: string;
+  /**
+   * Stellar RPC endpoint used ONLY by the direct-invoke release workaround
+   * (`submitDirectRelease`). Defaults to the public testnet RPC.
+   */
+  rpcUrl?: string;
   /** Optional fetch override (tests, proxies). Defaults to globalThis.fetch. */
   fetchImpl?: FetchLike;
 }
@@ -247,6 +263,75 @@ export function disbursementEngagementId(invoiceId: string, offerId: string): st
   return `invofi-${invoiceId}-${offerId}`;
 }
 
+// ── Direct-invoke release workaround ─────────────────────────────────────────
+//
+// TW's `/escrow/single-release/release-funds` BUILD endpoint rejects fully
+// releasable escrows with HTTP 400 "Escrow already in dispute" — reproduced
+// twice on independent testnet escrows (2026-09-09 and 2026-09-10, see
+// docs/trustless-work-bug-report.md in the invofi repo). The escrow CONTRACT
+// itself is fine: a direct on-chain `release_funds` invocation succeeds
+// instantly and moves funds correctly. Until TW ships a fix, the release step
+// goes direct-to-chain; everything else (deploy/fund/milestone builds) keeps
+// using the TW API.
+
+/**
+ * Contract-side signature (verified against TW's single-release source and
+ * executed live twice): `release_funds(release_signer: Address,
+ * trustless_work_address: Address)`.
+ *
+ * `trustless_work_address` is NOT the TW platform wallet — it is the escrow's
+ * own **base contract id** (the `C…` id TW's read model reports as
+ * `contractBaseId`; the deployed escrow is a wrapper instance around it).
+ * Passing the deployed wrapper id here fails validation on-chain.
+ */
+export function buildReleaseFundsArgs(releaseSigner: string, contractBaseId: string): xdr.ScVal[] {
+  return [nativeToScVal(releaseSigner, { type: 'address' }), nativeToScVal(contractBaseId, { type: 'address' })];
+}
+
+/**
+ * Extracts the escrow's base contract id (`contractBaseId`) from a TW
+ * read-model snapshot. Returns null when absent so callers can distinguish
+ * "cannot release directly" (needs the id) from other read failures.
+ */
+export function extractContractBaseId(snapshot: Record<string, unknown>): string | null {
+  const base = snapshot.contractBaseId;
+  return typeof base === 'string' && base.length > 0 ? base : null;
+}
+
+/**
+ * Validating equality check for an escrow id / base id pair: both arguments
+ * must decode as well-formed contract strkeys and their 32-byte payloads
+ * must match. Returns false (never throws) on malformed input.
+ *
+ * This does NOT certify that a base id belongs to a given escrow — a wrong
+ * but well-formed third-party id passes here just like the right one. The
+ * chain is the only real judge: `release_funds` rejects any
+ * `trustless_work_address` that is not the escrow's actual base contract.
+ */
+export function contractIdMatchesBase(contractId: string, contractBaseId: string): boolean {
+  const hexOf = (id: string): string | null => {
+    try {
+      return StrKey.decodeContract(id).toString('hex');
+    } catch {
+      return null;
+    }
+  };
+  const a = hexOf(contractId);
+  const b = hexOf(contractBaseId);
+  return a !== null && a === b;
+}
+
+/**
+ * Builds the Escrow Viewer URL for an escrow contract id. The default points
+ * at Trustless Work's public viewer host; override the path/host per
+ * deployment with `NEXT_PUBLIC_ESCROW_VIEWER_URL` (a `{contractId}`
+ * placeholder is replaced; defaults to appending the id).
+ */
+export function escrowViewerUrl(contractId: string, templateEnv?: string): string {
+  const template = templateEnv && templateEnv.length > 0 ? templateEnv : 'https://viewer.trustlesswork.com/escrow/{contractId}';
+  return template.includes('{contractId}') ? template.replace('{contractId}', encodeURIComponent(contractId)) : `${template.replace(/\/+$/, '')}/${encodeURIComponent(contractId)}`;
+}
+
 /**
  * Maps InvoFi domain parameters onto TW's single-release deploy payload.
  * Exported for transparency and testing; `deployDisbursementEscrow` uses it.
@@ -282,7 +367,62 @@ export function usdcTestnetTrustline(issuerAddress: string): EscrowTrustline {
   return { symbol: 'USDC', address: issuerAddress };
 }
 
-// ── Client factory ───────────────────────────────────────────────────────────
+// ── Direct-invoke release (scVal composition lives above, with the types) ───
+
+/**
+ * Signs and submits a DIRECT on-chain `release_funds` invocation — the
+ * workaround for TW's release-funds build-endpoint bug (see
+ * buildReleaseFundsArgs). The platform wallet signs; the RPC receives the
+ * prepared transaction.
+ *
+ * This is the ONLY place the escrow adapter goes straight to the chain
+ * instead of through TW's build/sign/submit loop, and it exists solely
+ * because TW's build endpoint rejects releasable escrows while the bug is
+ * open. When TW ships the fix, callers should switch back to
+ * `buildRelease` → `sign` → `submit`.
+ */
+export async function submitDirectRelease(cfg: TrustlessWorkConfig, contractId: string, contractBaseId: string, platformAddress: string): Promise<SendTransactionResult> {
+  // Every failure — malformed ids, RPC errors, wallet refusal, network
+  // rejection — maps to ESCROW_RELEASE_FAILED so callers get one typed,
+  // funds-not-moved contract instead of a mix of raw SDK errors.
+  try {
+    const server = new SorobanRpc.Server(cfg.rpcUrl ?? 'https://soroban-testnet.stellar.org', { allowHttp: (cfg.rpcUrl ?? '').startsWith('http://') });
+    const contract = new Contract(contractId);
+    const source = await server.getAccount(platformAddress);
+    const tx = new TransactionBuilder(source, { fee: BASE_FEE, networkPassphrase: cfg.networkPassphrase })
+      .addOperation(contract.call('release_funds', ...buildReleaseFundsArgs(platformAddress, contractBaseId)))
+      .setTimeout(60)
+      .build();
+    const signedXdr = await cfg.signTransaction(tx.toXDR(), cfg.networkPassphrase);
+    const signed = TransactionBuilder.fromXDR(signedXdr, cfg.networkPassphrase);
+    const sent = await server.sendTransaction(signed as Transaction);
+    if (sent.status === 'ERROR') {
+      throw new TrustlessWorkError({
+        status: 502,
+        code: 'ESCROW_RELEASE_FAILED',
+        title: 'Direct release failed on-chain',
+        detail: `release_funds was rejected by the network (${sent.errorResult?.result()?.switch()?.name ?? 'unknown error'}). No funds moved — verify the escrow state and retry.`,
+      }, 502);
+    }
+    return { success: true, raw: sent };
+  } catch (err: unknown) {
+    if (err instanceof TrustlessWorkError) throw err;
+    throw new TrustlessWorkError({
+      status: 502,
+      code: 'ESCROW_RELEASE_FAILED',
+      title: 'Direct release failed',
+      detail: `release_funds could not be executed: ${err instanceof Error ? err.message : String(err)}. No funds moved — verify the escrow state and retry.`,
+    }, 502);
+  }
+}
+
+/** Standalone shape of {@link submitDirectRelease} for dependency injection / typing. */
+export type SubmitDirectReleaseFn = (
+  cfg: TrustlessWorkConfig,
+  contractId: string,
+  contractBaseId: string,
+  platformAddress: string,
+) => Promise<SendTransactionResult>;
 
 const DEFAULT_BASE_URLS: Record<TrustlessWorkEnv, string> = {
   testnet: 'https://dev.api.trustlesswork.com',
@@ -296,6 +436,7 @@ const DEFAULT_BASE_URLS: Record<TrustlessWorkEnv, string> = {
 export function createTrustlessWorkClient(cfg: TrustlessWorkConfig) {
   const env: TrustlessWorkEnv = cfg.env ?? 'testnet';
   const baseUrl = (cfg.baseUrl ?? DEFAULT_BASE_URLS[env]).replace(/\/+$/, '');
+  const rpcUrl = cfg.rpcUrl ?? 'https://soroban-testnet.stellar.org';
   const fetchImpl: FetchLike = cfg.fetchImpl ?? ((url, init) => globalThis.fetch(url, init) as unknown as Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>);
 
   function headers(): Record<string, string> {
@@ -491,6 +632,25 @@ export function createTrustlessWorkClient(cfg: TrustlessWorkConfig) {
      */
     buildDisbursementEscrow(params: DisbursementEscrowParams): Promise<UnsignedTransaction> {
       return build('/deployer/single-release', mapToDeployPayload(params));
+    },
+
+    /** RPC URL in use by the direct-invoke release (exposed for logging/tests). */
+    rpcUrl,
+
+    /**
+     * Executes the release step DIRECTLY on-chain, bypassing TW's release-funds
+     * build endpoint (which rejects releasable escrows while the
+     * "Escrow already in dispute" bug is open — see
+     * buildReleaseFundsArgs / docs/trustless-work-bug-report.md).
+     *
+     * Reads nothing from the TW API: it fetches the platform account from RPC,
+     * builds `release_funds(release_signer, trustless_work_address)` with
+     * `trustless_work_address = contractBaseId`, has the platform wallet sign,
+     * and submits via RPC. Throws `TrustlessWorkError` (ESCROW_RELEASE_FAILED)
+     * when the network rejects the transaction.
+     */
+    submitDirectRelease(contractId: string, contractBaseId: string, platformAddress: string): Promise<SendTransactionResult> {
+      return submitDirectRelease(cfg, contractId, contractBaseId, platformAddress);
     },
   };
 }

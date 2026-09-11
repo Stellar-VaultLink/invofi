@@ -377,6 +377,30 @@
         "description": "Bu teklifi zincir üzerinde temerrüt olarak işaretlemeden önce beklenen etkileri gözden geçirin. Anapara kabul sırasında ödenmişti — bu işlem parayı geri getirmez ve geri alınamaz.",
         "confirm": "Geri al"
       }
+    },
+    "escrow": {
+      "title": "Emanet korumalı ödeme",
+      "viewer": "Emanet gezgininde görüntüle",
+      "loading": "Emanet durumu yükleniyor…",
+      "txHash": "Serbest bırakma işlemi",
+      "confirmDelivery": "Teslimatı Onayla",
+      "approveDelivery": "Teslimatı Onayla",
+      "releaseFunds": "Fonları Serbest Bırak",
+      "deliveryConfirmed": "Teslimat onaylandı",
+      "deliveryConfirmedHint": "Serbest bırakmayı onaylaması için platform bilgilendirildi.",
+      "approved": "Teslimat onaylandı",
+      "approvedHint": "Artık fonları işletmeye serbest bırakabilirsiniz.",
+      "released": "Fonlar serbest bırakıldı",
+      "releasedHint": "Ödeme işletmeye yapıldı.",
+      "actionFailed": "Emanet işlemi başarısız",
+      "missingBaseId": "Henüz serbest bırakılamaz: temel sözleşme kimliği kullanılamıyor — kısa süre içinde tekrar deneyin.",
+      "step": {
+        "awaitingDelivery": "İşletmenin teslimatı onaylaması bekleniyor.",
+        "awaitingApproval": "Teslimat onaylandı — platform onayı bekleniyor.",
+        "releasable": "Teslimat doğrulandı — fonlar serbest bırakılmaya hazır.",
+        "released": "Fonlar işletmeye serbest bırakıldı.",
+        "disputed": "Bu emanet ihtilafta — destekle iletişime geçin."
+      }
     }
   },
   "Notifications": {

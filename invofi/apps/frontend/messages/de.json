@@ -377,6 +377,30 @@
         "description": "Prüfe die erwarteten Auswirkungen, bevor du dieses Angebot on-chain als ausgefallen markierst. Das Kapital wurde bei der Annahme bereits ausgezahlt — das gibt keine Mittel zurück und lässt sich nicht rückgängig machen.",
         "confirm": "Einfordern"
       }
+    },
+    "escrow": {
+      "title": "Treuhand-gesicherte Auszahlung",
+      "viewer": "Im Escrow-Explorer ansehen",
+      "loading": "Treuhand-Status wird geladen…",
+      "txHash": "Freigabe-Transaktion",
+      "confirmDelivery": "Lieferung bestätigen",
+      "approveDelivery": "Lieferung freigeben",
+      "releaseFunds": "Mittel freigeben",
+      "deliveryConfirmed": "Lieferung bestätigt",
+      "deliveryConfirmedHint": "Die Plattform wurde zur Freigabe benachrichtigt.",
+      "approved": "Lieferung freigegeben",
+      "approvedHint": "Du kannst die Mittel jetzt an das Unternehmen freigeben.",
+      "released": "Mittel freigegeben",
+      "releasedHint": "Die Auszahlung wurde an das Unternehmen geleistet.",
+      "actionFailed": "Treuhand-Aktion fehlgeschlagen",
+      "missingBaseId": "Freigabe noch nicht möglich: Basis-Vertrags-ID ist nicht verfügbar — bitte kurz erneut versuchen.",
+      "step": {
+        "awaitingDelivery": "Wartet auf die Lieferbestätigung des Unternehmens.",
+        "awaitingApproval": "Lieferung bestätigt — wartet auf Freigabe der Plattform.",
+        "releasable": "Lieferung verifiziert — Mittel sind freigabebereit.",
+        "released": "Mittel an das Unternehmen freigegeben.",
+        "disputed": "Dieses Treuhandkonto ist strittig — kontaktiere den Support."
+      }
     }
   },
   "Notifications": {

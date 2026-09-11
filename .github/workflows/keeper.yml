@@ -40,11 +40,15 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: invofi/scripts/package-lock.json
-      - run: npm ci
+      # --legacy-peer-deps matches CI's install flag: the frontend tree has
+      # peer ranges (e.g. @creit.tech/stellar-wallets-kit pins) that plain npm
+      # ci refuses; strict mode here turned the keeper red on lockfile drift
+      # that CI's own flag tolerates.
+      - run: npm ci --legacy-peer-deps
       # The keeper test imports from ../apps/frontend/src/lib/health/collector.js,
       # which requires @stellar/stellar-sdk resolved from the frontend workspace.
       - name: Install frontend dependencies (for test imports)
-        run: npm ci
+        run: npm ci --legacy-peer-deps
         working-directory: invofi/apps/frontend
       - run: npm test
       - run: npx tsc --noEmit --project tsconfig.keeper.json

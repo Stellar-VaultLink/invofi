@@ -5,27 +5,47 @@ on:
     paths:
       - '**/package.json'
       - '**/package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   check-sync:
-    name: Verify package-lock.json is in sync
+    name: Verify package-lock.json is in sync (${{ matrix.workspace.name }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Note: scripts lives at invofi/scripts, not under apps/ — hence the
+        # explicit dir mapping instead of deriving the path from the name.
+        workspace:
+          - { name: frontend, dir: invofi/apps/frontend }
+          - { name: sdk, dir: invofi/apps/sdk }
+          - { name: scripts, dir: invofi/scripts }
     defaults:
       run:
-        working-directory: invofi/apps/frontend
+        working-directory: ${{ matrix.workspace.dir }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: invofi/apps/frontend/package-lock.json
+          cache-dependency-path: ${{ matrix.workspace.dir }}/package-lock.json
+
       - name: Check if lock file is in sync
         run: |
-          # Install with package-lock only to detect drift
-          npm install --package-lock-only --ignore-scripts 2>&1
+          # Install with package-lock only to detect drift, mirroring the
+          # install flag used by CI and the scheduled workflows
+          # (keeper, health-collector). 2026-09-11: a frontend lockfile
+          # drift merged via a dependabot PR broke keeper +
+          # health-collector for hours; this matrix now covers all three
+          # npm workspaces so drift fails PRs at the door.
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps 2>&1
           if ! git diff --quiet package-lock.json; then
-            echo "::error::package-lock.json is out of sync with package.json. Please run 'npm install' and commit the updated lock file."
+            echo "::error::package-lock.json is out of sync with package.json in ${{ matrix.workspace.dir }}. Please run 'npm install' and commit the updated lock file."
             git diff package-lock.json
             exit 1
           fi

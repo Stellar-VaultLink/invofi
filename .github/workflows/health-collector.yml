@@ -90,16 +90,20 @@ jobs:
             npm-${{ runner.os }}-
 
       # ── Install dependencies ──────────────────────────────────────────────
+      # --legacy-peer-deps matches CI's install flag: the frontend tree has
+      # peer ranges (e.g. @creit.tech/stellar-wallets-kit pins) that plain npm
+      # ci refuses; strict mode here turned the collector red on lockfile
+      # drift that CI's own flag tolerates.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       # The test and type-check import from ../apps/frontend and ../apps/sdk,
       # which require their own node_modules for type resolution.
       - name: Install frontend dependencies (for test imports)
-        run: npm ci
+        run: npm ci --legacy-peer-deps
         working-directory: invofi/apps/frontend
       - name: Install SDK dependencies (for type-check)
-        run: npm ci
+        run: npm ci --legacy-peer-deps
         working-directory: invofi/apps/sdk
 
       # ── Type-check ────────────────────────────────────────────────────────

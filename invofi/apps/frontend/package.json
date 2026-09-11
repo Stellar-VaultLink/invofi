@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@albedo-link/intent": "^0.13.0",
-    "@creit.tech/stellar-wallets-kit": "^2.5.0",
+    "@creit.tech/stellar-wallets-kit": "^2.6.0",
     "@hookform/resolvers": "^3.9.0",
     "@lobstrco/signer-extension-api": "^2.0.0",
     "@pinata/sdk": "^2.1.0",

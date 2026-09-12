@@ -59,9 +59,10 @@ would re-derive that audit burden for zero benefit.
 **Negative / follow-ups**
 - The API key must be requested manually in the TW Backoffice dApp
   (wallet-signed; key shown once) — documented in
-  `docs/trustless-work-integration.md` §"Getting access".
-- Milestone approval adds a UX step for USDC offers (originator's customer /
-  platform confirms delivery). Milestone-approval UI is a follow-up issue.
+  `docs/trustless-work-integration.md` §"Partnership status".
+- Milestone approval adds a UX step for USDC offers (the originator
+  confirms delivery; the platform approves + releases). Milestone-approval
+  UI has since shipped (#381).
 - Repayment escrow, dispute routing through TW, and insurance payout via
   escrow remain Phase-2b (Epic 4 in the integration doc).
 

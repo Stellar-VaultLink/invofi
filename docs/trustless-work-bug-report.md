@@ -5,10 +5,10 @@
 > **Date:** 2026-09-09 · **Network:** Stellar testnet · **API:** `https://dev.api.trustlesswork.com`
 > **Companion doc:** [trustless-work-integration.md](./trustless-work-integration.md) (Part 0 findings, full e2e evidence)
 >
-> **Status:** drafted, ready to send via their Telegram/Discord (linked from
-> their docs). Once sent, record the channel + date in
-> [trustless-work-integration.md → Part 7](./trustless-work-integration.md#part-7--bug-report-to-trustless-work-2026-09-09)
-> so the TW conversation has a single paper trail.
+> **Status:** shared with the TW team (2026-09-12, via a core team member on
+> Telegram) — under active discussion. The integration doc's
+> [Part 6](./trustless-work-integration.md#part-6--bug-report--engagement-with-trustless-work)
+> tracks the engagement timeline; this file is the canonical repro evidence.
 
 > **⚠️ Re-verified 2026-09-10 — bug REPRODUCED on a brand-new escrow.**
 > Everything below remains accurate; a second, independent repro with fresh

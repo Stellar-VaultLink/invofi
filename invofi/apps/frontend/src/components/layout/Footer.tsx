@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { REGISTRY_CONTRACT_ID, STELLAR_NETWORK, explorerContractUrl } from '@/lib/constants';
-import { Heart } from 'lucide-react';
+import { Heart, Linkedin, Send } from 'lucide-react';
 
 const SITE_MAP = {
   product: [
@@ -26,6 +26,21 @@ const SITE_MAP = {
     { label: 'Stellar Dev Portal', href: 'https://developers.stellar.org' },
   ],
 };
+
+const SOCIAL_LINKS = [
+  {
+    label: 'Telegram',
+    href: 'https://t.me/+K56Xkd2pfPM4NDE0',
+    Icon: Send,
+    hoverClass: 'hover:text-[#26A5E4]',
+  },
+  {
+    label: 'LinkedIn',
+    href: 'https://www.linkedin.com/company/stellar-vaultlink',
+    Icon: Linkedin,
+    hoverClass: 'hover:text-[#0A66C2]',
+  },
+] as const;
 
 export function Footer() {
   const t = useTranslations('Footer');
@@ -145,6 +160,23 @@ export function Footer() {
               </a>
             </span>
           </p>
+
+          {/* ── Social icons ── */}
+          <div className="flex items-center gap-2">
+            {SOCIAL_LINKS.map(({ label, href, Icon, hoverClass }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={label}
+                title={label}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-foreground/30 ${hoverClass}`}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" />
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

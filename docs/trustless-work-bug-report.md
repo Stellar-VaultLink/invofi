@@ -16,6 +16,15 @@
 > A **second defect** was also confirmed: their indexer did not index a new
 > escrow deploy for 40+ minutes, so `fund-escrow` via the API returns
 > "Escrow not found" for escrows that exist on-chain.
+>
+> **⚠️ Re-verified again 2026-09-12 — third repro, 100% API-path escrow.**
+> TW's infra was healthy this time (indexer lag 2s, every build endpoint
+> instant) and the release build **still** returned 400 "Escrow already in
+> dispute" for a provably releasable escrow — see the
+> [2026-09-12 section](#re-verification-2026-09-12--third-repro-full-api-path-escrow-infra-pause-theory-ruled-out).
+> This rules out the "backend was paused" explanation for the release bug
+> itself; the separate indexer-lag defect from 09-10 may still have been
+> pause-related.
 
 ---
 
@@ -50,6 +59,45 @@ releasable state directly on-chain, and re-attempted the release build.
   We funded via direct contract invocation instead. (The read model also
   still shows yesterday's escrow 002 as `released: false` although
   on-chain `released: true` since 2026-09-09.)
+
+---
+
+## Re-verification (2026-09-12) — third repro, full-API-path escrow; infra-pause theory ruled out
+
+A TW core member asked whether the error is reproducible and noted a single
+release had just worked for him, suggesting (via the maintainer) that a
+recent backend/DB pause on TW's side might explain our failures. Retested
+2026-09-12 ~22:16 UTC with a **brand-new escrow driven 100% through the API
+path** (deploy → fund → approve → complete — all builds, signs, and submits
+via `dev.api.trustlesswork.com`):
+
+| Item | Value |
+|---|---|
+| Escrow contract | `CD7G7S2RXCXIRTVSVUUZNTI3V3IPS5TJV56W434CFAZ2EGXPW6LMTB74` |
+| Engagement | `invofi-e2e-escrow-004-o1` · 250 units · platformFee 0.5 |
+| Deploy tx | `aaf6db91d9e2fb2ed290a31444fc5a8436cbfd580298dd88bf993524dc84cb63` |
+| Fund tx (via API) | `ff33ef13f3243449d8bc35a97c535001b6ebc03db533bf3c1f18eb3b4628ba45` |
+| Approve milestone | `3a1cf231dbf49869a29eb53e5d17918c245521f132066d58cd3d3e8bfd32e338` |
+| Milestone → completed | `ba36a3febe381b93d1b1c6880d216455ca2d860062c4edac7be74d946781d852` |
+| Release build attempts | **HTTP 400 "Escrow already in dispute"** at 22:16:58 and again after 30s (22:17:31) |
+| Direct release tx | `4d155c417e946f31c7cf8147250b6f5724d72735c91e99d5faa9f5c08bf15716` — funds moved correctly |
+
+**Infra-pause theory ruled out for THIS bug:** the read model was healthy
+throughout — indexer lag was **2 seconds** from deploy confirmation to the
+escrow appearing in `get-escrows-by-signer`, and every build endpoint
+resolved the escrow instantly. On-chain state at both failed attempts:
+`disputed: false, released: false`, milestone approved + completed, balance
+250 unspent — provably releasable; the direct `release_funds` succeeded
+immediately (receiver +248, platform fee +1.25).
+
+**Additional read-model defect confirmed:** after the on-chain release,
+the 004 row updated `balance` to 0 but still reports `released: false`
+(same as escrow 002 since 2026-09-09). The flags-sync pipeline is not
+picking up `tw_release` events even though balance changes propagate —
+consistent with the stale-flag state the release pre-check appears to key on.
+
+Script: `invofi/scripts/tw-retest.ts` (runs the full flow end-to-end and
+prints a summary block; idempotent per fresh engagement id).
 
 ---
 

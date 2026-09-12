@@ -413,7 +413,7 @@ All Trustless Work calls sit behind **one adapter file** in `@invofi/sdk` so a T
 
 ---
 
-## Part 7 — Bug report to Trustless Work (2026-09-09, re-verified 2026-09-10)
+## Part 7 — Bug report to Trustless Work (2026-09-09, re-verified 2026-09-10, re-verified 2026-09-12)
 
 > **Status:** drafted, ready to send via their Telegram/Discord (linked from
 > their docs). Once sent, record the channel + date here so the TW
@@ -433,6 +433,24 @@ All Trustless Work calls sit behind **one adapter file** in `@invofi/sdk` so a T
 > as a document: [trustless-work-bug-report.md](./trustless-work-bug-report.md)
 > (the message below is unchanged and remains accurate; the re-verification
 > evidence is appended above its message body).
+>
+> **⚠️ 2026-09-12 re-verification + TW conversation update.** A TW core
+> member asked if the error is reproducible and suggested a recent
+> backend/DB pause on their side might explain it. Third repro same day
+> (`CD7G7S2R…MTB74`, engagement `invofi-e2e-escrow-004-o1`, escrow driven
+> **100% through the API path**): infra was healthy — **2s indexer lag**,
+> every build endpoint instant — and the release build **still** returned
+> 400 "Escrow already in dispute" twice (22:16:58, 22:17:31 UTC) for a
+> provably releasable escrow; the direct `release_funds` succeeded
+> immediately (`4d155c41…5716`). **Pause theory ruled out for the release
+> bug.** New sub-finding: their read model updates `balance` but not
+> `released`/`disputed` flags (004 shows `released: false, balance: 0`
+> post-release; 002 has been wrong since 09-09) — plausibly the same
+> stale-flag root cause the release pre-check keys on. Also: after the
+> maintainer shared the API key privately with the TW member for log
+> inspection, **rotate the key once log review concludes**. Full evidence:
+> [bug report → 2026-09-12 section](./trustless-work-bug-report.md#re-verification-2026-09-12--third-repro-full-api-path-escrow-infra-pause-theory-ruled-out).
+> Repro script: `invofi/scripts/tw-retest.ts`.
 
 ````markdown
 Subject: Bug report — release-funds build endpoint returns "Escrow already in dispute" for a fully releasable escrow (testnet, repro + tx hashes)

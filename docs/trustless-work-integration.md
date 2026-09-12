@@ -216,7 +216,7 @@ All TW calls sit behind **one adapter file** in `@invofi/sdk` (`src/escrow.ts`) 
 ## Part 5 — Partnership status
 
 - **Contact established:** engaged with a TW core team member via Telegram (2026-09-12); the release-funds bug report is under active discussion (see Part 7). Their public Telegram group remains the fastest general channel.
-- **API key:** self-served via the [Backoffice](https://dapp.trustlesswork.com) (wallet-signed ownership proof; key shown once, format `id.secret`). Security note: the key was shared privately with TW for log inspection during bug triage — **rotate it once that review concludes**.
+- **API key:** self-served via the [Backoffice](https://dapp.trustlesswork.com) (wallet-signed ownership proof; key shown once, format `id.secret`). TW offered to inspect our API request logs for the release-bug triage; we offered to share the key privately if needed (not shared so far). If it is ever shared for debugging, **rotate it afterward**.
 - **Outstanding asks:** release-funds fix; read-model flag sync fix; mainnet key-gating process; reference-integration listing in due course.
 
 ---

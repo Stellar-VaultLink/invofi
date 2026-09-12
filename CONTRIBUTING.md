@@ -375,4 +375,4 @@ Actions secrets.
 
 ## Questions?
 
-Open a [GitHub Discussion](https://github.com/Stellar-VaultLink/invofi/discussions) or comment on the relevant issue. We're happy to help new contributors get oriented.
+Open a [GitHub Discussion](https://github.com/Stellar-VaultLink/invofi/discussions), join the [Telegram community](https://t.me/+K56Xkd2pfPM4NDE0), or comment on the relevant issue. We're happy to help new contributors get oriented.

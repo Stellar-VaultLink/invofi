@@ -18,8 +18,10 @@
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2014-black)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Auth-Supabase-3ECF8E)](https://supabase.com)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black)](https://invofi-five.vercel.app)
+[![Telegram](https://img.shields.io/badge/Community-Telegram-26A5E4)](https://t.me/+K56Xkd2pfPM4NDE0)
+[![LinkedIn](https://img.shields.io/badge/Company-LinkedIn-0A66C2)](https://www.linkedin.com/company/stellar-vaultlink)
 
-[Live Demo](https://invofi-five.vercel.app) · [Docs](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs) · [Contributing](./CONTRIBUTING.md) · [Report Bug](https://github.com/Stellar-VaultLink/invofi/issues)
+[Live Demo](https://invofi-five.vercel.app) · [Docs](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs) · [Telegram](https://t.me/+K56Xkd2pfPM4NDE0) · [LinkedIn](https://www.linkedin.com/company/stellar-vaultlink) · [Contributing](./CONTRIBUTING.md) · [Report Bug](https://github.com/Stellar-VaultLink/invofi/issues)
 
 </div>
 
@@ -897,6 +899,12 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
 	<tbody>
 </table>
 <!-- readme: contributors -end -->
+
+## Community
+
+- [Telegram](https://t.me/+K56Xkd2pfPM4NDE0) — community chat for questions and updates
+- [LinkedIn](https://www.linkedin.com/company/stellar-vaultlink) — Stellar VaultLink company page
+- [GitHub Discussions](https://github.com/Stellar-VaultLink/invofi/discussions) — technical questions and roadmap ideas
 
 ## Contributing
 

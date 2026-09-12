@@ -43,3 +43,5 @@ See [Deployment](./07-deployment.md) for a complete setup guide.
 
 - [GitHub Issues](https://github.com/Stellar-VaultLink/invofi/issues) — bug reports and feature requests
 - [GitHub Discussions](https://github.com/Stellar-VaultLink/invofi/discussions) — questions and ideas
+- [Telegram](https://t.me/+K56Xkd2pfPM4NDE0) — community chat for questions and updates
+- [LinkedIn](https://www.linkedin.com/company/stellar-vaultlink) — Stellar VaultLink company page

@@ -21,6 +21,8 @@ const SITE_MAP = {
     { label: 'Contributing', href: 'https://github.com/Stellar-VaultLink/invofi/blob/main/CONTRIBUTING.md' },
     { label: 'Open Issues', href: 'https://github.com/Stellar-VaultLink/invofi/issues' },
     { label: 'Discussions', href: 'https://github.com/Stellar-VaultLink/invofi/discussions' },
+    { label: 'Telegram', href: 'https://t.me/+K56Xkd2pfPM4NDE0' },
+    { label: 'LinkedIn', href: 'https://www.linkedin.com/company/stellar-vaultlink' },
     { label: 'Stellar Dev Portal', href: 'https://developers.stellar.org' },
   ],
 };

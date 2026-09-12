@@ -99,6 +99,24 @@ consistent with the stale-flag state the release pre-check appears to key on.
 Script: `invofi/scripts/tw-retest.ts` (runs the full flow end-to-end and
 prints a summary block; idempotent per fresh engagement id).
 
+### Video proof (escrow 006, 2026-09-12 23:32 UTC)
+
+A recorded terminal session of a complete fourth repro — deploy → fund →
+approve → complete → **release build HTTP 400** → direct release **SUCCESS**
+— is embedded below (animated; ~1 min at 2× speed) and also hosted at
+<https://asciinema.org/a/SKwLDC7oj7XUfhyk> (interactive, scrubbable).
+
+![Recorded reproduction of the release-funds bug: full escrow lifecycle via
+the TW API, release build rejected with "Escrow already in dispute" for a
+releasable escrow, then a successful direct on-chain
+release_funds](./tw-bug-repro.gif)
+
+- Escrow: `CDBU3TDENP7UJ4APLR6AE4Y5R6EUZFTZHV5CDFY74APHYAHK7MPL6LYF`
+  (engagement `invofi-e2e-escrow-006-o1`)
+- Indexer lag: 2s · Release build: HTTP 400 twice
+- Direct release tx:
+  `6324fd5075075259a6648177aff34ae0a1b7b4c35ae06c3f816a36d5469db5e4`
+
 ---
 
 ## Message to send (copy everything below this line as-is)

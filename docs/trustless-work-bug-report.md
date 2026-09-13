@@ -34,6 +34,13 @@
 > [role-collision experiment](#role-collision-experiment-2026-09-13-00030020-utc--tws-hypothesis-tested-and-refuted)
 > plus a newly-found **corrupted fund-build defect** (funds credited to the
 > signer instead of the escrow) and the full error-message timeline.
+>
+> **⚠️ 2026-09-13 (later) — the token + trustline hypothesis is also refuted.**
+> Escrow 012 ran the complete API path with a **fully distinct address per
+> role** and **every participant wallet trustlined and holding the asset**
+> (per TW's own Trustlines doc). Same false 400. Both env-side explanations
+> are now ruled out — see the
+> [token & trustline experiment](#token--trustline-hypothesis-2026-09-13-00480052-utc--also-refuted).
 
 ---
 
@@ -178,6 +185,38 @@ two further error-message changes on the release endpoint within one hour
 earnings" → back to "already in dispute"), indicating active redeployment of
 the API during this window.
 
+### Token + trustline hypothesis (2026-09-13 00:48–00:52 UTC) — ALSO REFUTED
+
+A TW core member then suggested the "random messages" come from our test
+asset, and that `platformAddress`, `receiver`, and TW's address may be
+missing the trustline. Our asset is **VBUC**, a testnet-only SAC we minted
+for verification (issuer `GBG77OVP…`, SAC `CCJ4FGM5DJ…`). TW's own
+[Trustlines doc](https://docs.trustlesswork.com/trustless-work/introduction/stellar-and-soroban-the-backbone-of-trustless-work/trustlines)
+says escrows "can use any Stellar-issued asset" as long as "every participant
+must be able to hold that asset." Escrow **012** tested that exact bar:
+
+| Wallet | Role in 012 | Trustline | Balance at test time |
+|---|---|---|---|
+| e2e-lender `GDHS…UHT2` | signer/funder | ✓ | 500 VBUC |
+| invofi-deployer `GBDD…EVZR` | approver + platformAddress | ✓ | 7.5 VBUC |
+| e2e-originator `GAB3…CJOWY` | serviceProvider + receiver | ✓ | 1,988 VBUC |
+| e2e-buyer `GCPN…VUSQ7` | releaseSigner | ✓ | 300 VBUC |
+| keeper `GCEC…4G6QJ6` | disputeResolver | ✓ | 300 VBUC |
+
+Every step succeeded through the API — deploy (indexed in 2s), fund,
+approve, complete (`CDSH3O7S…P4SO5X`) — and the release build **still
+returned 400 "Escrow already in dispute" twice** (00:50:04, 00:50:25 UTC)
+while on-chain state was releasable and TW's own read model showed
+`disputed: false` for the same contract at the same minute. The buyer-signed
+on-chain release then succeeded instantly (`5f8699f2…d803c1f1`): receiver
++248, platform fee +1.25 — the exact flow TW's member described.
+
+The trustline theory is also contradicted by history: receiver and platform
+held trustlines **and** balances during all five failing release attempts
+(004, 006, 011, 012 among them), and the 09-12 23:59 probes showed the
+endpoint returning *correct* state-based errors for unfunded/released
+escrows — impossible if trustline/mint state corrupted the pre-check.
+
 ### Error-message timeline on `release-funds` (all observed live)
 
 | When | Message | Escrow state |
@@ -190,6 +229,8 @@ the API during this window.
 | 09-12 23:59 | "The escrow funds have been released" | released (correct) |
 | 09-13 00:03 | "The escrow balance must be equal to the amount of earnings" | funded+completed (false — balance was equal) |
 | 09-13 00:03 | "Escrow already in dispute" | funded+completed, distinct roles (false) |
+| 09-13 00:46 | "The escrow funds have been released" | released (correct — pre-check healthy again) |
+| 09-13 00:50 | "Escrow already in dispute" ×2 | funded+completed, distinct roles, all wallets trustlined+funded (false) |
 
 ---
 

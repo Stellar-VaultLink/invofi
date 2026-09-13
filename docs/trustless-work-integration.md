@@ -84,7 +84,7 @@ platform does both; TW's contract role model says otherwise.)
 
 - **Who we are:** InvoFi — open-source invoice-financing protocol on Stellar Soroban; 5 contracts (registry / financing / repayment / insurance / reputation), real USDC/XLM testnet transfers, public stats dashboard, SCF-path project.
 - **What we built against your API:** a typed zero-dependency single-release adapter in `@invofi/sdk` on the live production API, an InvoFi→TW role mapping (receiver = originator, approver / releaseSigner / disputeResolver = platform), a server-side key proxy, and the accept-offer disbursement flow behind a feature flag — all CI-green, plus a scripted e2e repro (`tw-retest.ts`).
-- **Open technical asks:** (1) fix the `release-funds` build endpoint (Part 7 — our UI needs the standard API path, the direct contract invoke is a stopgap); (2) fix read-model flag sync (`released` stays `false` after release); (3) confirm mainnet API-key gating process post-audit.
+- **Open technical asks:** (1) ~~fix the `release-funds` build endpoint~~ — **resolved 09-13: works on USDC; the pre-check is asset-restricted** (our A/B: USDC 201, custom SAC 400); remaining question for TW: is non-USDC asset support intentional-but-buggy or unsupported?; (2) ~~fix read-model flag sync~~ — flags synced correctly on the USDC run; verify it stays consistent; (3) confirm mainnet API-key gating process post-audit.
 - **Design question for v1:** the sole-approver model means the platform is a single point in the release path (deliberate, documented in ADR-0010 — an absent external lender can never strand an originator's funds). If v1 ever supports multiple approvers, we'd add the lender as a second approver.
 - **In due course:** reference-integration listing (alongside KindFi / SafeTrust / Boundless) and cross-ecosystem visibility — both projects are SCF-path and bounty-driven.
 
@@ -176,7 +176,7 @@ All TW calls sit behind **one adapter file** in `@invofi/sdk` (`src/escrow.ts`) 
 | # | Item | Labels | Status |
 |---|---|---|---|
 | 3.1 | On `accept_offer`, create + fund the escrow (lender signs) | `high-complexity` | ✅ done (`316a90b6`, best-effort, env-gated) |
-| 3.2 | Milestone-approval step + release to originator | `high-complexity` | ✅ done (#381, `fbe9db1`) |
+| 3.2 | Milestone-approval step + release to originator | `high-complexity` | ✅ done (#381, `fbe9db1`) — **release now verified end-to-end via TW's API on USDC (09-13 A/B)** |
 | 3.3 | Escrow status surface on invoice detail + portfolio | `medium` | ⬜ open (status step exists in the offer row; portfolio-wide surface not yet) |
 | 3.4 | e2e: Playwright test for accept → escrow → approve → release on testnet | `medium` | ⬜ open (gated on the broader e2e-suite repair) |
 | 3.5 | Docs: README architecture + GitBook with the escrow rail | `trivial`, `good-first-issue` | ✅ done |
@@ -237,7 +237,8 @@ All TW calls sit behind **one adapter file** in `@invofi/sdk` (`src/escrow.ts`) 
 | 2026-09-12 | **Re-verified (3rd repro) + TW engaged:** a TW core member asked if it's reproducible and suggested a recent backend/DB pause on their side. Escrow 004 driven **100% through the API path** — infra healthy (2s indexer lag, every build endpoint instant), release build **still** 400 twice; direct release moved funds correctly. **Pause theory ruled out for this bug.** Evidence shared with TW; repro script handed over |
 | 2026-09-13 | **TW's release-signer hypothesis tested and refuted:** escrow 011 with fully distinct `releaseSigner` (buyer) and `disputeResolver` (keeper) wallets, schema-perfect payload — **same false 400**. The buyer-signed on-chain release succeeded instantly (receiver +248, platform fee paid). Also found: a **corrupted fund-escrow build** credited 250 VBUC to the signer instead of the escrow (tx `1b7ed1aa…`), and the release error message changed three times within an hour — their API was being redeployed mid-test |
 | 2026-09-13 | **TW's token + trustline hypothesis also refuted:** escrow 012 ran the full API path with a distinct address per role and **every wallet trustlined + holding VBUC** (lender 500 / platform 7.5 / originator 1,988 / buyer 300 / keeper 300) — release build still 400 "already in dispute" while their own read model showed `disputed: false`. Buyer-signed direct release succeeded (`5f8699f2…`): receiver +248, platform +1.25. VBUC is a testnet-only SAC (issuer `GBG77OVP…`); TW's docs permit any issued asset with trustlines on every participant — all satisfied |
-| open | Awaiting TW fix; meanwhile the UI release step uses the direct-invoke workaround (`submitDirectRelease`) |
+| 2026-09-13 | **ROOT CAUSE FOUND — the token.** Controlled A/B, minutes apart, identical roles/balances/API path: release build on **USDC → HTTP 201, full API-path release** (escrow 013, `CCR4WZRK…`); on **VBUC → 400 "already in dispute"** (escrow 014, `CAOYPJKU…`). Our earlier "refuted" call was wrong and is retracted — the TW member's token hypothesis was correct. InvoFi switched testnet verification to official testnet USDC (Circle issuer `GBBD47IF…`); the direct-invoke release workaround is now only a fallback, not a requirement |
+| ✅ resolved | Release path fully green through TW's standard API on USDC; remaining TW ask narrowed to: is the release pre-check's asset restriction documented behavior for non-USDC tokens? |
 
 **New sub-finding (09-12):** the read model updates `balance` but not the
 `released`/`disputed` flags after an on-chain release (004: `released: false,

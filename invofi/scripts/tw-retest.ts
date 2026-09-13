@@ -50,7 +50,10 @@ const API = 'https://dev.api.trustlesswork.com';
 const NET = Networks.TESTNET;
 const RPC_URL = 'https://soroban-testnet.stellar.org';
 const HORIZON = 'https://horizon-testnet.stellar.org';
-const VBUC_ISSUER = 'GBG77OVPMWHLOSRD3MSJ2IN7GLUTLCUWOV5J53WY4NBAOO4YZTQ6WFQ6';
+const ASSET_SYMBOL = process.env.TW_ASSET ?? 'USDC';
+const ASSET_ISSUER =
+  process.env.TW_ISSUER ?? 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
+// Legacy VBUC verification run: TW_ASSET=VBUC TW_ISSUER=GBG77OVPMWHLOSRD3MSJ2IN7GLUTLCUWOV5J53WY4NBAOO4YZTQ6WFQ6
 
 const KEY = process.env.TW_API_KEY ?? '';
 if (!KEY) {
@@ -214,7 +217,7 @@ async function main(): Promise<void> {
     amount: AMOUNT,
     platformFee: PLATFORM_FEE,
     milestones: [{ description: 'InvoFi retest delivery milestone' }],
-    trustline: { address: VBUC_ISSUER, symbol: 'VBUC' },
+    trustline: { address: ASSET_ISSUER, symbol: ASSET_SYMBOL },
   };
   const deployTx = await runStep('deploy', LENDER, '/deployer/single-release', deployBody);
 

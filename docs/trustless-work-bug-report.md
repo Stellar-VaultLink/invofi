@@ -35,12 +35,15 @@
 > plus a newly-found **corrupted fund-build defect** (funds credited to the
 > signer instead of the escrow) and the full error-message timeline.
 >
-> **⚠️ 2026-09-13 (later) — the token + trustline hypothesis is also refuted.**
-> Escrow 012 ran the complete API path with a **fully distinct address per
-> role** and **every participant wallet trustlined and holding the asset**
-> (per TW's own Trustlines doc). Same false 400. Both env-side explanations
-> are now ruled out — see the
-> [token & trustline experiment](#token--trustline-hypothesis-2026-09-13-00480052-utc--also-refuted).
+> **✅ 2026-09-13 (final) — ROOT CAUSE IDENTIFIED: the asset.** A controlled
+> A/B experiment minutes apart — identical code, roles, trustlines, balances,
+> API path — showed the release-funds build endpoint **succeeds (HTTP 201)
+> on official testnet USDC** (escrow 013) and **fails with the false
+> "Escrow already in dispute" 400 on our custom VBUC SAC** (escrow 014).
+> The release pre-check is **token-conditional**. An earlier note in this
+> report claiming the token hypothesis was "refuted" was wrong — it was
+> retracted after the A/B run. See the
+> [A/B experiment](#ab-experiment-2026-09-13-01140117-utc--token-is-the-trigger).
 
 ---
 
@@ -185,7 +188,7 @@ two further error-message changes on the release endpoint within one hour
 earnings" → back to "already in dispute"), indicating active redeployment of
 the API during this window.
 
-### Token + trustline hypothesis (2026-09-13 00:48–00:52 UTC) — ALSO REFUTED
+### Token + trustline hypothesis (2026-09-13 00:48 UTC) — tested; final verdict below
 
 A TW core member then suggested the "random messages" come from our test
 asset, and that `platformAddress`, `receiver`, and TW's address may be
@@ -217,6 +220,35 @@ held trustlines **and** balances during all five failing release attempts
 endpoint returning *correct* state-based errors for unfunded/released
 escrows — impossible if trustline/mint state corrupted the pre-check.
 
+### A/B experiment (2026-09-13 01:14–01:17 UTC) — TOKEN is the trigger
+
+Controlled comparison, minutes apart, identical everything except the asset
+(same script `tw-role-test.ts`, same five wallets with distinct roles, same
+250 amount / 0.5% fee, same API path, every wallet trustlined and funded in
+both runs):
+
+| | Escrow 013 — **USDC** | Escrow 014 — **VBUC** |
+|---|---|---|
+| Contract | `CCR4WZRK…RPG75` | `CAOYPJKU…IOPDL` |
+| deploy → index | 3 s | 3 s |
+| fund (API) | ✓ `bb440a56…` | ✓ `19f1589a…` |
+| approve (API) | ✓ `debdaca6…` | ✓ `9ed08f66…` |
+| complete (API) | ✓ `62faf041…` | ✓ `63b8157e…` |
+| **release build** | **HTTP 201 — accepted** (`bfcdecbb…`) | **HTTP 400 "already in dispute"** ×2 |
+| funds moved | receiver +248, fee +1.25 | stuck → direct invoke needed (`e23dd336…`) |
+| read-model flags after release | `released: true` ✓ | stale `released: false` |
+
+**Conclusion (retracting our earlier "refuted" note):** TW's core member was
+right — the failure is tied to the token used. The release-funds pre-check
+(built XDR validation and/or its read-model lookup) rejects escrows denominated
+in our custom VBUC SAC while working correctly for USDC. Trustlines were a
+necessary precondition (all satisfied) but not the discriminator. InvoFi has
+since switched its testnet verification to official testnet USDC, which is
+also our production asset — so the integration is now fully green through the
+standard API path. The residual ask for TW: confirm whether non-USDC issued
+assets are *supported-but-buggy* or *unsupported* in the release pre-check, so
+other integrators with custom assets know what to expect.
+
 ### Error-message timeline on `release-funds` (all observed live)
 
 | When | Message | Escrow state |
@@ -230,7 +262,9 @@ escrows — impossible if trustline/mint state corrupted the pre-check.
 | 09-13 00:03 | "The escrow balance must be equal to the amount of earnings" | funded+completed (false — balance was equal) |
 | 09-13 00:03 | "Escrow already in dispute" | funded+completed, distinct roles (false) |
 | 09-13 00:46 | "The escrow funds have been released" | released (correct — pre-check healthy again) |
-| 09-13 00:50 | "Escrow already in dispute" ×2 | funded+completed, distinct roles, all wallets trustlined+funded (false) |
+| 09-13 00:50 | "Escrow already in dispute" ×2 | funded+completed, distinct roles, all wallets trustlined+funded, VBUC (false) |
+| 09-13 01:14 | **HTTP 201 — release accepted** | same setup, USDC (correct) |
+| 09-13 01:16 | "Escrow already in dispute" ×2 | same setup, VBUC (false) |
 
 ---
 

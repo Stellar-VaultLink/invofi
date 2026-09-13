@@ -34,7 +34,9 @@ if (!KEY) { console.error('TW_API_KEY required'); process.exit(1); }
 const ENGAGEMENT = process.env.TW_ENGAGEMENT ?? 'invofi-e2e-escrow-008-o1';
 const AMOUNT = 250;
 const FEE = 0.5;
-const VBUC_ISSUER = 'GBG77OVPMWHLOSRD3MSJ2IN7GLUTLCUWOV5J53WY4NBAOO4YZTQ6WFQ6';
+const ASSET_SYMBOL = process.env.TW_ASSET ?? 'USDC';
+const ASSET_ISSUER =
+  process.env.TW_ISSUER ?? 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 
 const kp = (name: string) => Keypair.fromSecret(execSync(`stellar keys show ${name}`, { encoding: 'utf8' }).trim().split(/\s+/).pop()!);
 const LENDER = kp('e2e-lender');
@@ -108,7 +110,7 @@ async function main() {
     amount: AMOUNT,
     platformFee: FEE,
     milestones: [{ description: 'Role-collision test delivery milestone' }],
-    trustline: { address: VBUC_ISSUER, symbol: 'VBUC' },
+    trustline: { address: ASSET_ISSUER, symbol: ASSET_SYMBOL },
   });
   if (!dep.ok) throw new Error(`deploy build → ${dep.status}: ${dep.text.slice(0, 250)}`);
   const dtx = TransactionBuilder.fromXDR(dep.json.unsignedTransaction, NET);

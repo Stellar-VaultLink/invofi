@@ -260,6 +260,31 @@
       "transferredHint": "{amount} jetons de position envoyés à {recipient}.",
       "transferFailed": "Échec du transfert",
       "transferFailedHint": "La transaction a échoué"
+    },
+    "escrow": {
+      "title": "Décaissements sous séquestre",
+      "description": "État en direct des séquestres qui conservent vos montants financés jusqu’à la vérification de la livraison.",
+      "refresh": "Actualiser les statuts des séquestres",
+      "viewer": "Voir dans l’explorateur de séquestres",
+      "amount": "Sous séquestre : {amount}",
+      "loading": "Chargement…",
+      "unavailable": "Statut indisponible",
+      "unavailableHint": "Certains statuts de séquestre n’ont pas pu être lus — actualisez pour réessayer ou ouvrez le séquestre dans l’explorateur.",
+      "actionNeeded": "{count, plural, one {# séquestre demande votre attention.} other {# séquestres demandent votre attention.}}",
+      "step": {
+        "awaitingApproval": "Livraison confirmée — en attente d’approbation de la plateforme.",
+        "awaitingDelivery": "En attente de la confirmation de livraison par l’entreprise.",
+        "disputed": "Ce séquestre est en litige — contactez le support.",
+        "releasable": "Livraison vérifiée — les fonds sont prêts à être libérés.",
+        "released": "Fonds libérés à l’entreprise."
+      },
+      "label": {
+        "awaitingDelivery": "En attente de livraison",
+        "awaitingApproval": "En attente d’approbation",
+        "releasable": "Prêt à libérer",
+        "released": "Libéré",
+        "disputed": "En litige"
+      }
     }
   },
   "Invoice": {

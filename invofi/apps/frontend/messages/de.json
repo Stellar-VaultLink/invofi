@@ -260,6 +260,31 @@
       "transferredHint": "{amount} Positions-Token an {recipient} gesendet.",
       "transferFailed": "Übertragung fehlgeschlagen",
       "transferFailedHint": "Transaktion fehlgeschlagen"
+    },
+    "escrow": {
+      "title": "Treuhandgesicherte Auszahlungen",
+      "description": "Live-Status der Treuhänder, die Ihre finanzierten Beträge bis zur verifizierten Lieferung halten.",
+      "refresh": "Treuhand-Status aktualisieren",
+      "viewer": "Im Treuhand-Explorer anzeigen",
+      "amount": "In Treuhand: {amount}",
+      "loading": "Wird geladen…",
+      "unavailable": "Status nicht verfügbar",
+      "unavailableHint": "Einige Treuhand-Statuswerte konnten nicht gelesen werden — bitte aktualisieren oder im Explorer öffnen.",
+      "actionNeeded": "{count, plural, one {# Auszahlung braucht Aufmerksamkeit.} other {# Auszahlungen brauchen Aufmerksamkeit.}}",
+      "step": {
+        "awaitingApproval": "Lieferung bestätigt — wartet auf Freigabe der Plattform.",
+        "awaitingDelivery": "Wartet auf die Lieferbestätigung des Unternehmens.",
+        "disputed": "Dieses Treuhandkonto ist strittig — kontaktiere den Support.",
+        "releasable": "Lieferung verifiziert — Mittel sind freigabebereit.",
+        "released": "Mittel an das Unternehmen freigegeben."
+      },
+      "label": {
+        "awaitingDelivery": "Warten auf Lieferung",
+        "awaitingApproval": "Warten auf Freigabe",
+        "releasable": "Freigabebereit",
+        "released": "Freigegeben",
+        "disputed": "Strittig"
+      }
     }
   },
   "Invoice": {

@@ -362,6 +362,31 @@
       "transferredHint": "Sent {amount} position tokens to {recipient}.",
       "transferFailed": "Transfer failed",
       "transferFailedHint": "Transaction failed"
+    },
+    "escrow": {
+      "title": "Escrow-protected disbursements",
+      "description": "Live state of the escrows holding your financed amounts until delivery is verified.",
+      "refresh": "Refresh escrow statuses",
+      "viewer": "View on Escrow Explorer",
+      "amount": "Escrowed: {amount}",
+      "loading": "Loading…",
+      "unavailable": "Status unavailable",
+      "unavailableHint": "Some escrow statuses could not be read — use refresh to retry, or open the escrow on the explorer.",
+      "actionNeeded": "{count, plural, one {# escrow needs attention.} other {# escrows need attention.}}",
+      "step": {
+        "awaitingApproval": "Delivery confirmed — awaiting platform approval.",
+        "awaitingDelivery": "Waiting for the business to confirm delivery.",
+        "disputed": "This escrow is in dispute — contact support.",
+        "releasable": "Delivery verified — funds are ready to release.",
+        "released": "Funds released to the business."
+      },
+      "label": {
+        "awaitingDelivery": "Awaiting delivery",
+        "awaitingApproval": "Awaiting approval",
+        "releasable": "Ready to release",
+        "released": "Released",
+        "disputed": "Disputed"
+      }
     }
   },
   "Invoice": {

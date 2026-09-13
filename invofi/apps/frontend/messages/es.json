@@ -260,6 +260,31 @@
       "transferredHint": "Se han enviado {amount} tokens de posición a {recipient}.",
       "transferFailed": "Error en la transferencia",
       "transferFailedHint": "La transacción ha fallado"
+    },
+    "escrow": {
+      "title": "Desembolsos protegidos con custodia",
+      "description": "Estado en vivo de las custodias que retienen tus importes financiados hasta que se verifique la entrega.",
+      "refresh": "Actualizar estados de custodia",
+      "viewer": "Ver en el explorador de custodia",
+      "amount": "En custodia: {amount}",
+      "loading": "Cargando…",
+      "unavailable": "Estado no disponible",
+      "unavailableHint": "No se pudieron leer algunos estados de custodia — actualiza para reintentar o abre la custodia en el explorador.",
+      "actionNeeded": "{count, plural, one {# custodia necesita atención.} other {# custodias necesitan atención.}}",
+      "step": {
+        "awaitingApproval": "Entrega confirmada — pendiente de aprobación de la plataforma.",
+        "awaitingDelivery": "Esperando que la empresa confirme la entrega.",
+        "disputed": "Esta custodia está en disputa — contacta a soporte.",
+        "releasable": "Entrega verificada — los fondos están listos para liberarse.",
+        "released": "Fondos liberados a la empresa."
+      },
+      "label": {
+        "awaitingDelivery": "Pendiente de entrega",
+        "awaitingApproval": "Pendiente de aprobación",
+        "releasable": "Listo para liberar",
+        "released": "Liberado",
+        "disputed": "En disputa"
+      }
     }
   },
   "Invoice": {

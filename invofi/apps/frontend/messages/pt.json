@@ -260,6 +260,31 @@
       "transferredHint": "Foram enviados {amount} tokens de posição para {recipient}.",
       "transferFailed": "Falha na transferência",
       "transferFailedHint": "A transação falhou"
+    },
+    "escrow": {
+      "title": "Desembolsos protegidos por garantia",
+      "description": "Estado em tempo real das garantias que retêm seus valores financiados até a confirmação da entrega.",
+      "refresh": "Atualizar status das garantias",
+      "viewer": "Ver no explorador de garantias",
+      "amount": "Em garantia: {amount}",
+      "loading": "Carregando…",
+      "unavailable": "Status indisponível",
+      "unavailableHint": "Alguns status de garantia não puderam ser lidos — atualize para tentar novamente ou abra a garantia no explorador.",
+      "actionNeeded": "{count, plural, one {# garantia precisa de atenção.} other {# garantias precisam de atenção.}}",
+      "step": {
+        "awaitingApproval": "Entrega confirmada — aguardando aprovação da plataforma.",
+        "awaitingDelivery": "Aguardando a empresa confirmar a entrega.",
+        "disputed": "Esta custódia está em disputa — contate o suporte.",
+        "releasable": "Entrega verificada — os fundos estão prontos para liberação.",
+        "released": "Fundos liberados para a empresa."
+      },
+      "label": {
+        "awaitingDelivery": "Aguardando entrega",
+        "awaitingApproval": "Aguardando aprovação",
+        "releasable": "Pronto para liberar",
+        "released": "Liberado",
+        "disputed": "Em disputa"
+      }
     }
   },
   "Invoice": {

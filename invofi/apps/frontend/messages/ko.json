@@ -260,6 +260,31 @@
       "transferredHint": "{recipient}에게 포지션 토큰 {amount}개를 보냈습니다.",
       "transferFailed": "이전 실패",
       "transferFailedHint": "트랜잭션이 실패했습니다"
+    },
+    "escrow": {
+      "title": "에스크로 보호 송금",
+      "description": "납품 확인까지 자금을 보관하는 에스크로의 실시간 상태입니다.",
+      "refresh": "에스크로 상태 새로고침",
+      "viewer": "에스크로 탐색기에서 보기",
+      "amount": "에스크로 중: {amount}",
+      "loading": "불러오는 중…",
+      "unavailable": "상태를 사용할 수 없음",
+      "unavailableHint": "일부 에스크로 상태를 읽지 못했습니다 — 새로고침으로 재시도하거나 탐색기에서 열어주세요.",
+      "actionNeeded": "{count, plural, other {#개의 에스크로에 주의가 필요합니다.}}",
+      "step": {
+        "awaitingApproval": "납품 확인됨 — 플랫폼 승인 대기 중.",
+        "awaitingDelivery": "기업의 납품 확인을 기다리는 중입니다.",
+        "disputed": "이 에스크로는 분쟁 중입니다 — 고객 지원에 문의하세요.",
+        "releasable": "납품 검증 완료 — 자금을 지급할 수 있습니다.",
+        "released": "기업에 자금이 지급되었습니다."
+      },
+      "label": {
+        "awaitingDelivery": "납품 대기",
+        "awaitingApproval": "승인 대기",
+        "releasable": "해제 가능",
+        "released": "해제됨",
+        "disputed": "분쟁 중"
+      }
     }
   },
   "Invoice": {

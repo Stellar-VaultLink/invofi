@@ -22,7 +22,7 @@ import {
   encodeI128,
 } from '@/lib/simulate';
 import { supabase } from '@/lib/supabase';
-import { isEscrowEnabled, createDisbursementEscrow, resolveDisbursementEscrow, fundEscrow, escrowTrustlineForCurrency, approveMilestone, confirmDelivery, releaseEscrowDirect, getEscrowSnapshot, parseEscrowStatus, escrowViewerUrl, ESCROW_VIEWER_URL_TEMPLATE, ESCROW_PLATFORM_ADDRESS, TrustlessWorkError, type EscrowStatus } from '@/lib/escrow';
+import { isEscrowEnabled, createDisbursementEscrow, resolveDisbursementEscrow, fundEscrow, escrowTrustlineForCurrency, approveMilestone, confirmDelivery, releaseEscrowDirect, getEscrowSnapshot, parseEscrowStatus, escrowStepOf, escrowViewerUrl, ESCROW_VIEWER_URL_TEMPLATE, ESCROW_PLATFORM_ADDRESS, TrustlessWorkError, type EscrowStatus } from '@/lib/escrow';
 import { formatAmount as formatUnits, generateOfferId, amountToStroops, toStroopsBigInt, OFFER_STATUS_COLORS } from '@/lib/utils';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import {
@@ -890,13 +890,8 @@ function remainingBalance(offer: FinancingOffer): bigint {
 // release-funds build path rejects the escrow (its pre-check is asset-restricted:
 // USDC works, non-USDC 400s — see docs/trustless-work-integration.md Part 6).
 // Everything else keeps using the TW API through /api/escrow/*.
-function escrowStepOf(status: EscrowStatus): 'awaitingDelivery' | 'awaitingApproval' | 'releasable' | 'released' | 'disputed' {
-  if (status.flags.released) return 'released';
-  if (status.flags.disputed) return 'disputed';
-  if (status.milestone?.approved) return 'releasable';
-  if (status.milestone?.status === 'completed') return 'awaitingApproval';
-  return 'awaitingDelivery';
-}
+// Lifecycle-step derivation is the shared `escrowStepOf` in lib/escrow.ts —
+// the portfolio's EscrowStatusesCard (Epic 3.3) must agree with this panel.
 
 interface EscrowPanelProps {
   /** undefined = still loading; null = read-model row absent (stale mapping). */

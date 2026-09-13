@@ -260,6 +260,31 @@
       "transferredHint": "{recipient} に {amount} のポジショントークンを送りました。",
       "transferFailed": "譲渡に失敗しました",
       "transferFailedHint": "取引に失敗しました"
+    },
+    "escrow": {
+      "title": "エスクロー保護された送金",
+      "description": "納品確認まで資金を保管しているエスクローのライブステータス。",
+      "refresh": "エスクロー状態を更新",
+      "viewer": "エスクローエクスプローラーで表示",
+      "amount": "エスクロー中: {amount}",
+      "loading": "読み込み中…",
+      "unavailable": "状態を取得できません",
+      "unavailableHint": "一部のエスクロー状態を読み込めませんでした — 更新して再試行するか、エクスプローラーで開いてください。",
+      "actionNeeded": "{count, plural, other {# 件のエスクローに対応が必要です。}}",
+      "step": {
+        "awaitingApproval": "納品確認済み — プラットフォームの承認待ち。",
+        "awaitingDelivery": "企業による納品確認を待っています。",
+        "disputed": "このエスクローは係争中です — サポートに連絡してください。",
+        "releasable": "納品検証済み — 資金をリリースできます。",
+        "released": "資金は企業にリリースされました。"
+      },
+      "label": {
+        "awaitingDelivery": "納品待ち",
+        "awaitingApproval": "承認待ち",
+        "releasable": "解放可能",
+        "released": "解放済み",
+        "disputed": "係争中"
+      }
     }
   },
   "Invoice": {

@@ -260,6 +260,31 @@
       "transferredHint": "已向 {recipient} 发送 {amount} 个头寸代币。",
       "transferFailed": "转让失败",
       "transferFailedHint": "交易失败"
+    },
+    "escrow": {
+      "title": "托管保护的放款",
+      "description": "在确认交付之前托管您已融资资金的托管账户实时状态。",
+      "refresh": "刷新托管状态",
+      "viewer": "在托管浏览器中查看",
+      "amount": "托管中：{amount}",
+      "loading": "加载中…",
+      "unavailable": "状态不可用",
+      "unavailableHint": "部分托管状态无法读取 — 请刷新重试，或在浏览器中打开该托管。",
+      "actionNeeded": "{count, plural, other {# 个托管需要关注。}}",
+      "step": {
+        "awaitingApproval": "交付已确认 — 等待平台批准。",
+        "awaitingDelivery": "等待企业确认交付。",
+        "disputed": "该托管存在争议 — 请联系客服。",
+        "releasable": "交付已核验 — 资金可以释放。",
+        "released": "资金已释放给企业。"
+      },
+      "label": {
+        "awaitingDelivery": "待交付",
+        "awaitingApproval": "待批准",
+        "releasable": "可释放",
+        "released": "已释放",
+        "disputed": "争议中"
+      }
     }
   },
   "Invoice": {

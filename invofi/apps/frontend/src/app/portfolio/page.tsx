@@ -25,6 +25,7 @@ import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
 import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
 import { PaginationControls } from '@/components/portfolio/PaginationControls';
 import { PositionTokensPanel } from '@/components/portfolio/PositionTokensPanel';
+import { EscrowStatusesCard } from '@/components/portfolio/EscrowStatusesCard';
 import { paginate } from '@/lib/pagination';
 import type { LivePosition } from '@/lib/live/types';
 import { toErrorMessage } from '@/lib/errors';
@@ -590,6 +591,11 @@ export default function PortfolioPage() {
             </div>
           </div>
         )}
+
+        {/* Portfolio-wide escrow status (Epic 3.3): read-only lifecycle
+            summary for every escrowed USDC disbursement. Hidden entirely when
+            the rail is off or no position carries an escrow. */}
+        <EscrowStatusesCard offers={offers} />
 
         {/* Loading skeleton */}
         {loading && <TableSkeleton rows={4} />}

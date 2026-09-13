@@ -307,3 +307,27 @@ export async function getEscrowSnapshot(contractId: string): Promise<Record<stri
 export type { DisbursementEscrowParams, EscrowTrustline, UnsignedTransaction, SendTransactionResult };
 export { TrustlessWorkError };
 export { escrowViewerUrl, contractIdMatchesBase } from '@invofi/sdk';
+
+// ── Shared escrow step derivation (Epic 3.3) ─────────────────────────────────
+
+/** The five product states a disbursement escrow can present in the UI. */
+export type EscrowStep =
+  | 'awaitingDelivery'
+  | 'awaitingApproval'
+  | 'releasable'
+  | 'released'
+  | 'disputed';
+
+/**
+ * Maps a read-model snapshot onto the five-step delivery lifecycle shown
+ * under every escrowed offer (invoice detail) and in the portfolio's escrow
+ * summary card. Single source of truth so the two surfaces can never
+ * disagree about what state an escrow is in.
+ */
+export function escrowStepOf(status: EscrowStatus): EscrowStep {
+  if (status.flags.released) return 'released';
+  if (status.flags.disputed) return 'disputed';
+  if (status.milestone?.approved) return 'releasable';
+  if (status.milestone?.status === 'completed') return 'awaitingApproval';
+  return 'awaitingDelivery';
+}

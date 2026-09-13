@@ -260,6 +260,31 @@
       "transferredHint": "{recipient} adresine {amount} pozisyon jetonu gönderildi.",
       "transferFailed": "Aktarım başarısız",
       "transferFailedHint": "İşlem başarısız oldu"
+    },
+    "escrow": {
+      "title": "Escrow ile korunan ödemeler",
+      "description": "Teslimat doğrulanana kadar finanse edilen tutarları tutan escrowların canlı durumu.",
+      "refresh": "Escrow durumlarını yenile",
+      "viewer": "Escrow gezgininde görüntüle",
+      "amount": "Escrow tutarı: {amount}",
+      "loading": "Yükleniyor…",
+      "unavailable": "Durum kullanılamıyor",
+      "unavailableHint": "Bazı escrow durumları okunamadı — yeniden denemek için yenileyin veya gezginde açın.",
+      "actionNeeded": "{count, plural, other {# escrow ilgi gerektiriyor.}}",
+      "step": {
+        "awaitingApproval": "Teslimat onaylandı — platform onayı bekleniyor.",
+        "awaitingDelivery": "İşletmenin teslimatı onaylaması bekleniyor.",
+        "disputed": "Bu emanet ihtilafta — destekle iletişime geçin.",
+        "releasable": "Teslimat doğrulandı — fonlar serbest bırakılmaya hazır.",
+        "released": "Fonlar işletmeye serbest bırakıldı."
+      },
+      "label": {
+        "awaitingDelivery": "Teslim bekleniyor",
+        "awaitingApproval": "Onay bekleniyor",
+        "releasable": "Serbest bırakılmaya hazır",
+        "released": "Serbest bırakıldı",
+        "disputed": "Anlaşmazlıkta"
+      }
     }
   },
   "Invoice": {

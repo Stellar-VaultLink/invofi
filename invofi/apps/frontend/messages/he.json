@@ -260,6 +260,31 @@
       "transferredHint": "נשלחו {amount} אסימוני פוזיציה אל {recipient}.",
       "transferFailed": "ההעברה נכשלה",
       "transferFailedHint": "העסקה נכשלה"
+    },
+    "escrow": {
+      "title": "חלוקות מוגנות בנאמנות",
+      "description": "מצב חי של הנאמנויות שמחזיקות את הסכומים הממומנים שלך עד לאימות המשלוח.",
+      "refresh": "רענון מצבי הנאמנות",
+      "viewer": "הצגה בסייר הנאמנות",
+      "amount": "בנאמנות: {amount}",
+      "loading": "טוען…",
+      "unavailable": "המצב אינו זמין",
+      "unavailableHint": "לא ניתן היה לקרוא חלק ממצבי הנאמנות — רעננו כדי לנסות שוב או פתחו את הנאמנות בסייר.",
+      "actionNeeded": "{count, plural, one {נאמנות אחת דורשת טיפול.} other {# נאמנויות דורשות טיפול.}}",
+      "step": {
+        "awaitingApproval": "המסירה אושרה — ממתין לאישור הפלטפורמה.",
+        "awaitingDelivery": "ממתין לאישור המסירה על ידי העסק.",
+        "disputed": "נאמנות זו במחלוקת — פנה לתמיכה.",
+        "releasable": "המסירה אומתה — הכספים מוכנים לשחרור.",
+        "released": "הכספים שוחררו לעסק."
+      },
+      "label": {
+        "awaitingDelivery": "ממתין למסירה",
+        "awaitingApproval": "ממתין לאישור",
+        "releasable": "מוכן לשחרור",
+        "released": "שוחרר",
+        "disputed": "במחלוקת"
+      }
     }
   },
   "Invoice": {

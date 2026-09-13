@@ -16,6 +16,7 @@
 | **Server proxy** `/api/escrow/[action]` — injects the server-only key, forwards build/submit/resolve calls; SSRF-guard; never signs | `invofi/apps/frontend/src/app/api/escrow/[action]/route.ts` | ✅ merged |
 | **Frontend binding** — `lib/escrow.ts`: feature-flagged, USDC-only, wallet signer lazy-imported; milestone helpers `approveMilestone` / `confirmDelivery` / `releaseEscrowDirect` + `parseEscrowStatus` | `invofi/apps/frontend/src/lib/escrow.ts` | ✅ merged |
 | **Milestone-approval UI (#381, Epic 3.2)** — per-offer escrow panel in `OfferList`: awaiting delivery → awaiting approval → releasable → released / disputed, Escrow Viewer link, release tx hash; role-gated actions; i18n in all 12 locales | `invofi/apps/frontend/src/components/invoices/OfferList.tsx` | ✅ merged (`fbe9db1`), frontend 591/591 tests |
+| **Portfolio escrow-status surface (Epic 3.3)** — read-only `EscrowStatusesCard` on `/portfolio`: summary strip + one row per escrowed position (contract id, escrowed amount, lifecycle badge, Escrow Viewer link, refresh); shared `escrowStepOf` keeps it consistent with the invoice-detail panel; hidden when the rail is off or no position is escrowed; i18n in all 12 locales | `invofi/apps/frontend/src/components/portfolio/EscrowStatusesCard.tsx` + `src/hooks/useEscrowStatuses.ts` | ✅ merged, frontend 603/603 tests |
 | **`accept_offer` wiring** — after a successful accept, best-effort deploy+fund of the disbursement escrow; failure never rolls back the accepted offer; `financing_offers.escrow_contract_id` persisted (migration 003) | `OfferList.tsx` + `migrations/003_escrow.sql` | ✅ merged (`316a90b6`) |
 | **Env vars on Vercel** (`invofi` project, production+preview): `TW_ESCROW_API_KEY` (server-only, Sensitive), `NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY` (`set` — an on/off flag, **not** the key), `NEXT_PUBLIC_TRUSTLESS_WORK_ENV=testnet`, `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS=GBDD…EVZR`, `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_FEE=0.5` | Vercel | ✅ set 2026-09-08/09 |
 | **ADR-0010** — escrow rail decision (API-level, USDC-only, adapter pattern, role mapping, dark-launch flag) | `docs/adr/0010-trustless-work-escrow-rail.md` | ✅ Accepted |
@@ -180,7 +181,7 @@ All TW calls sit behind **one adapter file** in `@invofi/sdk` (`src/escrow.ts`) 
 |---|---|---|---|
 | 3.1 | On `accept_offer`, create + fund the escrow (lender signs) | `high-complexity` | ✅ done (`316a90b6`, best-effort, env-gated) |
 | 3.2 | Milestone-approval step + release to originator | `high-complexity` | ✅ done (#381, `fbe9db1`) — **release now verified end-to-end via TW's API on USDC (09-13 A/B)** |
-| 3.3 | Escrow status surface on invoice detail + portfolio | `medium` | ⬜ open (status step exists in the offer row; portfolio-wide surface not yet) |
+| 3.3 | Escrow status surface on invoice detail + portfolio | `medium` | ✅ done — `EscrowStatusesCard` on `/portfolio` (summary strip + per-position rows, read-only, Escrow Viewer links, refresh on read-model miss, i18n ×12), shared `escrowStepOf` in `lib/escrow.ts` keeps invoice detail and portfolio in sync; frontend 603/603 tests |
 | 3.4 | e2e: Playwright test for accept → escrow → approve → release on testnet | `medium` | ⬜ open (gated on the broader e2e-suite repair) |
 | 3.5 | Docs: README architecture + GitBook with the escrow rail | `trivial`, `good-first-issue` | ✅ done |
 

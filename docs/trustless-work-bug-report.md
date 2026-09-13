@@ -25,6 +25,15 @@
 > This rules out the "backend was paused" explanation for the release bug
 > itself; the separate indexer-lag defect from 09-10 may still have been
 > pause-related.
+>
+> **⚠️ 2026-09-13 — TW's release-signer hypothesis tested and refuted.** A
+> fifth escrow (011) with fully distinct `releaseSigner`/`disputeResolver`
+> wallets and a schema-perfect payload still got the false "Escrow already
+> in dispute" 400 — while the same on-chain release signed by that distinct
+> release signer succeeded immediately. See the
+> [role-collision experiment](#role-collision-experiment-2026-09-13-00030020-utc--tws-hypothesis-tested-and-refuted)
+> plus a newly-found **corrupted fund-build defect** (funds credited to the
+> signer instead of the escrow) and the full error-message timeline.
 
 ---
 
@@ -116,6 +125,71 @@ release_funds](./tw-bug-repro.gif)
 - Indexer lag: 2s · Release build: HTTP 400 twice
 - Direct release tx:
   `6324fd5075075259a6648177aff34ae0a1b7b4c35ae06c3f816a36d5469db5e4`
+
+---
+
+## Role-collision experiment (2026-09-13 00:03–00:20 UTC) — TW's hypothesis tested and REFUTED
+
+A TW core member suggested the failure was payload-related — "it should be
+the release signer address and the contract ID." Our payloads always matched
+the live OpenAPI schema (`ReleaseFunds: { contractId, releaseSigner }`), but
+one variable had never been isolated: in every failing escrow, the platform
+key held **releaseSigner + approver + disputeResolver + platformAddress**
+simultaneously. Escrow **011** was built to test exactly that:
+
+| Role | Wallet |
+|---|---|
+| signer/funder | e2e-lender `GDHS…UHT2` |
+| approver + platformAddress | platform `GBDD…EVZR` |
+| serviceProvider + receiver | originator `GAB3…OWY` |
+| **releaseSigner** | **buyer `GCPN…USQ7` (distinct)** |
+| **disputeResolver** | **keeper `GCEC…QJ6` (distinct)** |
+
+Lifecycle (escrow `CBYM6BIVKW5PBX7KMXZZB6TWZXU4F2JOP7IA4CZMME5VHICW4EJGF2ZU`,
+engagement `invofi-e2e-escrow-011-o1`, deploy via their API):
+
+| Step | Result |
+|---|---|
+| Deploy (API build, lender signs) | ✅ `df26fe30`-lineage submit 201 |
+| Fund (direct on-chain, correct order: fund → approve → complete) | ✅ `9edadbb1…` |
+| Approve milestone (platform) | ✅ `3f77f893…` |
+| Complete milestone (originator) | ✅ `d166fd73…` |
+| **Release build via API — `{contractId, releaseSigner: buyer}`** | ❌ **HTTP 400 "Escrow already in dispute" — the exact same false error** |
+| On-chain state at probe time | `disputed: false, released: false`, milestone `completed`, balance = amount |
+| Direct on-chain `release_funds` **signed by the distinct buyer** | ✅ `dcf65068…` — receiver +248, platform fee paid, `released: true` |
+
+**Verdict:** with fully distinct roles, a schema-perfect payload, and a
+provably releasable escrow, the endpoint still returns the false dispute
+error. The release-signer/role-collision theory is **refuted**; the defect
+is in the API's pre-build check and it fires precisely when an escrow
+becomes releasable (balance == amount).
+
+### Additional defect discovered the same night: corrupted fund-escrow build
+
+At 2026-09-12 23:50 UTC, a `fund-escrow` build for escrow 008
+(`CCII3LRD…SKLA`) produced a transaction that — after successful on-chain
+execution — credited **250 VBUC to the signer's own address** instead of the
+escrow contract (Horizon effects of tx `1b7ed1aa6bef77da8dfa112e3873f4a5b2319402d3b4c1947307640867c8d316`:
+`account_debited GDHS… 250 VBUC` + `contract_credited GDHS… 250 VBUC`). The
+escrow contract balance remained 0. This looks like the API assembled the
+fund invocation against the wrong contract address — and it coincided with
+two further error-message changes on the release endpoint within one hour
+("must be completed to release" → "balance must be equal to the amount of
+earnings" → back to "already in dispute"), indicating active redeployment of
+the API during this window.
+
+### Error-message timeline on `release-funds` (all observed live)
+
+| When | Message | Escrow state |
+|---|---|---|
+| 09-09 13:59–14:07 | "Escrow already in dispute" | releasable (false) |
+| 09-10 00:47–00:48 | "Escrow already in dispute" | releasable (false) |
+| 09-12 22:16–22:17 | "Escrow already in dispute" | releasable (false) |
+| 09-12 23:29 | "Escrow already in dispute" | releasable (false) |
+| 09-12 23:59 | "The escrow must be completed to release earnings" | unfunded (correct check, new message) |
+| 09-12 23:59 | "The escrow funds have been released" | released (correct) |
+| 09-13 00:03 | "The escrow balance must be equal to the amount of earnings" | funded+completed (false — balance was equal) |
+| 09-13 00:03 | "Escrow already in dispute" | funded+completed, distinct roles (false) |
 
 ---
 

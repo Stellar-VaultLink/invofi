@@ -235,6 +235,7 @@ All TW calls sit behind **one adapter file** in `@invofi/sdk` (`src/escrow.ts`) 
 | 2026-09-09 | **Reported:** `release-funds` build returns 400 "Escrow already in dispute" for a releasable escrow (escrow 002; report drafted same day) |
 | 2026-09-10 | **Re-verified (2nd repro):** fresh escrow 003 through their own factory — same 400 twice; direct `release_funds` succeeded. Second defect same session: indexer missed a fresh deploy for 40+ min ("Escrow not found" from the API while the contract existed on-chain) |
 | 2026-09-12 | **Re-verified (3rd repro) + TW engaged:** a TW core member asked if it's reproducible and suggested a recent backend/DB pause on their side. Escrow 004 driven **100% through the API path** — infra healthy (2s indexer lag, every build endpoint instant), release build **still** 400 twice; direct release moved funds correctly. **Pause theory ruled out for this bug.** Evidence shared with TW; repro script handed over |
+| 2026-09-13 | **TW's release-signer hypothesis tested and refuted:** escrow 011 with fully distinct `releaseSigner` (buyer) and `disputeResolver` (keeper) wallets, schema-perfect payload — **same false 400**. The buyer-signed on-chain release succeeded instantly (receiver +248, platform fee paid). Also found: a **corrupted fund-escrow build** credited 250 VBUC to the signer instead of the escrow (tx `1b7ed1aa…`), and the release error message changed three times within an hour — their API was being redeployed mid-test |
 | open | Awaiting TW fix; meanwhile the UI release step uses the direct-invoke workaround (`submitDirectRelease`) |
 
 **New sub-finding (09-12):** the read model updates `balance` but not the
@@ -249,6 +250,8 @@ release pre-check keys on. Reported to TW alongside the repro.
 | `CC2OKXVN…SVOS` | `…002-o1` | 09-09 | 400 ×4 | ✅ `d3c0f77b…86fb0` |
 | `CDNY5U5V…EMR3` | `…003-o1` | 09-10 | 400 ×2 | ✅ `5058b6f7…57f4` |
 | `CD7G7S2R…MTB74` | `…004-o1` | 09-12 | 400 ×2 | ✅ `4d155c41…5716` |
+| `CDBU3TDE…6LYF` | `…006-o1` | 09-12 | 400 (video'd) | ✅ `6324fd50…b5e4` |
+| `CBYM6BIV…F2ZU` | `…011-o1` | 09-13 | 400 with **distinct releaseSigner/disputeResolver** | ✅ `dcf65068…3b9d` (buyer-signed) |
 
 **What we've asked TW for:** (1) fix the release pre-build dispute check;
 (2) confirm the intended milestone flow (approve + change-status → completed);

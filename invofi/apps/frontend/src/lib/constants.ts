@@ -1,5 +1,5 @@
-import type { Currency } from '@invofi/sdk';
-import { Networks } from '@invofi/sdk';
+export type { Currency } from '@invofi/sdk';
+import { Currency, Networks } from '@invofi/sdk';
 
 export const STELLAR_NETWORK = (process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet') as 'testnet' | 'mainnet';
 export const NETWORK_PASSPHRASE = STELLAR_NETWORK === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET;

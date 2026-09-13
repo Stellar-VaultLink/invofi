@@ -139,6 +139,11 @@
       "label": "Display language",
       "hint": "Changes the interface language, number and date formats, and text direction."
     },
+    "currency": {
+      "title": "Currency",
+      "label": "Default display currency",
+      "hint": "Choose the default currency for amounts displayed without an explicit currency."
+    },
     "network": {
       "title": "Network & Contracts",
       "label": "Stellar Network",

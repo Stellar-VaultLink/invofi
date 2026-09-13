@@ -1,5 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  DEFAULT_CURRENCY,
+  DEFAULT_DISPLAY_CURRENCY_STORAGE_KEY,
   formatAmount,
   formatBasisPoints,
   formatCurrencyAmount,
@@ -9,10 +11,52 @@ import {
   formatRelativeDate,
   formatUnits,
   formatWalletAddress,
+  getDefaultCurrency,
 } from './formatters';
 
 describe('formatters', () => {
-  afterEach(() => vi.useRealTimers());
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    window.localStorage.clear();
+    vi.useRealTimers();
+  });
+
+  describe('getDefaultCurrency', () => {
+    it('returns XLM when no preference is in localStorage', () => {
+      expect(getDefaultCurrency()).toBe(DEFAULT_CURRENCY);
+    });
+
+    it('reads JSON-persisted currency preference from localStorage', () => {
+      window.localStorage.setItem(DEFAULT_DISPLAY_CURRENCY_STORAGE_KEY, JSON.stringify('USDC'));
+      expect(getDefaultCurrency()).toBe('USDC');
+    });
+
+    it('handles raw string currency preference in localStorage', () => {
+      window.localStorage.setItem(DEFAULT_DISPLAY_CURRENCY_STORAGE_KEY, 'USDC');
+      expect(getDefaultCurrency()).toBe('USDC');
+    });
+  });
+
+  describe('default currency fallback across formatters', () => {
+    it('uses the persisted default currency when no explicit currency is given', () => {
+      window.localStorage.setItem(DEFAULT_DISPLAY_CURRENCY_STORAGE_KEY, JSON.stringify('USDC'));
+      expect(formatAmount(12_345_678)).toBe('1.23 USDC');
+      expect(formatUnits(12.3456789)).toBe('12.35 USDC');
+      expect(formatCurrencyAmount(10_000_000)).toBe('1.00 USDC');
+      expect(formatCurrencyPair(2.5)).toBe('2.50 USDC');
+    });
+
+    it('explicit currency takes precedence over the default currency', () => {
+      window.localStorage.setItem(DEFAULT_DISPLAY_CURRENCY_STORAGE_KEY, JSON.stringify('USDC'));
+      expect(formatAmount(12_345_678, 'XLM')).toBe('1.23 XLM');
+      expect(formatUnits(12.3456789, 'XLM')).toBe('12.35 XLM');
+      expect(formatCurrencyAmount(10_000_000, 'XLM')).toBe('1.00 XLM');
+      expect(formatCurrencyPair(2.5, 'XLM')).toBe('2.50 XLM');
+    });
+  });
 
   describe('formatAmount', () => {
     it('converts stroops to a two-decimal XLM amount', () => {

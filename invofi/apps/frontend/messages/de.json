@@ -37,6 +37,11 @@
       "label": "Anzeigesprache",
       "hint": "Ändert Oberflächensprache, Zahlen- und Datumsformat sowie die Textrichtung."
     },
+    "currency": {
+      "title": "Währung",
+      "label": "Standard-Anzeigewährung",
+      "hint": "Wähle die Standardwährung für Beträge ohne explizite Währungsangabe."
+    },
     "network": {
       "title": "Netzwerk & Contracts",
       "label": "Stellar-Netzwerk",

@@ -37,6 +37,11 @@
       "label": "Görüntüleme dili",
       "hint": "Arayüz dilini, sayı ve tarih biçimlerini ve metin yönünü değiştirir."
     },
+    "currency": {
+      "title": "Para Birimi",
+      "label": "Varsayılan görüntüleme para birimi",
+      "hint": "Açıkça para birimi belirtilmeyen tutarlar için varsayılan para birimini seçin."
+    },
     "network": {
       "title": "Ağ ve sözleşmeler",
       "label": "Stellar ağı",

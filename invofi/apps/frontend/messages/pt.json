@@ -37,6 +37,11 @@
       "label": "Idioma da interface",
       "hint": "Altera o idioma da interface, o formato de números e datas e a direção do texto."
     },
+    "currency": {
+      "title": "Moeda",
+      "label": "Moeda de exibição padrão",
+      "hint": "Escolha a moeda padrão para valores exibidos sem uma moeda explícita."
+    },
     "network": {
       "title": "Rede e contratos",
       "label": "Rede Stellar",

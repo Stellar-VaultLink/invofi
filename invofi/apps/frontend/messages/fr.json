@@ -37,6 +37,11 @@
       "label": "Langue d’affichage",
       "hint": "Modifie la langue de l’interface, le format des nombres et des dates, ainsi que le sens du texte."
     },
+    "currency": {
+      "title": "Devise",
+      "label": "Devise d'affichage par défaut",
+      "hint": "Choisissez la devise par défaut pour les montants affichés sans devise explicite."
+    },
     "network": {
       "title": "Réseau et contrats",
       "label": "Réseau Stellar",

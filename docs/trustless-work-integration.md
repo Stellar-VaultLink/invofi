@@ -1,12 +1,12 @@
 # Trustless Work Escrow Integration — Status & Reference
 
 > **Status:** 🟢 **LIVE on testnet** — core shipped, API key issued & active on Vercel (server-only), production deployed · **Owner:** @samjay8 · **Decision record:** [ADR-0010](./adr/0010-trustless-work-escrow-rail.md)
-> **Companion docs:** [Bug report to TW](./trustless-work-bug-report.md) (standalone, shareable) · [ADR-0010](./adr/0010-trustless-work-escrow-rail.md)
+> **Companion doc:** [ADR-0010](./adr/0010-trustless-work-escrow-rail.md) · The standalone bug report was deleted 2026-09-13 after resolution — full text archived in git history at commit `b442245f`
 > **TW links:** [Org](https://github.com/Trustless-Work) · [Smart escrow contract](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar) · [API docs](https://docs.trustlesswork.com) · [Backoffice (key issuance)](https://dapp.trustlesswork.com)
 
 ---
 
-## Part 0 — Current status (read this first, updated 2026-09-12)
+## Part 0 — Current status (read this first, updated 2026-09-13)
 
 ### What is DONE and merged
 
@@ -44,9 +44,12 @@ the rail is currency-agnostic; production flows use USDC unchanged).
 · on-chain flags after release: `released: true, disputed: false` ·
 `tw_release` event published.
 
-Re-verification runs (escrows **003** on 09-10, **004** on 09-12) are recorded
-in the [bug report](./trustless-work-bug-report.md); repro script:
-`invofi/scripts/tw-retest.ts` (`npm run tw:retest`).
+Re-verified end-to-end on 09-13 with a controlled A/B: the **full API path —
+including the release — is green on official testnet USDC** (escrow 013,
+HTTP 201 release, flags sync correctly), while the same flow on a custom SAC
+asset hit TW's asset-restricted release pre-check (escrow 014). Repro script:
+`invofi/scripts/tw-retest.ts` (`npm run tw:retest`), token-parameterized via
+`TW_ASSET`/`TW_ISSUER` (USDC default).
 
 ### Role note (verified on-chain, drives the UI)
 
@@ -76,9 +79,9 @@ platform does both; TW's contract role model says otherwise.)
 1. **Trustline `address` must be the asset ISSUER account (G…), not the SAC contract (C…).** The API validates it as a G-address and resolves issuer → SAC itself. A C… address passes deploy validation but funding fails on-chain with `Storage, MissingValue`.
 2. **The asset's Stellar Asset Contract must be deployed** before the escrow can fund (`stellar contract asset deploy`). USDC on testnet already has one.
 3. **Release requires TWO milestone steps:** `approve-milestone` (approver) **and** `change-milestone-status` → `completed` with evidence (serviceProvider). Approve alone leaves `status: pending` and release stays blocked.
-4. ⚠️ **`release-funds` build endpoint mis-reports "Escrow already in dispute"** for provably releasable escrows — reproduced **three times** on independent escrows (09-09, 09-10, 09-12), including once with fully healthy infra. Workaround: direct on-chain `release_funds(release_signer, trustless_work_address = contractBaseId)`. See Part 6.
+4. **`release-funds` release pre-check is asset-restricted (root-caused 09-13):** it 400s "Escrow already in dispute" for releasable escrows denominated in non-USDC assets (five repros on our custom VBUC SAC) while succeeding on USDC. On USDC — our production asset — the standard API path works end-to-end. The direct on-chain `release_funds(release_signer, trustless_work_address = contractBaseId)` stays in the SDK as a fallback. See Part 6.
 5. **The read model is eventually consistent.** Observed 40+ min indexing lag once (09-10, likely infra-related); 2s on 09-12. Fall back to the authoritative on-chain `get_escrow` read when the indexer lags.
-6. ⚠️ **Read-model flag sync is unreliable:** released escrows can keep showing `released: false` while `balance` correctly drops to 0 (escrow 002 wrong since 09-09; 004 same on 09-12). Don't key release UI state off the flags alone.
+6. **Read-model flag sync:** stale `released: false` was observed after *on-chain (non-API)* releases on custom-asset escrows (09-09 → 09-13); on the fully-API-path USDC run the flags synced correctly. Don't key release UI state off the flags alone — the SDK's on-chain read fallback covers the edge.
 
 ### Meeting brief (TL;DR for TW conversations)
 
@@ -202,7 +205,7 @@ All TW calls sit behind **one adapter file** in `@invofi/sdk` (`src/escrow.ts`) 
 | Currency scope | **USDC-only** for escrowed flows | TW is USDC-first; XLM keeps the direct path — registry entry, not a code branch |
 | Dependency management | All TW calls behind one adapter in `@invofi/sdk` | One file changes if their API evolves (V2 just shipped — API drift is the top risk) |
 | Where the escrow id lives | Postgres mirror on the offer row + escrow status column | Frontend reads the mirror; contracts remain the system of record for financing state |
-| Release path | **Direct on-chain `release_funds` until TW's release-build bug is fixed** (Part 6) | The workaround is typed, tested, and isolated in `submitDirectRelease`; switch back to the API path when TW ships the fix |
+| Release path | **TW API on USDC (primary); direct on-chain `release_funds` as fallback** (Part 6) | USDC release path verified end-to-end via the API (09-13); the typed fallback covers non-USDC assets and API incidents |
 
 ### Top risks
 
@@ -215,18 +218,19 @@ All TW calls sit behind **one adapter file** in `@invofi/sdk` (`src/escrow.ts`) 
 
 ## Part 5 — Partnership status
 
-- **Contact established:** engaged with a TW core team member via Telegram (2026-09-12); the release-funds bug report is under active discussion (see Part 7). Their public Telegram group remains the fastest general channel.
+- **Contact established:** engaged with a TW core team member via Telegram (2026-09-12 → 09-13); the release-funds investigation was closed jointly after the A/B test pinned the cause to the asset (see Part 6). Their public Telegram group remains the fastest general channel.
 - **API key:** self-served via the [Backoffice](https://dapp.trustlesswork.com) (wallet-signed ownership proof; key shown once, format `id.secret`). TW offered to inspect our API request logs for the release-bug triage; we offered to share the key privately if needed (not shared so far). If it is ever shared for debugging, **rotate it afterward**.
-- **Outstanding asks:** release-funds fix; read-model flag sync fix; mainnet key-gating process; reference-integration listing in due course.
+- **Outstanding asks:** document whether non-USDC issued assets are supported-but-buggy or unsupported in the release pre-check; mainnet key-gating process post-audit; reference-integration listing in due course.
 
 ---
 
-## Part 6 — Bug report & engagement with Trustless Work
+## Part 6 — Release-path investigation & engagement with Trustless Work
 
-> **Canonical, shareable copy:** [trustless-work-bug-report.md](./trustless-work-bug-report.md)
-> (full repro steps, on-chain state proofs, and per-run evidence tables live
-> there — this section tracks only status). Repro script:
-> `invofi/scripts/tw-retest.ts` (`npm run tw:retest`).
+> The standalone bug report (`docs/trustless-work-bug-report.md`, incl. the
+> recorded repro GIF) was **deleted 2026-09-13 after resolution** — the full
+> text remains in git history at commit `b442245f`; link TW to that commit if
+> the per-run evidence tables are needed again. This section is the canonical
+> record. Repro script: `invofi/scripts/tw-retest.ts` (`npm run tw:retest`).
 
 **Timeline:**
 
@@ -245,7 +249,7 @@ All TW calls sit behind **one adapter file** in `@invofi/sdk` (`src/escrow.ts`) 
 balance: 0`; 002 wrong since 09-09) — plausibly the same stale-flag state the
 release pre-check keys on. Reported to TW alongside the repro.
 
-**Escrow summary across the three runs:**
+**Escrow summary across all verification runs:**
 
 | Escrow | Engagement | Deployed | Release build | Direct release |
 |---|---|---|---|---|
@@ -254,7 +258,6 @@ release pre-check keys on. Reported to TW alongside the repro.
 | `CD7G7S2R…MTB74` | `…004-o1` | 09-12 | 400 ×2 | ✅ `4d155c41…5716` |
 | `CDBU3TDE…6LYF` | `…006-o1` | 09-12 | 400 (video'd) | ✅ `6324fd50…b5e4` |
 | `CBYM6BIV…F2ZU` | `…011-o1` | 09-13 | 400 with **distinct releaseSigner/disputeResolver** | ✅ `dcf65068…3b9d` (buyer-signed) |
-
-**What we've asked TW for:** (1) fix the release pre-build dispute check;
-(2) confirm the intended milestone flow (approve + change-status → completed);
-(3) a deploy-time guard or docs note for the issuer-vs-SAC trustline pitfall.
+| `CDSH3O7S…SO5X` | `…012-o1` | 09-13 | 400 — VBUC, distinct roles, **all wallets trustlined + funded** | ✅ `5f8699f2…d803c1f1` (buyer-signed) |
+| `CCR4WZRK…RPG75` | `…013-o1` | 09-13 | **✅ HTTP 201 — USDC, released via TW's API** (`bfcdecbb…`) | not needed |
+| `CAOYPJKU…IOPDL` | `…014-o1` | 09-13 | 400 ×2 — VBUC (A/B control, minutes after 013) | ✅ `e23dd336…` (direct) |**Status of asks:** (1) release pre-build dispute check — **resolved as an asset restriction** (works on USDC; asked TW to document the non-USDC status); (2) milestone flow (approve + change-status → completed) — confirmed working end-to-end via the API on USDC; (3) issuer-vs-SAC trustline pitfall — docs note still requested.

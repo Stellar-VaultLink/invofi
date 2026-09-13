@@ -230,11 +230,11 @@ export async function confirmDelivery(contractId: string, milestoneIndex: number
 }
 
 /**
- * Builds AND executes the release DIRECTLY on-chain (Soroban RPC), bypassing
- * TW's release-funds build endpoint. This is the documented workaround for
- * TW's "Escrow already in dispute" bug, which rejects fully releasable
- * escrows (see docs/trustless-work-bug-report.md). `contractBaseId` comes
- * from the escrow read-model snapshot (extractContractBaseId).
+ * Builds AND executes the release DIRECTLY on-chain (Soroban RPC) — the
+ * fallback for non-USDC assets or TW API incidents (the standard API path is
+ * the happy path on USDC; see docs/trustless-work-integration.md Part 6).
+ * `contractBaseId` comes from the escrow read-model snapshot
+ * (extractContractBaseId).
  */
 export async function releaseEscrowDirect(
   contractId: string,

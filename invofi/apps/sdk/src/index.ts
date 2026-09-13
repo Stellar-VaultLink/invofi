@@ -146,8 +146,8 @@ export {
   TrustlessWorkError,
   DELIVERY_MILESTONE_DESCRIPTION,
   RESOLVE_CONTRACT_ID_DEFAULTS,
-  // Direct-invoke release workaround (TW release-funds build bug — see
-  // docs/trustless-work-bug-report.md in the invofi repo).
+  // Direct-invoke release fallback (asset-restricted TW release pre-check —
+  // see docs/trustless-work-integration.md Part 6).
   buildReleaseFundsArgs,
   extractContractBaseId,
   contractIdMatchesBase,

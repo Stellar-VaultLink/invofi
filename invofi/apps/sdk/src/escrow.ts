@@ -265,14 +265,14 @@ export function disbursementEngagementId(invoiceId: string, offerId: string): st
 
 // ── Direct-invoke release workaround ─────────────────────────────────────────
 //
-// TW's `/escrow/single-release/release-funds` BUILD endpoint rejects fully
-// releasable escrows with HTTP 400 "Escrow already in dispute" — reproduced
-// twice on independent testnet escrows (2026-09-09 and 2026-09-10, see
-// docs/trustless-work-bug-report.md in the invofi repo). The escrow CONTRACT
-// itself is fine: a direct on-chain `release_funds` invocation succeeds
-// instantly and moves funds correctly. Until TW ships a fix, the release step
-// goes direct-to-chain; everything else (deploy/fund/milestone builds) keeps
-// using the TW API.
+// TW's `/escrow/single-release/release-funds` pre-build check rejected fully
+// releasable escrows with HTTP 400 "Escrow already in dispute" when the escrow
+// was denominated in a non-USDC asset (2026-09-09 → 09-13, five repros; root
+// cause found via a controlled A/B — see docs/trustless-work-integration.md
+// Part 6). On USDC — our production asset — the standard API path works
+// end-to-end (verified 09-13), so this direct-to-chain path is now only a
+// FALLBACK for non-USDC assets or API incidents; deploy/fund/milestone builds
+// always use the TW API.
 
 /**
  * Contract-side signature (verified against TW's single-release source and
@@ -638,10 +638,10 @@ export function createTrustlessWorkClient(cfg: TrustlessWorkConfig) {
     rpcUrl,
 
     /**
-     * Executes the release step DIRECTLY on-chain, bypassing TW's release-funds
-     * build endpoint (which rejects releasable escrows while the
-     * "Escrow already in dispute" bug is open — see
-     * buildReleaseFundsArgs / docs/trustless-work-bug-report.md).
+     * Executes the release step DIRECTLY on-chain — the fallback for non-USDC
+     * assets or TW API incidents (the standard API path is the happy path on
+     * USDC; see buildReleaseFundsArgs and docs/trustless-work-integration.md
+     * Part 6 for the asset-restriction history).
      *
      * Reads nothing from the TW API: it fetches the platform account from RPC,
      * builds `release_funds(release_signer, trustless_work_address)` with

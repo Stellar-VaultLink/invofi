@@ -886,9 +886,9 @@ function remainingBalance(offer: FinancingOffer): bigint {
 //   platform    Approve Delivery  → approve-milestone (makes the escrow releasable)
 //   platform    Release Funds     → DIRECT on-chain release_funds invocation
 //
-// The release goes direct-to-chain (Soroban RPC) because TW's release-funds
-// build endpoint rejects fully releasable escrows with "Escrow already in
-// dispute" — reproduced twice on testnet; see docs/trustless-work-bug-report.md.
+// The release falls back to direct-to-chain (Soroban RPC) when the TW
+// release-funds build path rejects the escrow (its pre-check is asset-restricted:
+// USDC works, non-USDC 400s — see docs/trustless-work-integration.md Part 6).
 // Everything else keeps using the TW API through /api/escrow/*.
 function escrowStepOf(status: EscrowStatus): 'awaitingDelivery' | 'awaitingApproval' | 'releasable' | 'released' | 'disputed' {
   if (status.flags.released) return 'released';

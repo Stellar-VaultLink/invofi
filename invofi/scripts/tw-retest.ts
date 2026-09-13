@@ -1,12 +1,12 @@
 #!/usr/bin/env tsx
 /**
- * Trustless Work release-funds bug retest — fresh escrow, FULL API path.
+ * Trustless Work release-path retest — fresh escrow, FULL API path.
  * ============================================================================
- * Purpose: re-verify the "Escrow already in dispute" 400 from
- * /escrow/single-release/release-funds (docs/trustless-work-bug-report.md)
- * on a brand-new escrow driven entirely through TW's build→sign→submit loop,
- * and measure read-model (indexer) lag at each step to test the
- * "backend/DB was paused" hypothesis from the TW team.
+ * Purpose: verify the /escrow/single-release/release-funds build succeeds on
+ * USDC (the production asset) on a brand-new escrow driven entirely through
+ * TW's build→sign→submit loop, and measure read-model (indexer) lag at each
+ * step. (Historical context: the release pre-check 400'd on non-USDC assets —
+ * see docs/trustless-work-integration.md Part 6.)
  *
  * Flow:
  *   1. deploy    POST /deployer/single-release                     (lender signs)

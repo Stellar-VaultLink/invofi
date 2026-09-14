@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { nativeToScVal, SorobanDataBuilder } from '@stellar/stellar-sdk';
+import { Keypair, Transaction, TransactionBuilder, nativeToScVal, SorobanDataBuilder } from '@stellar/stellar-sdk';
 
 /**
  * Shared fixtures for the InvoFi e2e smoke suite.
@@ -13,6 +13,15 @@ import { nativeToScVal, SorobanDataBuilder } from '@stellar/stellar-sdk';
 
 export const SUPABASE_URL = 'https://e2e.supabase.co';
 export const RPC_URL = 'https://soroban-testnet.stellar.org';
+
+/**
+ * The InvoFi platform wallet for e2e (the escrow's approver / release signer
+ * role). `playwright.config.ts` feeds this into
+ * `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS` so `isEscrowEnabled()` is true
+ * in the suite and role-gated escrow UI is reachable; the Trustless Work API
+ * itself is always mocked at the `/api/escrow/*` proxy boundary.
+ */
+export const PLATFORM_ADDRESS = 'GARQM6JYPWTTOEQRRLL5L3N5I3TOPOVWR4G72H6E5NVMNB5RK662UXVR';
 
 /**
  * The auth storage key @supabase/ssr derives for `SUPABASE_URL`:
@@ -52,7 +61,7 @@ export interface OnChainInvoice {
 export interface MirrorInvoice {
   id: string;
   originator: string;
-  /** Human-unit decimal string, e.g. "10000.00" (mirror convention). */
+  /** Stroops as a decimal string (mirror convention — `formatAmount` divides by 10^7). */
   amount: string;
   currency: 'XLM' | 'USDC';
   /** ISO timestamp string (mirror convention). */
@@ -74,7 +83,7 @@ export const SMOKE_INVOICES: MirrorInvoice[] = [
   {
     id: 'inv_smoke_market_1',
     originator: ORIGINATOR,
-    amount: '10000.00',
+    amount: '100000000000', // 10,000.00 XLM
     currency: 'XLM',
     due_date: '2027-01-01T00:00:00.000Z',
     status: 'Pending',
@@ -83,7 +92,7 @@ export const SMOKE_INVOICES: MirrorInvoice[] = [
   {
     id: 'inv_smoke_market_2',
     originator: ORIGINATOR,
-    amount: '2500000.00',
+    amount: '25000000000000', // 2,500,000.00 USDC
     currency: 'USDC',
     due_date: '2027-02-01T00:00:00.000Z',
     status: 'Financed',
@@ -175,6 +184,8 @@ export const SMOKE_POSITION_OFFER: MirrorOffer = {
   invoice_id: 'inv_smoke_market_1',
   lender: ORIGINATOR,
   lender_id: SMOKE_USER.id,
+  // financing_offers rows carry HUMAN-unit amounts (ListPositionForm runs
+  // toStroopsBigInt itself) — unlike `invoices`, which store stroops.
   amount: '1000.00',
   currency: 'USDC',
   interest_rate: 500,
@@ -193,6 +204,27 @@ export const SMOKE_POSITION_OFFER: MirrorOffer = {
  */
 function encodeSessionCookie(session: object): string {
   return `base64-${Buffer.from(JSON.stringify(session)).toString('base64url')}`;
+}
+
+/**
+ * Catch-all for every Supabase REST/auth request no table-specific mock
+ * claims. This keeps the suite hermetic as features add mirror tables: an
+ * unmocked table used to die with `ERR_NAME_NOT_RESOLVED` against the fake
+ * `e2e.supabase.co` domain and (with queries hanging or components waiting
+ * on them) could blank entire pages. Register AFTER the table-specific
+ * mocks — Playwright routes registered later take precedence.
+ */
+export async function mockSupabaseCatchAll(page: Page): Promise<void> {
+  // REST: any unmocked table reads as empty. supabase-js derives sensible
+  // client-side results (`[]` → empty list; `.single()` on it yields the
+  // PGRST116 "no rows" error our callers already treat as "nothing stored").
+  await page.route('**/rest/v1/**', (route) =>
+    route.fulfill({ json: [] }),
+  );
+  // Auth: anything beyond the stubbed /user (logout, session claims, …).
+  await page.route('**/auth/v1/**', (route) =>
+    route.fulfill({ json: {} }),
+  );
 }
 
 /**
@@ -416,12 +448,23 @@ export async function mockInvoiceEvents(page: Page): Promise<void> {
 
 /**
  * One-call setup for the authenticated smoke flows: a signed-in Supabase
- * session plus the mirror and (optionally) on-chain mocks.
+ * session plus the mirror and (optionally) on-chain mocks. A catch-all
+ * ensures any mirror table a feature adds later reads as empty instead of
+ * dying with DNS errors against the placeholder Supabase host.
  */
 export async function authenticate(
   page: Page,
   options: { invoice?: OnChainInvoice; invoices?: MirrorInvoice[]; offers?: object[] } = {},
 ): Promise<void> {
+  // Default guard for the escrow proxy: every build/submit/read returns 503
+  // unless a test mocks the specific routes (the escrow-lifecycle spec does,
+  // registering its routes AFTER authenticate so they take precedence). With
+  // the rail enabled suite-wide via config env, this keeps the accept-offer
+  // escrow hook in other specs hermetic — no stray calls to the real TW API.
+  await page.route('**/api/escrow/**', (route) =>
+    route.fulfill({ status: 503, json: { code: 'ESCROW_NOT_MOCKED', detail: 'escrow proxy is not mocked in this test' } }),
+  );
+  await mockSupabaseCatchAll(page);
   await mockSupabaseAuth(page);
   await mockSupabaseMirror(page, options);
   if (options.invoice) {
@@ -445,8 +488,23 @@ export async function authenticate(
 export async function mockFreighter(
   page: Page,
   address: string = ORIGINATOR,
+  /** Secret key signing SUBMIT_TRANSACTION requests. Random throwaway when omitted. */
+  signerSecret?: string,
 ): Promise<void> {
-  await page.addInitScript((addr: string) => {
+  const secret = signerSecret ?? Keypair.random().secret();
+
+  // Node-side signer: the page calls this binding, the test process holds the
+  // fixture keypair and the SDK, so signing uses the real Transaction API.
+  await page.exposeFunction('__e2eSignTransaction', async (txXdr: string) => {
+    const kp = Keypair.fromSecret(secret);
+    const tx = TransactionBuilder.fromXDR(txXdr, 'Test SDF Network ; September 2015');
+    if (!(tx instanceof Transaction)) throw new Error('fee-bump transactions are not supported by the e2e signer');
+    tx.sign(kp);
+    return tx.toXDR();
+  });
+
+  await page.addInitScript(
+    ({ addr }: { addr: string }) => {
     const PASSPHRASE = 'Test SDF Network ; September 2015';
     window.addEventListener('message', (event: MessageEvent) => {
       const data = event.data as { source?: string; messageId?: number; type?: string } | null;
@@ -486,9 +544,23 @@ export async function mockFreighter(
               sorobanRpcUrl: 'https://soroban-testnet.stellar.org',
             },
           });
+        case 'SUBMIT_TRANSACTION': {
+          // Delegated to the Node test process via the __e2eSignTransaction
+          // binding installed by mockFreighter (the page has no SDK, and the
+          // fixture keypair must stay in the test process).
+          const payload = data as { transactionXdr?: string };
+          if (!payload.transactionXdr) {
+            return reply({ signedTransaction: '', signerAddress: addr, error: { code: -4, message: 'e2e mock: no transactionXdr' } });
+          }
+          (window as unknown as { __e2eSignTransaction: (tx: string) => Promise<string> }).__e2eSignTransaction(payload.transactionXdr).then(
+            (signed: string) => reply({ signedTransaction: signed, signerAddress: addr }),
+            (e: unknown) => reply({ signedTransaction: '', signerAddress: addr, error: { code: -4, message: `e2e mock sign failed: ${e}` } }),
+          );
+          return;
+        }
         default:
           return;
       }
     });
-  }, address);
+  }, { addr: address });
 }

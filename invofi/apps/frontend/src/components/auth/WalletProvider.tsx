@@ -190,9 +190,28 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     );
 
     (async () => {
+      // Probe each wallet behind a guard: an isInstalled() implementation that
+      // rejects (or never resolves — e.g. its extension handshake silently
+      // dropped) must not leave isCheckingWallet stuck true, which spins
+      // AuthGuard's loader forever and blanks every gated page.
+      const withTimeout = async (p: Promise<boolean>, ms: number): Promise<boolean> => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          return await Promise.race([
+            p,
+            new Promise<boolean>(resolve => {
+              timer = setTimeout(() => resolve(false), ms);
+            }),
+          ]);
+        } catch {
+          return false;
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      };
       const installed = new Set<string>();
       for (const w of APPROVED_WALLETS) {
-        if (await w.isInstalled()) {
+        if (await withTimeout(Promise.resolve(w.isInstalled()), 3_000)) {
           installed.add(w.id);
         }
       }
@@ -217,14 +236,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       // Prefer the last-connected wallet so returning users reconnect to the
       // wallet they chose last time; fall back to probing every approved
-      // wallet for a previously-granted session.
+      // wallet for a previously-granted session. Restore attempts get the
+      // same hang-guard as the install probes.
       const lastWallet = readLastWallet();
       if (lastWallet && installed.has(lastWallet.walletId)) {
-        if (await tryRestoreWallet(lastWallet.walletId)) return;
+        if (await withTimeout(tryRestoreWallet(lastWallet.walletId), 5_000)) return;
       }
       for (const w of APPROVED_WALLETS) {
         if (!installed.has(w.id)) continue;
-        if (await tryRestoreWallet(w.id)) return;
+        if (await withTimeout(tryRestoreWallet(w.id), 5_000)) return;
       }
 
       setIsCheckingWallet(false);

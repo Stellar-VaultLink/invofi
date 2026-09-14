@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { PLATFORM_ADDRESS } from './e2e/fixtures';
 
 /**
  * E2E smoke suite for the InvoFi frontend (issue #171).
@@ -21,8 +22,10 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   // `next dev` compiles each route on first request, which can exceed the
   // defaults on a cold start. Give tests and assertions room to wait for it.
+  // The expect timeout also absorbs the first-hit compile of a route (a
+  // heading assertion on a freshly-compiled page can otherwise outrun 20s).
   timeout: 90_000,
-  expect: { timeout: 20_000 },
+  expect: { timeout: 30_000 },
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
@@ -53,6 +56,14 @@ export default defineConfig({
       NEXT_PUBLIC_STELLAR_NETWORK: 'testnet',
       NEXT_PUBLIC_RPC_URL: 'https://soroban-testnet.stellar.org',
       NEXT_PUBLIC_HORIZON_URL: 'https://horizon-testnet.stellar.org',
+      // Escrow rail ON for the suite: role-gated escrow UI (the milestone
+      // panel, Epic 3.4) becomes reachable. The flag value is NOT a key —
+      // the real TW API key stays server-side in production; every TW call
+      // the suite makes is intercepted at the /api/escrow/* proxy boundary
+      // (see e2e/fixtures.ts authenticate()).
+      NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY: 'e2e-flag',
+      NEXT_PUBLIC_TRUSTLESS_WORK_ENV: 'testnet',
+      NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS: PLATFORM_ADDRESS,
     },
   },
 });

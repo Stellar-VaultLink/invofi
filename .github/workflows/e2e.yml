@@ -74,6 +74,12 @@ jobs:
       - name: Install SDK deps
         working-directory: invofi/apps/sdk
         run: npm ci
+      # type-check also pulls in ../apps/frontend/src/lib/health (shared with
+      # the collector), which resolves frontend-only deps from the frontend's
+      # node_modules — same requirement as the health-collector workflow.
+      - name: Install frontend dependencies (for type-check)
+        working-directory: invofi/apps/frontend
+        run: npm ci --legacy-peer-deps
       - run: npm run type-check
       # The on-chain flow needs two funded testnet identities. Until the
       # E2E_* secrets are configured (CONTRIBUTING.md#testing), skip the flow

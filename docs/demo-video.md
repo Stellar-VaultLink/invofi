@@ -11,6 +11,28 @@
 
 ---
 
+## Raw clips (pre-voiceover cut)
+
+All nine shots are recorded against the **live site** with **real testnet
+transactions** (every on-chain step verified on Horizon — invoice
+`inv_mu2iknberwbf`, 5000 XLM, registered → financed → transferred → repaid).
+Files live in [`docs/demo-video/clips/`](./clips/) — the [folder
+README](./clips/README.md) maps every clip to its on-chain evidence:
+
+- [clip-01 intro](./clips/clip-01-intro-landing.webm) ·
+  [clip-02 connect wallet](./clips/clip-02-connect-wallet.webm) ·
+  [clip-03 register](./clips/clip-03-register-invoice.webm) ·
+  [clip-04 offer](./clips/clip-04-create-offer.webm) ·
+  [clip-05 accept](./clips/clip-05-accept-offer.webm) ·
+  [clip-06a trustline](./clips/clip-06a-recipient-trustline.webm) ·
+  [clip-06b transfer](./clips/clip-06b-transfer.webm) ·
+  [clip-07 repay](./clips/clip-07-repay.webm) ·
+  [clip-08 stats](./clips/clip-08-stats.webm) ·
+  [clip-09 outro](./clips/clip-09-outro-repos.webm)
+
+Total ≈ 4:57. The final cut replaces these once the voice-over is recorded
+and the shots are stitched (see "After recording" below).
+
 ## Before you record
 
 - [ ] Use a **fresh funded testnet account** for the business and one for the

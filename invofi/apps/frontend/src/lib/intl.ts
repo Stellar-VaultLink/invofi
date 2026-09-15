@@ -21,6 +21,7 @@
  */
 
 import { STROOPS_PER_XLM } from './constants';
+import { getDefaultCurrency } from './formatters';
 import { toStroopsBigInt } from './utils';
 
 /**
@@ -44,12 +45,13 @@ function stroopsToUnits(stroops: bigint | number | string | null | undefined): n
  */
 export function formatCurrency(
   stroops: bigint | number | string | null | undefined,
-  currency: string,
-  locale: string,
+  currency: string = getDefaultCurrency(),
+  locale: string = 'en',
   options: { maximumFractionDigits?: number } = {},
 ): string {
   const units = stroopsToUnits(stroops);
-  const iso = ISO_CURRENCIES[currency];
+  const code = currency || getDefaultCurrency();
+  const iso = ISO_CURRENCIES[code];
 
   if (iso) {
     return new Intl.NumberFormat(locale, {
@@ -66,7 +68,7 @@ export function formatCurrency(
   const number = new Intl.NumberFormat(locale, {
     maximumFractionDigits: options.maximumFractionDigits ?? 7,
   }).format(units);
-  return `${number}\u00A0${currency}`;
+  return `${number}\u00A0${code}`;
 }
 
 /** A plain locale-formatted number (no currency), e.g. counts and totals. */

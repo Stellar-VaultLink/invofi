@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
+import { CurrencySwitcher } from '@/components/settings/CurrencySwitcher';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
 import {
@@ -154,6 +155,15 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <LanguageSwitcher />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t('currency.title')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CurrencySwitcher />
           </CardContent>
         </Card>
 

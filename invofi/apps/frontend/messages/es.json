@@ -37,6 +37,11 @@
       "label": "Idioma de la interfaz",
       "hint": "Cambia el idioma de la interfaz, el formato de números y fechas y la dirección del texto."
     },
+    "currency": {
+      "title": "Moneda",
+      "label": "Moneda de visualización predeterminada",
+      "hint": "Elige la moneda predeterminada para montos mostrados sin una moneda explícita."
+    },
     "network": {
       "title": "Red y contratos",
       "label": "Red de Stellar",

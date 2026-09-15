@@ -1,5 +1,36 @@
 import { STROOPS_PER_XLM } from './constants';
 
+export const DEFAULT_DISPLAY_CURRENCY_STORAGE_KEY = 'invofi:default-currency';
+export const DEFAULT_CURRENCY = 'XLM';
+
+/**
+ * Returns the configured default display currency from localStorage, falling back to 'XLM'.
+ */
+export function getDefaultCurrency(): string {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = window.localStorage.getItem(DEFAULT_DISPLAY_CURRENCY_STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (typeof parsed === 'string' && parsed.trim()) {
+            return parsed.trim();
+          }
+        } catch {
+          if (typeof stored === 'string' && stored.trim()) {
+            return stored.trim();
+          }
+        }
+      }
+    } catch {
+      // private mode / quota exceeded / unavailable
+    }
+  }
+  return DEFAULT_CURRENCY;
+}
+
+export const getDefaultDisplayCurrency = getDefaultCurrency;
+
 /**
  * Format a stroops-denominated amount for display.
  *
@@ -14,7 +45,10 @@ import { STROOPS_PER_XLM } from './constants';
  * - the currency code is appended as `" 1.23 XLM"` (not `$`/`€` symbols)
  * This helper does NOT perform currency conversion.
  */
-export function formatAmount(stroops: string | number | bigint, currency: string = 'XLM'): string {
+export function formatAmount(
+  stroops: string | number | bigint,
+  currency: string = getDefaultCurrency(),
+): string {
   const units = Number(stroops) / STROOPS_PER_XLM;
   return formatUnits(units, currency);
 }
@@ -24,11 +58,15 @@ export function formatAmount(stroops: string | number | bigint, currency: string
  * e.g. a Horizon `getXlmBalance` string `"12.3456789"` → `"12.35 XLM"`.
  * See {@link formatAmount} for the shared rounding rules.
  */
-export function formatUnits(units: string | number, currency: string = 'XLM'): string {
+export function formatUnits(
+  units: string | number,
+  currency: string = getDefaultCurrency(),
+): string {
+  const code = currency || getDefaultCurrency();
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(Number(units)) + ` ${currency}`;
+  }).format(Number(units)) + ` ${code}`;
 }
 
 /**
@@ -39,7 +77,7 @@ export function formatUnits(units: string | number, currency: string = 'XLM'): s
  */
 export function formatCurrencyAmount(
   stroops: string | number | bigint,
-  currency: string = 'XLM',
+  currency: string = getDefaultCurrency(),
 ): string {
   return formatAmount(stroops, currency);
 }
@@ -51,7 +89,7 @@ export function formatCurrencyAmount(
  */
 export function formatCurrencyPair(
   units: string | number,
-  currency: string = 'XLM',
+  currency: string = getDefaultCurrency(),
 ): string {
   return formatUnits(units, currency);
 }

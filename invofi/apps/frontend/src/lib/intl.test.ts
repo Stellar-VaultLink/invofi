@@ -42,6 +42,10 @@ describe('formatCurrency', () => {
     expect(formatCurrency(25_000_000n, 'XLM', 'en')).toBe(`2.5${NBSP}XLM`);
     expect(formatCurrency(1n, 'XLM', 'en')).toBe(`0.0000001${NBSP}XLM`);
   });
+
+  it('falls back to default currency when no currency is provided', () => {
+    expect(formatCurrency(25_000_000n, undefined, 'en')).toBe(`2.5${NBSP}XLM`);
+  });
 });
 
 describe('formatPercent', () => {

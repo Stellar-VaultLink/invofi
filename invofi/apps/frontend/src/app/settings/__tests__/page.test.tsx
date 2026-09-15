@@ -48,12 +48,27 @@ describe('SettingsPage — Network & Contracts panel (issue #163)', () => {
     delete process.env.NEXT_PUBLIC_CONTRACT_ID;
   });
 
-  it('renders the settings page with Profile, Network & Contracts and Account cards', async () => {
+  it('renders the settings page with Profile, Language, Currency, Network & Contracts and Account cards', async () => {
     await renderSettingsPage();
     expect(screen.getByRole('heading', { name: /settings/i })).toBeInTheDocument();
     expect(screen.getByText('Network & Contracts')).toBeInTheDocument();
     expect(screen.getByText('Profile')).toBeInTheDocument();
+    expect(screen.getByText('Default display currency')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument();
+  });
+
+  it('allows changing the default display currency preference and persists to localStorage', async () => {
+    await renderSettingsPage();
+
+    const select = screen.getByTestId('currency-switcher') as HTMLSelectElement;
+    expect(select.value).toBe('XLM');
+
+    fireEvent.change(select, { target: { value: 'USDC' } });
+    expect(select.value).toBe('USDC');
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem('invofi:default-currency')).toBe('"USDC"');
+    });
   });
 
   it('shows the network, RPC and Horizon endpoints', async () => {

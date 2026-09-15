@@ -28,7 +28,7 @@ export function useFormat() {
       locale,
       currency: (
         stroops: bigint | number | string | null | undefined,
-        code: string,
+        code?: string,
         options?: { maximumFractionDigits?: number },
       ) => formatCurrency(stroops, code, locale, options),
       number: (value: number | bigint | string | null | undefined, options?: Intl.NumberFormatOptions) =>

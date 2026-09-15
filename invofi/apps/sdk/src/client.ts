@@ -624,12 +624,26 @@ export function createInvofiClient(cfg: InvofiClientConfig) {
 
     /**
      * Get the position token contract ID from the financing contract.
+     *
+     * Legacy deployments (financing contracts built before Task 7's minting
+     * code) have no `get_position_token` function — the read fails with a
+     * VM "missing function" error. When `cfg.positionTokenAsset` is set, we
+     * fall back to that classic asset's token contract (its SAC), so the
+     * transfer/balance UI keeps working against legacy contracts instead of
+     * every lender seeing "Position tokens not configured".
      */
-    getPositionTokenId: (sourceAccount?: string): Promise<string | null> => {
+    getPositionTokenId: async (sourceAccount?: string): Promise<string | null> => {
       if (sourceAccount !== undefined) validateStellarAddress(sourceAccount, 'sourceAccount');
-      return readContract(cfg.financingId, 'get_position_token', [], sourceAccount).then(
-        val => (scValToNative(val) as string | null) ?? null,
-      );
+      try {
+        const val = await readContract(cfg.financingId, 'get_position_token', [], sourceAccount);
+        return (scValToNative(val) as string | null) ?? null;
+      } catch (err) {
+        if (!cfg.positionTokenAsset) throw err;
+        // Legacy financing contract (no position-token support) — resolve the
+        // deterministic SAC for the configured classic asset.
+        const { code, issuer } = parseAssetParts(cfg.positionTokenAsset);
+        return new Asset(code, issuer).contractId(cfg.networkPassphrase);
+      }
     },
 
     /**

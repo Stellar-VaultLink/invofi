@@ -13,6 +13,10 @@
 
 ## Raw clips (pre-voiceover cut)
 
+**Assembled single video (silent, ready for narration overlay):**
+[`docs/demo-video/invofi-demo-prenarration.mp4`](./invofi-demo-prenarration.mp4)
+— all 9 shots stitched, 1080p30 H.264, **4:58**, 11.9 MB.
+
 All nine shots are recorded against the **live site** with **real testnet
 transactions** (every on-chain step verified on Horizon — invoice
 `inv_mu2iknberwbf`, 5000 XLM, registered → financed → transferred → repaid).

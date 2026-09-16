@@ -33,12 +33,13 @@ export const STROOPS_PER_XLM = 10_000_000;
 
 // Position tokens (Task 7/8) are Stellar assets (SAC) minted to lenders on
 // offer acceptance. Holders must establish a trustline before mint/transfer
-// can touch their balance — standard Stellar asset behavior. The asset is
-// `POS` issued by the protocol deployer; override per deployment via
+// can touch their balance — standard Stellar asset behavior. The live asset
+// is `POSv2` issued by the protocol deployer (v2 stack, Sep 2026 — earlier
+// generations POS/POSI are dead-admin legacy); override per deployment via
 // NEXT_PUBLIC_POSITION_TOKEN_ASSET.
 export const POSITION_TOKEN_ASSET =
   process.env.NEXT_PUBLIC_POSITION_TOKEN_ASSET ??
-  'POS:GBDDLOWR6YUEEYUKFKS6ISTCLBQKDPUXAOVJMNJYAACT6UYQGEKYEVZR';
+  'POSv2:GBDDLOWR6YUEEYUKFKS6ISTCLBQKDPUXAOVJMNJYAACT6UYQGEKYEVZR';
 
 export const INVOICE_STATUSES = ['Pending', 'Financed', 'Repaid', 'Overdue', 'Cancelled', 'Disputed', 'Defaulted'] as const;
 export const OFFER_STATUSES = ['Pending', 'Accepted', 'Financed', 'Rejected', 'Repaid', 'Defaulted'] as const;

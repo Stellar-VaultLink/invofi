@@ -426,7 +426,7 @@ export async function mockInvoiceEvents(page: Page): Promise<void> {
       type: 'contract',
       ledger: evt.ledger,
       ledgerClosedAt: `2026-08-1${i + 1}T12:00:00Z`,
-      contractId: 'CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7',
+      contractId: 'CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY',
       topic: [
         nativeToScVal(evt.name, { type: 'symbol' }).toXDR('base64'),
         nativeToScVal(SMOKE_INVOICE.id, { type: 'symbol' }).toXDR('base64'),

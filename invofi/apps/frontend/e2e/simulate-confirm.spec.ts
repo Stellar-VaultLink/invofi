@@ -22,7 +22,7 @@ import { Contract, TransactionBuilder, SorobanDataBuilder, nativeToScVal, xdr } 
 
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015';
 const LENDER = 'GDNSSYSCSSJ76FER5WEEXME5G4MTCUBKDRQSKOYP36KUKVDB2VCMERS6';
-const REGISTRY_ID = 'CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7';
+const REGISTRY_ID = 'CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY';
 
 /** Decodes which contract function a `simulateTransaction` request invokes. */
 function invokedFunction(txXdr: string): string | null {

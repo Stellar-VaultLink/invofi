@@ -57,7 +57,7 @@ vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const CONTRACT_ID = 'CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7';
+const CONTRACT_ID = 'CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY';
 const RPC_URL = 'https://soroban-testnet.stellar.org';
 const TX_HASH = 'abc123def456';
 /** Default poll interval used in every test (ms). */

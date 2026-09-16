@@ -61,7 +61,7 @@ export const MOCK_BUSINESS_C = `G${'C'.repeat(55)}`;
 export const MOCK_LENDER_B = `G${'L'.repeat(55)}`;
 
 /** Position-token contract id the mock reports (a valid `C…` contract address). */
-export const MOCK_POSITION_TOKEN_ID = 'CAXNTWSKDVSB3GPJMU3RTSDTAIFF4A6FFRAAI35B4AE7LZLLI4VXMCF7';
+export const MOCK_POSITION_TOKEN_ID = 'CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY';
 
 /**
  * Contract ids the mock reports in the `contractId` field of emitted protocol

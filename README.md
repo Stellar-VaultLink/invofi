@@ -18,10 +18,19 @@
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2014-black)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Auth-Supabase-3ECF8E)](https://supabase.com)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black)](https://invofi-five.vercel.app)
+[![Demo Video](https://img.shields.io/badge/%F0%9F%8E%AC-Demo%20Video%204%3A58-red)](https://github.com/Stellar-VaultLink/invofi/releases/tag/v0.1.0-demo)
 [![Telegram](https://img.shields.io/badge/Community-Telegram-26A5E4)](https://t.me/+K56Xkd2pfPM4NDE0)
 [![LinkedIn](https://img.shields.io/badge/Company-LinkedIn-0A66C2)](https://www.linkedin.com/company/stellar-vaultlink)
 
-[Live Demo](https://invofi-five.vercel.app) · [Docs](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs) · [Telegram](https://t.me/+K56Xkd2pfPM4NDE0) · [LinkedIn](https://www.linkedin.com/company/stellar-vaultlink) · [Contributing](./CONTRIBUTING.md) · [Report Bug](https://github.com/Stellar-VaultLink/invofi/issues)
+[Live Demo](https://invofi-five.vercel.app) · [🎬 Demo Video](https://github.com/Stellar-VaultLink/invofi/releases/tag/v0.1.0-demo) · [Docs](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs) · [Telegram](https://t.me/+K56Xkd2pfPM4NDE0) · [LinkedIn](https://www.linkedin.com/company/stellar-vaultlink) · [Contributing](./CONTRIBUTING.md) · [Report Bug](https://github.com/Stellar-VaultLink/invofi/issues)
+
+<a href="https://github.com/Stellar-VaultLink/invofi/releases/tag/v0.1.0-demo">
+  <img src="./docs/demo-video/demo-thumbnail.png" alt="InvoFi narrated testnet demo — 4:58 walkthrough: register invoice → lender offers → accept (real XLM transfer) → SEP-41 position token → repay → stats" width="720">
+</a>
+
+**▶ [Watch the narrated demo — 4:58](https://github.com/Stellar-VaultLink/invofi/releases/tag/v0.1.0-demo)**
+· [player on main](./docs/demo-video/invofi-demo-final.mp4)
+· [production notes & narration script](./docs/demo-video.md)
 
 </div>
 

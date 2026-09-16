@@ -56,6 +56,9 @@ export const APPROVED_WALLETS = [
     installUrl: 'https://freighter.app',
     module: FreighterModule,
     isInstalled: hasFreighterExtension,
+    // Extension wallets answer fetchAddress() silently when the user has
+    // already granted access — safe to auto-restore a persisted session.
+    silentRestore: true,
   },
   {
     id: LOBSTR_ID,
@@ -64,6 +67,9 @@ export const APPROVED_WALLETS = [
     installUrl: 'https://lobstr.co/extension',
     module: LobstrModule,
     isInstalled: hasLobstrExtension,
+    // Same extension contract as Freighter; isInstalled() IS the connected
+    // check here, so a silent restore only fires for an already-granted pair.
+    silentRestore: true,
   },
   {
     id: ALBEDO_ID,
@@ -72,6 +78,9 @@ export const APPROVED_WALLETS = [
     installUrl: 'https://albedo.link/',
     module: AlbedoModule,
     isInstalled: hasAlbedoAvailable,
+    // Bridge/web wallets open a sign-up/auth popup on fetchAddress() — they
+    // must NEVER be touched without an explicit user click.
+    silentRestore: false,
   },
   {
     id: XBULL_ID,
@@ -80,6 +89,7 @@ export const APPROVED_WALLETS = [
     installUrl: 'https://xbull.app',
     module: xBullModule,
     isInstalled: hasXBullAvailable,
+    silentRestore: false,
   },
 ] as const;
 
@@ -93,3 +103,19 @@ export const WALLET_IDS = {
   albedo: ALBEDO_ID,
   xbull: XBULL_ID,
 } as const;
+
+/**
+ * Returns the wallet IDs eligible for a SILENT session restore, given the
+ * set of installed wallet ids: only wallets flagged `silentRestore`
+ * (extension wallets that answer `fetchAddress()` without UI) qualify.
+ *
+ * Connection is user-initiated by contract: bridge/web wallets (Albedo,
+ * xBull) pop their auth window on `fetchAddress()`, so they must only ever
+ * connect through an explicit click in the wallet-select dialog.
+ */
+export function silentRestorableWallets(installedIds: Iterable<string>): string[] {
+  const installed = new Set(installedIds);
+  return APPROVED_WALLETS
+    .filter(w => w.silentRestore && installed.has(w.id))
+    .map(w => w.id);
+}

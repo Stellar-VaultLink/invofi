@@ -9,7 +9,7 @@ import {
   probeWalletNetwork,
   subscribeToWalletEvents,
 } from '@/lib/walletkit';
-import { APPROVED_WALLETS } from '@/lib/approved-wallets';
+import { APPROVED_WALLETS, silentRestorableWallets } from '@/lib/approved-wallets';
 import { isMockMode } from '@/lib/mock-mode';
 import { MOCK_WALLET_ADDRESS } from '@/lib/mock';
 import {
@@ -234,17 +234,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Prefer the last-connected wallet so returning users reconnect to the
-      // wallet they chose last time; fall back to probing every approved
-      // wallet for a previously-granted session. Restore attempts get the
-      // same hang-guard as the install probes.
+      // Restore the wallet the user actually chose last time — and only
+      // that one. Connection is user-initiated by contract: probing every
+      // installed wallet here made bridge/web wallets (Albedo, xBull) pop
+      // their sign-up window on every page load, and left stale popups
+      // queued from the other wallets even after one connected. Extension
+      // wallets (Freighter, LOBSTR) answer fetchAddress() silently once
+      // access was granted, so a single-hint restore stays invisible; a
+      // bridge wallet is only ever connected via an explicit click in the
+      // select dialog.
       const lastWallet = readLastWallet();
-      if (lastWallet && installed.has(lastWallet.walletId)) {
-        if (await withTimeout(tryRestoreWallet(lastWallet.walletId), 5_000)) return;
-      }
-      for (const w of APPROVED_WALLETS) {
-        if (!installed.has(w.id)) continue;
-        if (await withTimeout(tryRestoreWallet(w.id), 5_000)) return;
+      if (
+        lastWallet &&
+        silentRestorableWallets(installed).includes(lastWallet.walletId)
+      ) {
+        await withTimeout(tryRestoreWallet(lastWallet.walletId), 5_000);
       }
 
       setIsCheckingWallet(false);

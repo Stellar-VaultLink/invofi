@@ -21,9 +21,10 @@ Total ≈ 4:57 (script target 3–5 min ✓)
 ## Notes for the edit
 - Voice-over pacing: scenes 3–7 recorded slightly longer/shorter than the
   script slots; trim pauses to taste.
-- POSI mint: the live financing contract predates Task 7 minting, so the
-  lender's 5000 POSI claim was minted issuer-side (payment, 1:1 with
-  principal). The SDK now falls back to the asset SAC so the transfer UI
-  works; contract-side minting lands with the next contract deployment.
+- POSI mint: at recording time (Sep 16) the deployed financing contract
+  predated Task 7 minting, so the lender's 5000 POSI claim was minted
+  issuer-side (payment, 1:1 with principal). **As of the v2 stack
+  (Sep 16, 2026) `accept_offer` mints the position token natively** —
+  verified end-to-end on testnet; future recordings need no workaround.
 - Personas: `/tmp/demo_personas.json` (business / lender / recipient, all
   friendbot-funded testnet keys).

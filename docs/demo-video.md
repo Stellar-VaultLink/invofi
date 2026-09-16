@@ -1,5 +1,12 @@
 # Demo Video — Shot List & Production Notes
 
+> ✅ **FINAL CUT SHIPPED (2026-09-16):**
+> [`docs/demo-video/invofi-demo-final.mp4`](./invofi-demo-final.mp4) — the
+> full 4:58 walkthrough **with AI narration** (1080p30 H.264 + AAC).
+> Also attached as an asset on the
+> [latest GitHub release](https://github.com/Stellar-VaultLink/invofi/releases/latest)
+> and embedded in the repo [README](../README.md).
+
 > **This is a human-track deliverable** — recording and uploading are done
 > by the maintainer; this document is the full recording script. Target:
 > **3–5 minutes**, uploaded **unlisted** to YouTube, then linked from both
@@ -13,7 +20,12 @@
 
 ## Raw clips (pre-voiceover cut)
 
-**Assembled single video (silent, ready for narration overlay):**
+**Final narrated cut:**
+[`docs/demo-video/invofi-demo-final.mp4`](./invofi-demo-final.mp4) — all 9
+shots with edge-tts narration (en-US-Andrew), 1080p30 H.264 + AAC, **4:58**,
+11.2 MB.
+
+**Assembled single video (silent, pre-narration):**
 [`docs/demo-video/invofi-demo-prenarration.mp4`](./invofi-demo-prenarration.mp4)
 — all 9 shots stitched, 1080p30 H.264, **4:58**, 11.9 MB.
 
@@ -36,6 +48,28 @@ README](./clips/README.md) maps every clip to its on-chain evidence:
 
 Total ≈ 4:57. The final cut replaces these once the voice-over is recorded
 and the shots are stitched (see "After recording" below).
+
+### Final cut — narration timing sheet
+
+Narration: edge-tts `en-US-AndrewNeural`, per-scene MP3s fitted to each
+clip (source lines in [`clips/narration/`](./clips/narration/)). Speech
+starts `delay` seconds into each scene:
+
+| Scene | Starts at | Delay | Shot |
+|---|---|---|---|
+| 01 | 0:01.0 | 1.0s | Intro / landing |
+| 02 | 0:23.4 | 0.8s | Connect wallet |
+| 03 | 0:51.9 | 0.8s | Register invoice |
+| 04 | 1:32.5 | 0.8s | Lender creates offer |
+| 05 | 2:12.3 | 0.5s | Accept — XLM moves |
+| 06a | 2:31.3 | 0.5s | Recipient trustline |
+| 06b | 2:46.3 | 0.5s | Position transfer |
+| 07 | 3:21.9 | 0.6s | Repay → Repaid |
+| 08 | 3:52.5 | 0.7s | Stats dashboard |
+| 09 | 4:22.4 | 0.7s | Outro / repos |
+
+(Final duration **4:58**; on-chain evidence for every scene in the
+[clips README](./clips/README.md).)
 
 ## Before you record
 

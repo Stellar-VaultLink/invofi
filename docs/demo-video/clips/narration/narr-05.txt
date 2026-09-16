@@ -1,0 +1,1 @@
+Here's the moment that matters. The business accepts — and the funds actually move from the lender to the business, on testnet, on-chain. The lender receives a position token: a claim on the repayment, held in their own wallet. Not an I-O-U in a database — an asset.

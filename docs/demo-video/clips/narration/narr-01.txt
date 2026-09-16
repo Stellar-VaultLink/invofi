@@ -1,0 +1,1 @@
+InvoFi is open-source invoice financing on Stellar Soroban. Small businesses often wait thirty to ninety days to get paid. InvoFi lets them tokenise an invoice on-chain, and get funded by a global pool of lenders — no banks, no middlemen.

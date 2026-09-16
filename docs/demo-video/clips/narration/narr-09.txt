@@ -1,0 +1,1 @@
+InvoFi is fully open source. The apps and docs live in the invofi repo, and the auditable Soroban contracts in invofi-contracts. Fork it, break it, build on it. Contributions welcome.

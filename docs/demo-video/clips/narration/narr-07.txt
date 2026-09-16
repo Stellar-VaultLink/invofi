@@ -1,0 +1,1 @@
+When the invoice comes due, the business repays principal plus interest. The balance updates live, the invoice flips to repaid, and the lender has earned yield on money that used to sit idle.

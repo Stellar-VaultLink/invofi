@@ -1,0 +1,1 @@
+As a business, I register an invoice: the amount, the currency, and the due date. It's written to the on-chain registry in seconds. Anyone can verify it, and nobody can quietly change it.

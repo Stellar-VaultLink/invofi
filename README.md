@@ -25,7 +25,7 @@
 [Live Demo](https://invofi-five.vercel.app) · [🎬 Demo Video](https://github.com/Stellar-VaultLink/invofi/releases/tag/v0.1.0-demo) · [Docs](https://stellar-vault-link.gitbook.io/stellar-vault-link-docs) · [Telegram](https://t.me/+K56Xkd2pfPM4NDE0) · [LinkedIn](https://www.linkedin.com/company/stellar-vaultlink) · [Contributing](./CONTRIBUTING.md) · [Report Bug](https://github.com/Stellar-VaultLink/invofi/issues)
 
 <a href="https://github.com/Stellar-VaultLink/invofi/releases/tag/v0.1.0-demo">
-  <img src="./docs/demo-video/demo-thumbnail.png" alt="InvoFi narrated testnet demo — 4:58 walkthrough: register invoice → lender offers → accept (real XLM transfer) → SEP-41 position token → repay → stats" width="720">
+  <img src="./docs/demo-video/demo-thumbnail.png" alt="InvoFi narrated testnet demo — 4:46 walkthrough: register invoice → lender offers → accept (real XLM transfer) → SEP-41 position token → repay → stats" width="720">
 </a>
 
 **▶ [Watch the narrated demo — 4:58](https://github.com/Stellar-VaultLink/invofi/releases/tag/v0.1.0-demo)**

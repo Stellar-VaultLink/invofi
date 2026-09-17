@@ -1,8 +1,15 @@
 # Demo Video — Shot List & Production Notes
 
-> ✅ **FINAL CUT SHIPPED (2026-09-16):**
+> ✅ **FINAL CUT SHIPPED (2026-09-17, v2 retake):**
 > [`docs/demo-video/invofi-demo-final.mp4`](./invofi-demo-final.mp4) — the
-> full 4:58 walkthrough **with AI narration** (1080p30 H.264 + AAC).
+> full 4:46 walkthrough **with AI narration** (1080p30 H.264 + AAC).
+>
+> **v2 retake note:** scenes 2 and 8 from the first cut are replaced —
+> scene 2 now shows the real connect-wallet dialog handshake (the first
+> take fell back to an already-connected restore cut), and scene 8 shows
+> the stats dashboard rendering real aggregates (the first take hit the
+> paused-Supabase error). Scenes 1, 3–7, 9 are unchanged from the first
+> cut.
 > Also attached as an asset on the
 > [latest GitHub release](https://github.com/Stellar-VaultLink/invofi/releases/latest)
 > and embedded in the repo [README](../README.md).
@@ -22,12 +29,12 @@
 
 **Final narrated cut:**
 [`docs/demo-video/invofi-demo-final.mp4`](./invofi-demo-final.mp4) — all 9
-shots with edge-tts narration (en-US-Andrew), 1080p30 H.264 + AAC, **4:58**,
-11.2 MB.
+shots with edge-tts narration (en-US-Andrew), 1080p30 H.264 + AAC, **4:46**,
+11.3 MB.
 
 **Assembled single video (silent, pre-narration):**
 [`docs/demo-video/invofi-demo-prenarration.mp4`](./invofi-demo-prenarration.mp4)
-— all 9 shots stitched, 1080p30 H.264, **4:58**, 11.9 MB.
+— all 9 shots stitched, 1080p30 H.264, **4:45**, 9.7 MB.
 
 All nine shots are recorded against the **live site** with **real testnet
 transactions** (every on-chain step verified on Horizon — invoice
@@ -58,17 +65,17 @@ starts `delay` seconds into each scene:
 | Scene | Starts at | Delay | Shot |
 |---|---|---|---|
 | 01 | 0:01.0 | 1.0s | Intro / landing |
-| 02 | 0:23.4 | 0.8s | Connect wallet |
-| 03 | 0:51.9 | 0.8s | Register invoice |
-| 04 | 1:32.5 | 0.8s | Lender creates offer |
-| 05 | 2:12.3 | 0.5s | Accept — XLM moves |
-| 06a | 2:31.3 | 0.5s | Recipient trustline |
-| 06b | 2:46.3 | 0.5s | Position transfer |
-| 07 | 3:21.9 | 0.6s | Repay → Repaid |
-| 08 | 3:52.5 | 0.7s | Stats dashboard |
-| 09 | 4:22.4 | 0.7s | Outro / repos |
+| 02 | 0:22.8 | 0.8s | Connect wallet (dialog handshake) |
+| 03 | 0:45.8 | 0.8s | Register invoice |
+| 04 | 1:25.8 | 0.8s | Lender creates offer |
+| 05 | 2:05.5 | 0.5s | Accept — XLM moves |
+| 06a | 2:24.5 | 0.5s | Recipient trustline |
+| 06b | 2:40.5 | 0.5s | Position transfer |
+| 07 | 3:15.6 | 0.6s | Repay → Repaid |
+| 08 | 3:46.7 | 0.7s | Stats dashboard (real v2 aggregates) |
+| 09 | 4:09.7 | 0.7s | Outro / repos |
 
-(Final duration **4:58**; on-chain evidence for every scene in the
+(Final duration **4:46**; on-chain evidence for every scene in the
 [clips README](./clips/README.md).)
 
 ## Before you record

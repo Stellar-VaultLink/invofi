@@ -44,10 +44,30 @@ For enabling on-chain transaction signing, and as a legacy/best-effort sign-in p
 
 1. User clicks "Connect Wallet" on the login page or in the Navbar
 2. The `WalletSelectDialog` lists the approved wallets from `lib/approved-wallets.ts`
-3. The chosen wallet's extension popup appears asking the user to approve
+3. The user clicks **Connect** on exactly one wallet — only that wallet's
+   extension popup appears asking the user to approve (see
+   [ADR-0011](./adr/0011-user-initiated-wallet-connection.md))
 4. On approval, `@creit.tech/stellar-wallets-kit` returns the user's Stellar address
 5. The `WalletProvider` context stores the public key in React state and marks it active for signing
 6. `signInWithWallet(address)` (`lib/supabase.ts`) opportunistically establishes *some* Supabase session tied to the address — an existing session, anonymous auth, or a device-local password-based account — so the app has a profile row to attach data to. **This step does not verify a signature; it trusts the caller's claimed address.** It exists for backward compatibility and for silently restoring a wallet connection that was already granted in a previous visit.
+
+#### Connection contract (ADR-0011)
+
+Connection is **user-initiated by contract** — enforced by
+`e2e/wallet-connection.spec.ts`:
+
+- **Nothing opens wallet UI on page load.** The startup restore loop never
+  probes every installed wallet; bridge/web wallets (Albedo, xBull) open
+  their sign-up window on `fetchAddress()`, so a probe would pop auth
+  windows for wallets the user never chose.
+- **Silent restore touches exactly one wallet** — the one persisted in the
+  last-wallet hint (`invofi:last-wallet`), and only wallets flagged
+  `silentRestore: true` in `lib/approved-wallets.ts` (extension wallets:
+  Freighter, LOBSTR — their `fetchAddress()` answers without UI once access
+  was granted).
+- **One click connects one wallet.** The dialog connects only the clicked
+  wallet; the other listed wallets are never contacted.
+- **Disconnect clears the hint**, so the next page load stays cold.
 
 ### Wallet linking
 

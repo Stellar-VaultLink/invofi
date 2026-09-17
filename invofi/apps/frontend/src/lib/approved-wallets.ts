@@ -28,7 +28,12 @@ async function hasFreighterExtension(): Promise<boolean> {
 async function hasLobstrExtension(): Promise<boolean> {
   if (!hasWindow()) return false;
   try {
-    return await isLobstrConnected();
+    // @lobstrco/signer-extension-api's isConnected() returns the raw
+    // window.lobstrSignerExtension global (an object) when the extension's
+    // content script is present — only the postMessage fallback path returns
+    // a real boolean. Coerce so the dialog's strict `installed === true`
+    // check sees a boolean (same contract as the Freighter check below).
+    return !!(await isLobstrConnected());
   } catch {
     return false;
   }

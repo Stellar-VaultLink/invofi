@@ -58,8 +58,8 @@ jobs:
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
       # Live v0.3 contract on Stellar testnet — matches README's Live Demo section.
       NEXT_PUBLIC_REGISTRY_CONTRACT_ID: CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY
-      NEXT_PUBLIC_FINANCING_CONTRACT_ID: CBGRA3457ZFXYZNEQLO4YGUQ3OBEWOE6US6ZREHK6NF2DLZYBO73IFVW
-      NEXT_PUBLIC_REPAYMENT_CONTRACT_ID: CCDATW5GMVDOPK55Q4MLXV5SGA3VLXPD67ABLBNMHWFF6BLL2IZBUVEP
+      NEXT_PUBLIC_FINANCING_CONTRACT_ID: CAVZID42BNQAJTK75XSO3RP5SR4K5PNHCSSBGDSTBBW7E2BSMKZOVALL
+      NEXT_PUBLIC_REPAYMENT_CONTRACT_ID: CBAJWUCH2JDX7EPARWDDSGZDJ5PST7TBTXKGIIKLZ45MD2BYQX6EHQGF
       NEXT_PUBLIC_STELLAR_NETWORK: testnet
       NEXT_PUBLIC_RPC_URL: https://soroban-testnet.stellar.org
       NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
@@ -84,8 +84,8 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
       NEXT_PUBLIC_REGISTRY_CONTRACT_ID: CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY
-      NEXT_PUBLIC_FINANCING_CONTRACT_ID: CBGRA3457ZFXYZNEQLO4YGUQ3OBEWOE6US6ZREHK6NF2DLZYBO73IFVW
-      NEXT_PUBLIC_REPAYMENT_CONTRACT_ID: CCDATW5GMVDOPK55Q4MLXV5SGA3VLXPD67ABLBNMHWFF6BLL2IZBUVEP
+      NEXT_PUBLIC_FINANCING_CONTRACT_ID: CAVZID42BNQAJTK75XSO3RP5SR4K5PNHCSSBGDSTBBW7E2BSMKZOVALL
+      NEXT_PUBLIC_REPAYMENT_CONTRACT_ID: CBAJWUCH2JDX7EPARWDDSGZDJ5PST7TBTXKGIIKLZ45MD2BYQX6EHQGF
       NEXT_PUBLIC_STELLAR_NETWORK: testnet
       NEXT_PUBLIC_RPC_URL: https://soroban-testnet.stellar.org
       NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
@@ -132,8 +132,8 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
       NEXT_PUBLIC_REGISTRY_CONTRACT_ID: CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY
-      NEXT_PUBLIC_FINANCING_CONTRACT_ID: CBGRA3457ZFXYZNEQLO4YGUQ3OBEWOE6US6ZREHK6NF2DLZYBO73IFVW
-      NEXT_PUBLIC_REPAYMENT_CONTRACT_ID: CCDATW5GMVDOPK55Q4MLXV5SGA3VLXPD67ABLBNMHWFF6BLL2IZBUVEP
+      NEXT_PUBLIC_FINANCING_CONTRACT_ID: CAVZID42BNQAJTK75XSO3RP5SR4K5PNHCSSBGDSTBBW7E2BSMKZOVALL
+      NEXT_PUBLIC_REPAYMENT_CONTRACT_ID: CBAJWUCH2JDX7EPARWDDSGZDJ5PST7TBTXKGIIKLZ45MD2BYQX6EHQGF
       NEXT_PUBLIC_STELLAR_NETWORK: testnet
       NEXT_PUBLIC_RPC_URL: https://soroban-testnet.stellar.org
       NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
@@ -154,6 +154,49 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: a11y-playwright-report
+          path: invofi/apps/frontend/playwright-report
+          retention-days: 14
+
+  # The wallet-connection contract (ADR-0011) is user-facing and easy to
+  # regress silently — run its spec on every PR instead of waiting for the
+  # weekly e2e.yml sweep. Scoped to wallet-connection + wallet-dialog so the
+  # job stays under CI's free-tier runtime budget; the full suite runs weekly
+  # (e2e.yml). Same env contract as playwright.config.ts's webServer block.
+  frontend-wallet-e2e:
+    name: Frontend / Wallet E2E (Playwright)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: invofi/apps/frontend
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://e2e.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-publishable-key
+      NEXT_PUBLIC_REGISTRY_CONTRACT_ID: CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY
+      NEXT_PUBLIC_FINANCING_CONTRACT_ID: CAVZID42BNQAJTK75XSO3RP5SR4K5PNHCSSBGDSTBBW7E2BSMKZOVALL
+      NEXT_PUBLIC_REPAYMENT_CONTRACT_ID: CBAJWUCH2JDX7EPARWDDSGZDJ5PST7TBTXKGIIKLZ45MD2BYQX6EHQGF
+      NEXT_PUBLIC_STELLAR_NETWORK: testnet
+      NEXT_PUBLIC_RPC_URL: https://soroban-testnet.stellar.org
+      NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
+      NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY: e2e-flag
+      NEXT_PUBLIC_TRUSTLESS_WORK_ENV: testnet
+      NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS: GARQM6JYPWTTOEQRRLL5L3N5I3TOPOVWR4G72H6E5NVMNB5RK662UXVR
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: invofi/apps/frontend/package-lock.json
+      - run: npm ci --legacy-peer-deps
+      - name: Install Playwright Chromium + system deps
+        run: npx playwright install --with-deps chromium
+      - name: Run wallet e2e specs
+        run: npx playwright test e2e/wallet-connection.spec.ts e2e/wallet-dialog.spec.ts
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wallet-e2e-playwright-report
           path: invofi/apps/frontend/playwright-report
           retention-days: 14
 

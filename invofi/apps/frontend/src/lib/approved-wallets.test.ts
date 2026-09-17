@@ -67,4 +67,13 @@ describe('silentRestorableWallets', () => {
       expect(typeof w.silentRestore).toBe('boolean');
     }
   });
+
+  it('treats LOBSTR exactly like Freighter (both are extension wallets)', () => {
+    // The ADR-0011 restore gate is per-wallet, not per-name — a second
+    // approved extension must inherit the same silent-restore treatment.
+    expect(silentRestorableWallets([WALLET_IDS.lobstr])).toEqual([WALLET_IDS.lobstr]);
+    expect(
+      silentRestorableWallets([WALLET_IDS.freighter, WALLET_IDS.lobstr]),
+    ).toEqual([WALLET_IDS.freighter, WALLET_IDS.lobstr]);
+  });
 });

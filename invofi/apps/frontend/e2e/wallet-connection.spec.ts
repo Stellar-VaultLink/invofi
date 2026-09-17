@@ -1,5 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 import { authenticate, mockFreighter, ORIGINATOR } from './fixtures';
+import { mockLobstr } from './mock-lobstr';
+
+/** The second extension persona — a distinct address so assertions can tell wallets apart. */
+const LOBSTR_ADDRESS = 'GARFYR7ADMF4DV5HKTNRK5GGCUI54LCBBL6SSMAESVHS5OGVPIHEC4VB';
 
 /**
  * Wallet-connection contract (ADR-0001 allowlist + the user-initiated
@@ -92,6 +96,52 @@ test.describe('wallet connection is user-initiated', () => {
     expect(popups, 'extension restore must be silent').toHaveLength(0);
   });
 
+  test('LOBSTR extension hint restores silently to exactly the chosen wallet', async ({ page }) => {
+    const { popups } = trackPopups(page);
+    await mockLobstr(page, LOBSTR_ADDRESS);
+
+    // Same contract as Freighter: LOBSTR is an approved extension wallet
+    // (silentRestore: true), so its persisted hint must restore without UI.
+    await page.addInitScript(
+      ([hint]) => window.localStorage.setItem('invofi:last-wallet', hint),
+      [lastWalletHint('lobstr', LOBSTR_ADDRESS)] as const,
+    );
+
+    await authenticate(page);
+    await page.goto('/dashboard');
+
+    // The header pill shows the LOBSTR address — not any other wallet's.
+    await expect(page.locator('header').getByText(LOBSTR_ADDRESS.slice(0, 4))).toBeVisible({
+      timeout: 30_000,
+    });
+
+    await page.waitForTimeout(2_000);
+    expect(popups, 'LOBSTR restore must be silent').toHaveLength(0);
+  });
+
+  test('LOBSTR hint does not cross-connect: Freighter stays untouched and vice versa', async ({ page }) => {
+    const { popups } = trackPopups(page);
+    // Both extensions installed. The hint names LOBSTR — Freighter's API
+    // must never be asked for an address.
+    await mockLobstr(page, LOBSTR_ADDRESS);
+    await mockFreighter(page, ORIGINATOR);
+
+    await page.addInitScript(
+      ([hint]) => window.localStorage.setItem('invofi:last-wallet', hint),
+      [lastWalletHint('lobstr', LOBSTR_ADDRESS)] as const,
+    );
+
+    await authenticate(page);
+    await page.goto('/dashboard');
+
+    await expect(page.locator('header').getByText(LOBSTR_ADDRESS.slice(0, 4))).toBeVisible({
+      timeout: 30_000,
+    });
+    // The Freighter address must appear nowhere in the connected UI.
+    await expect(page.locator('header')).not.toContainText(ORIGINATOR.slice(0, 4));
+    expect(popups).toHaveLength(0);
+  });
+
   test('dialog connects only the wallet the user clicked, then disconnect clears the hint', async ({
     page,
   }) => {
@@ -130,5 +180,38 @@ test.describe('wallet connection is user-initiated', () => {
     await page.locator('header').getByTitle('Disconnect wallet').click();
     await expect(page.getByRole('button', { name: 'Connect Wallet' }).first()).toBeVisible();
     await expect(page.evaluate(() => window.localStorage.getItem('invofi:last-wallet'))).resolves.toBeNull();
+  });
+
+  test('dialog connects via LOBSTR when it is the wallet clicked', async ({ page }) => {
+    const { popups } = trackPopups(page);
+    await mockLobstr(page, LOBSTR_ADDRESS);
+
+    await page.goto('/auth/login');
+    await page
+      .getByRole('main')
+      .getByRole('button', { name: 'Connect Wallet' })
+      .click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: 'Connect Wallet' })).toBeVisible();
+
+    // LOBSTR is the second row — pick its Connect button specifically (the
+    // row whose inner text names LOBSTR), not the first. Albedo/xBull rows
+    // also render Connect buttons (web wallets are always "available"), so
+    // row targeting by name is mandatory — clicking those would pop up UI.
+    const lobstrRow = dialog.locator('div.rounded-xl').filter({ hasText: 'LOBSTR' });
+    await expect(lobstrRow).toHaveCount(1);
+    await lobstrRow
+      .getByRole('button', { name: 'Connect', exact: true })
+      .click();
+
+    await expect(page.locator('header').getByText(LOBSTR_ADDRESS.slice(0, 4))).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(dialog).not.toBeVisible();
+    expect(popups, 'extension connect is silent (no popup needed)').toHaveLength(0);
+
+    const stored = await page.evaluate(() => window.localStorage.getItem('invofi:last-wallet'));
+    expect(JSON.parse(stored ?? '{}')).toMatchObject({ walletId: 'lobstr' });
   });
 });

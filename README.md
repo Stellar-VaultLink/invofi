@@ -69,11 +69,11 @@ See [ADR-0007: Repository topology and SDK location](./docs/adr/0007-repo-topolo
 > **Frontend:** [invofi-five.vercel.app](https://invofi-five.vercel.app)
 > **Contracts on Stellar Testnet (5-contract deployment):**
 > - registry: [`CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY`](https://stellar.expert/explorer/testnet/contract/CCV4OSLYRRMYTRMWH4GVWY2QGSFC5PV33KYQEMQF6DOQW3OXDAVBSHSY)
-> - financing: [`CBGRA3457ZFXYZNEQLO4YGUQ3OBEWOE6US6ZREHK6NF2DLZYBO73IFVW`](https://stellar.expert/explorer/testnet/contract/CBGRA3457ZFXYZNEQLO4YGUQ3OBEWOE6US6ZREHK6NF2DLZYBO73IFVW)
-> - repayment: [`CCDATW5GMVDOPK55Q4MLXV5SGA3VLXPD67ABLBNMHWFF6BLL2IZBUVEP`](https://stellar.expert/explorer/testnet/contract/CCDATW5GMVDOPK55Q4MLXV5SGA3VLXPD67ABLBNMHWFF6BLL2IZBUVEP)
-> - insurance: [`CAURQCGDZZ6PPCH6EKDVQP5W372CH3PQ62VQC2GKLIXNHB37VOMBMSU5`](https://stellar.expert/explorer/testnet/contract/CAURQCGDZZ6PPCH6EKDVQP5W372CH3PQ62VQC2GKLIXNHB37VOMBMSU5)
-> - reputation: [`CCHKVUWGTQ56U53C5U7ZSOFDTTMGLMOFCL22DME5UMXIYWQNUYXOYPDN`](https://stellar.expert/explorer/testnet/contract/CCHKVUWGTQ56U53C5U7ZSOFDTTMGLMOFCL22DME5UMXIYWQNUYXOYPDN)
-> - position token: `POS` minted to lenders on acceptance ([`CBIXYAJPEOOVIALBUTA7X2H26WXSI5JDZCTE23RUMQR4QFJNMPL6767Z`](https://stellar.expert/explorer/testnet/contract/CBIXYAJPEOOVIALBUTA7X2H26WXSI5JDZCTE23RUMQR4QFJNMPL6767Z))
+> - financing: [`CAVZID42BNQAJTK75XSO3RP5SR4K5PNHCSSBGDSTBBW7E2BSMKZOVALL`](https://stellar.expert/explorer/testnet/contract/CAVZID42BNQAJTK75XSO3RP5SR4K5PNHCSSBGDSTBBW7E2BSMKZOVALL)
+> - repayment: [`CBAJWUCH2JDX7EPARWDDSGZDJ5PST7TBTXKGIIKLZ45MD2BYQX6EHQGF`](https://stellar.expert/explorer/testnet/contract/CBAJWUCH2JDX7EPARWDDSGZDJ5PST7TBTXKGIIKLZ45MD2BYQX6EHQGF)
+> - insurance: [`CCRAYLLEZXGKGER4UC5JB6FZGSH42TRUXOEOU3W2EE4GEPJQYT2Q7EEN`](https://stellar.expert/explorer/testnet/contract/CCRAYLLEZXGKGER4UC5JB6FZGSH42TRUXOEOU3W2EE4GEPJQYT2Q7EEN)
+> - reputation: [`CAIETXKF3B6M6IABJYFMSIS6QYBGEBSCHLCNZLGAEEDNWRZW34RL3EVW`](https://stellar.expert/explorer/testnet/contract/CAIETXKF3B6M6IABJYFMSIS6QYBGEBSCHLCNZLGAEEDNWRZW34RL3EVW)
+> - position token: `POSv2` minted to lenders on acceptance ([`CCJZY7AAOSCXAG2SASDF54DB57ABXK3VFFS5U2CFC6CFG76BDPLDZLLD`](https://stellar.expert/explorer/testnet/contract/CCJZY7AAOSCXAG2SASDF54DB57ABXK3VFFS5U2CFC6CFG76BDPLDZLLD))
 >
 > A keeper automation (event-driven Soroban RPC getEvents polling for `inv_reg`/`off_acc` + 6-hourly fallback sweep)
 > bumps contract-data TTLs and marks past-due Financed invoices Overdue — see `invofi/scripts/keeper.ts`.

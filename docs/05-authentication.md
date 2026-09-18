@@ -2,6 +2,16 @@
 
 InvoFi supports three authentication methods that can be used independently or together.
 
+> **Status — wallet-first migration (issue #376, ADR-0008):** the replacement
+> auth backend is landing per [ADR-0008](adr/0008-auth-replacement.md) and its
+> wallet-only amendment: SEP-10 wallet sign-in becomes the **only** method,
+> backed by Auth.js v5 with database sessions in the Postgres schema
+> (`apps/frontend/migrations/0001_wallet_auth.sql`). The foundation is in
+> place — `src/lib/auth/` (pg layer, adapter, SEP-10 authorize handler with
+> unit tests) — but is **not yet wired** into the app: the live paths below
+> still describe the Supabase-era flows and remain accurate until the cutover
+> commit lands.
+
 ---
 
 ## Method 1 — Email + Password (via Supabase)

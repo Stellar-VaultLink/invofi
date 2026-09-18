@@ -3,6 +3,7 @@ import {
   authenticate,
   mockSupabaseMirror,
   mockFreighter,
+  seedLastWallet,
   invoiceScVal,
   ORIGINATOR,
   SMOKE_INVOICE,
@@ -202,6 +203,9 @@ const MIRROR_OFFER = {
 test.describe('transaction simulation', () => {
   test('cancel: simulation dialog previews token movements', async ({ page }) => {
     await mockFreighter(page);
+    // ADR-0011: a connected wallet at boot requires the last-wallet hint —
+    // the app never probes installed extensions on its own.
+    await seedLastWallet(page, 'freighter', ORIGINATOR);
     await authenticate(page);
     await mockSupabaseMirror(page, { invoices: [MIRROR_INVOICE] });
     await mockSimulation(page, 'success');
@@ -234,6 +238,7 @@ test.describe('transaction simulation', () => {
 
   test('cancel: failed simulation blocks submission', async ({ page }) => {
     await mockFreighter(page);
+    await seedLastWallet(page, 'freighter', ORIGINATOR);
     await authenticate(page);
     await mockSupabaseMirror(page, { invoices: [MIRROR_INVOICE] });
     await mockSimulation(page, 'error');
@@ -254,6 +259,7 @@ test.describe('transaction simulation', () => {
 
   test('offers: accept routes through simulation before submission', async ({ page }) => {
     await mockFreighter(page);
+    await seedLastWallet(page, 'freighter', ORIGINATOR);
     await authenticate(page);
     await mockSupabaseMirror(page, {
       invoices: [MIRROR_INVOICE],

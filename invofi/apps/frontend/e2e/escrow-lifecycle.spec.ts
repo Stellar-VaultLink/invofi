@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import {
   authenticate,
   mockFreighter,
+  seedLastWallet,
   SMOKE_INVOICE,
   SMOKE_INVOICES,
   SMOKE_USER,
@@ -156,8 +157,11 @@ test.describe('escrow lifecycle (Epic 3.4)', () => {
   test('invoice page: role-gated milestone flow — confirm → approve → release', async ({ page }) => {
     // The viewer is the originator: they see Confirm Delivery first. The
     // action buttons are role-gated on a CONNECTED wallet (publicKey), so the
-    // Freighter extension mock must be installed before the app boots.
+    // Freighter extension mock must be installed before the app boots — and
+    // since ADR-0011 the connection itself requires the last-wallet hint
+    // (the app never probes installed extensions on its own).
     await mockFreighter(page, ORIGINATOR);
+    await seedLastWallet(page, 'freighter', ORIGINATOR);
     // authenticate() next: it installs the /api/escrow/** 503 catch-all, and
     // mockEscrowRail's specific routes must be registered AFTER it to win
     // (Playwright gives precedence to the most recently registered route).

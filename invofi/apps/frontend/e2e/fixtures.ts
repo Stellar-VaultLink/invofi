@@ -196,7 +196,36 @@ export const SMOKE_POSITION_OFFER: MirrorOffer = {
   created_at: '2026-08-05T00:00:00.000Z',
 };
 
-// ── Session seeding ─────────────────────────────────────────────────────────
+// ── Last-wallet hint (ADR-0011) ─────────────────────────────────────────────
+
+/**
+ * Seeds the `invofi:last-wallet` hint (lib/last-wallet.ts) so the
+ * silent-restore path attaches `walletId` on the next navigation.
+ *
+ * Since the user-initiated-connection fix (ADR-0011, commit 027c61ca), the app
+ * NEVER probes installed wallets on load — a connected wallet at boot only
+ * happens via this hint, and only for extension wallets (silentRestore).
+ * Specs that exercise wallet-gated UI (Confirm Delivery, Cancel, Accept, …)
+ * must call this after their wallet mock and before `page.goto`.
+ *
+ * Deliberately NOT folded into mockFreighter/mockLobstr: the wallet
+ * spec's dialog tests install those mocks and then assert the app is still
+ * cold until the user clicks Connect — a default hint would break that
+ * contract. Seeding stays an explicit, per-test decision.
+ */
+export async function seedLastWallet(page: Page, walletId: string, publicKey: string): Promise<void> {
+  // Key mirrors LAST_WALLET_STORAGE_KEY in src/lib/last-wallet.ts (hardcoded
+  // rather than imported so the fixture stays dependency-free).
+  const KEY = 'invofi:last-wallet';
+  await page.addInitScript(
+    ({ key, entry }: { key: string; entry: string }) => {
+      window.localStorage.setItem(key, entry);
+    },
+    { key: KEY, entry: JSON.stringify({ walletId, publicKey }) },
+  );
+}
+
+// ── Session seeding ───────────────────────────────────────────────────────
 
 /**
  * Encodes a Supabase session the way @supabase/ssr persists it: a cookie named

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getAuthBackend, getWalletSessionUser } from '@/lib/auth/client';
 import { useWallet } from '@/components/auth/WalletProvider';
 
 interface AuthGuardProps {
@@ -18,6 +19,15 @@ export function AuthGuard({ children, isUnauthorized }: AuthGuardProps) {
   const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
+    // Backend-dependent session check (#376): the Auth.js database session is
+    // read from /api/auth/session; the Supabase JWT from the legacy client.
+    if (getAuthBackend() === 'authjs') {
+      getWalletSessionUser().then((user) => {
+        setHasSession(!!user);
+        setSessionReady(true);
+      });
+      return;
+    }
     supabase.auth.getUser().then(({ data: { user } }) => {
       setHasSession(!!user);
       setSessionReady(true);

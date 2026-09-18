@@ -2,15 +2,14 @@
 
 InvoFi supports three authentication methods that can be used independently or together.
 
-> **Status — wallet-first migration (issue #376, ADR-0008):** the replacement
-> auth backend is landing per [ADR-0008](adr/0008-auth-replacement.md) and its
-> wallet-only amendment: SEP-10 wallet sign-in becomes the **only** method,
-> backed by Auth.js v5 with database sessions in the Postgres schema
-> (`apps/frontend/migrations/0001_wallet_auth.sql`). The foundation is in
-> place — `src/lib/auth/` (pg layer, adapter, SEP-10 authorize handler with
-> unit tests) — but is **not yet wired** into the app: the live paths below
-> still describe the Supabase-era flows and remain accurate until the cutover
-> commit lands.
+> **Status — wallet-first migration (issue #376, ADR-0008):** the wallet-only
+> Auth.js backend is now **wired live behind a switch** (`NEXT_PUBLIC_AUTH_BACKEND=authjs`).
+> When set: SEP-10 wallet sign-in is the only method, sessions are database
+> rows (`sessions` table — `migrations/0001_wallet_auth.sql`), the credentials
+> callback lives at `/api/auth/callback/sep10`, and sign-in/sign-out flow
+> through `next-auth/react`. Unset (default): the Supabase-era flows described
+> below run unchanged. The legacy path is deleted at the #102 storage
+> cutover.
 
 ---
 
@@ -161,8 +160,30 @@ Real Freighter/LOBSTR browser-extension signing can't run in CI, so the offline 
 
 ---
 
-## Auth State in the App
+## Session resolution (authjs backend)
 
+Under `NEXT_PUBLIC_AUTH_BACKEND=authjs` (#376, ADR-0008):
+
+- **Database sessions.** The cookie holds an opaque token; the session row
+  lives in the `sessions` table (`migrations/0001_wallet_auth.sql`), so
+  logout-everywhere is a single `DELETE FROM sessions WHERE user_id = $1`.
+- **Middleware does no session work.** Edge middleware cannot reach the
+  database, so `middleware.ts` only rate-limits and negotiates the locale.
+  Session refresh (Auth.js `updateAge`, once a day) happens when `auth()`
+  runs in the Node runtime — RSC pages and route handlers — which is where
+  every guarded surface resolves its session anyway.
+- **Client reads** the session via `next-auth/react` (`getSession()` →
+  `GET /api/auth/session`); `AuthGuard`'s backend branch uses
+  `lib/auth/client.ts:getWalletSessionUser()`.
+- **Sign-in** posts the client-signed SEP-10 challenge to the credentials
+  provider (`POST /api/auth/callback/sep10`). The authorize handler
+  re-verifies the challenge server-side, claims single-use (replay guard),
+  binds the wallet to `user_profiles` with `wallet_verified = true`, and
+  mints the session. The client-visible challenge/sign flow is unchanged.
+- **Sign-out** (wallet Disconnect) deletes the session row through the
+  adapter.
+
+## Auth State in the App
 The app uses two independent auth states that work together:
 
 | State | Source | What it controls |

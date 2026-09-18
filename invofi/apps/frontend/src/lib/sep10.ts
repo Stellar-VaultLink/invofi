@@ -2,6 +2,7 @@
 
 import { getSupabaseClient } from './supabase';
 import { signTransactionWithActiveWallet } from './walletkit';
+import { getAuthBackend, signInWithSep10Challenge } from '@/lib/auth/client';
 
 export interface Sep10ChallengeResponse {
   transaction: string;
@@ -70,7 +71,14 @@ export async function verifyChallenge(signedXdr: string): Promise<Sep10VerifyRes
 /**
  * Runs the full SEP-10 login cycle for the given connected wallet account:
  * request challenge → sign with the active wallet → verify with the server
- * → establish a real Supabase session.
+ * → establish a real session.
+ *
+ * Backend-dependent final step (#376):
+ *  - `supabase` (default) — redeems the one-time token via `auth.verifyOtp`
+ *    into a Supabase session (legacy `verifyChallenge` path).
+ *  - `authjs` — the signed XDR is submitted to the Auth.js credentials
+ *    provider, whose authorize handler re-verifies it server-side, claims
+ *    single-use, and mints the database session (ADR-0008).
  *
  * Throws on any failure (challenge request, wallet rejection, or server
  * verification) — callers must not treat a thrown error as signed-in.
@@ -78,5 +86,14 @@ export async function verifyChallenge(signedXdr: string): Promise<Sep10VerifyRes
 export async function loginWithSep10(account: string): Promise<Sep10VerifyResponse> {
   const { transaction, networkPassphrase } = await requestChallenge(account);
   const signedXdr = await signChallenge(transaction, networkPassphrase);
+
+  if (getAuthBackend() === 'authjs') {
+    const user = await signInWithSep10Challenge(signedXdr);
+    // Auth.js wraps credentials failures; a resolved call means the server
+    // verified the challenge. The wallet address is the caller's own input —
+    // proven server-side by the authorize handler.
+    return { account, email: user.email ?? '', tokenHash: '' };
+  }
+
   return verifyChallenge(signedXdr);
 }

@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { updateSession } from '@/utils/supabase/middleware';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import {
   LOCALE_COOKIE,
@@ -9,27 +8,35 @@ import {
 } from '@/i18n/config';
 
 /**
- * Rate-limit config for auth and wallet-sign endpoints (roadmap v0.4).
+ * Middleware responsibilities after the wallet-first auth migration (#376,
+ * ADR-0008):
  *
- * Applied at the Vercel middleware layer so abuse is throttled *before* it
- * reaches a Route Handler or the Supabase auth backend. Uses the in-memory
- * token-bucket limiter from `lib/rate-limit.ts` (fixed-window, per-IP).
+ *  1. **Rate limiting** — auth/wallet-sign endpoints are throttled at the
+ *     edge BEFORE they reach a Route Handler (unchanged behavior).
+ *  2. **Locale negotiation** — write the best `Accept-Language` match to the
+ *     locale cookie on first visit (unchanged behavior, issue #227).
  *
- * Tune via the constants below — there is intentionally no env-var indirection
- * so the limits are visible and reviewable in one place.
+ *  **Session refresh is NOT done here anymore.** The new auth backend uses
+ *  Auth.js database sessions (ADR-0008): resolving or refreshing a session
+ *  requires a DB round-trip, which edge middleware cannot perform. Instead
+ *  `auth()` runs in the Node runtime — RSC pages and route handlers — where
+ *  Auth.js applies the session's `updateAge` sliding refresh. Every guarded
+ *  surface resolves its session server-side or via `/api/auth/session`; see
+ *  docs/05-authentication.md, "Session resolution".
  */
 const AUTH_RATE_LIMIT = 10;
 const AUTH_RATE_LIMIT_WINDOW_MS = 60_000;
 
 /**
- * Paths that are throttled. These cover both the SEP-10 wallet-sign endpoints
- * (`/api/auth/sep10/*`) and the email/password auth pages (`/auth/login`,
- * `/auth/register`) — the two surfaces where a burst of requests could be
- * abused (credential stuffing, challenge spam, etc.).
+ * Paths that are throttled. These cover the SEP-10 wallet-sign endpoints
+ * (`/api/auth/sep10/*`, `/api/auth/callback/sep10`) and the auth pages
+ * (`/auth/login`, `/auth/register`) — the surfaces where a burst of requests
+ * could be abused (challenge spam, credential stuffing).
  */
 const RATE_LIMITED_PATHS = [
   '/api/auth/sep10/challenge',
   '/api/auth/sep10/verify',
+  '/api/auth/callback/sep10',
   '/auth/login',
   '/auth/register',
 ];
@@ -59,7 +66,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const response = await updateSession(request);
+  const response = NextResponse.next();
   persistNegotiatedLocale(request, response);
   return response;
 }

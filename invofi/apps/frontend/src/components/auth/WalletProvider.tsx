@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { signOut as supabaseSignOut, signInWithWallet } from '@/lib/supabase';
+import { loginWithSep10 } from '@/lib/sep10';
+import { getAuthBackend, signOutWalletSession } from '@/lib/auth/client';
 import {
   StellarWalletsKit,
   initWalletKit,
@@ -45,6 +47,30 @@ const EXPECTED_NETWORK = (
 // Offline demo mode (#177): auto-connect a mock wallet so protected pages are
 // reachable without a browser extension or testnet access.
 const MOCK_MODE = isMockMode();
+
+/**
+ * Which auth backend session calls go to (#376). Under `authjs` a session is
+ * established only with a SEP-10 signature (proof at connect time — the
+ * ADR-0008 model); under `supabase` the legacy blind-trust link applies.
+ */
+const AUTH_BACKEND = getAuthBackend();
+
+/**
+ * Establishes the backend session for a freshly connected wallet. Best-effort
+ * (errors swallowed, matching the legacy signInWithWallet call sites) except
+ * that under `authjs` a failure simply leaves the user without a session —
+ * guards will route them to login, where the SEP-10 flow can be retried.
+ */
+async function ensureBackendSession(walletAddress: string): Promise<void> {
+  if (MOCK_MODE) return;
+  if (AUTH_BACKEND === 'authjs') {
+    // Proof-based: the wallet signs a SEP-10 challenge. Never called from the
+    // silent-restore path (ADR-0011 — no signing prompts on page load).
+    await loginWithSep10(walletAddress).catch(() => { });
+    return;
+  }
+  await signInWithWallet(walletAddress).catch(() => { });
+}
 
 /**
  * Normalises a wallet network value (name or passphrase) to the app's
@@ -121,8 +147,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         isInstalled: true,
         networkMismatch: networkMismatchFor(net),
       });
-      // Ensure a Supabase session exists for the restored wallet connection.
-      await signInWithWallet(address).catch(() => { });
+      // Ensure a backend session exists for the restored wallet connection.
+      // Silent restore must stay UI-free (ADR-0011), so under `authjs` this
+      // is a no-op — the session is established when the user explicitly
+      // signs in via the SEP-10 flow (no signing prompt on page load).
+      if (AUTH_BACKEND !== 'authjs') {
+        await signInWithWallet(address).catch(() => { });
+      }
       setIsCheckingWallet(false);
       return true;
     } catch {
@@ -146,8 +177,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     // Clear the persisted last-wallet hint so a page refresh won't
     // silently re-connect (issue #172).
     clearLastWallet();
-    // Sign out of Supabase so protected routes redirect to login.
-    supabaseSignOut().catch(() => { });
+    // Sign out of the backend so protected routes redirect to login.
+    if (AUTH_BACKEND === 'authjs') {
+      signOutWalletSession().catch(() => { });
+    } else {
+      supabaseSignOut().catch(() => { });
+    }
   }, []);
 
   useEffect(() => {
@@ -178,9 +213,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         // Refresh the persisted last-wallet hint so a page reload lands on
         // the newly selected account (issue #172/#187 contract).
         persistLastWallet(current.walletId, address);
-        // Refresh the Supabase session so protected routes and contract reads
-        // stay attached to the switched account.
-        signInWithWallet(address).catch(() => { });
+        // Re-establish the backend session for the switched account (the
+        // user just acted inside their wallet, so a signature prompt here is
+        // user-initiated context, not a page-load popup).
+        ensureBackendSession(address);
       },
       () => {
         // Wallet disconnected from the extension side — fall back to the
@@ -276,9 +312,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         networkMismatch: networkMismatchFor(net),
       });
 
-      // Block until the Supabase session is created so the dashboard's own
+      // Block until the backend session is created so the dashboard's own
       // auth check finds a user immediately after router.push('/dashboard').
-      await signInWithWallet(address).catch(() => { });
+      await ensureBackendSession(address);
 
       return address;
     } catch (err) {

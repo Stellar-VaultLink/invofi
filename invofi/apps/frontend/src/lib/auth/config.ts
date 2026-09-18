@@ -13,7 +13,12 @@
  *
  * Route handlers when wired (Auth.js v5 conventions):
  *   src/app/api/auth/[...nextauth]/route.ts → export const { handlers, auth, signIn, signOut }
- *   middleware.ts → auth() cookie refresh, replacing updateSession
+ *
+ * Session resolution note (ADR-0008 amendment, see docs/05): with the
+ * database session strategy the edge middleware CANNOT resolve sessions (no
+ * DB access at the edge), so middleware.ts does no session work — refresh
+ * (updateAge) happens when `auth()` runs in the Node runtime (RSC / route
+ * handlers), which is where every guarded page resolves its session anyway.
  */
 import NextAuth, { type NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
@@ -77,27 +82,42 @@ export const authConfig: NextAuthConfig = {
         signedTransactionXdr: { label: 'Signed SEP-10 challenge XDR', type: 'text' },
       },
       authorize: async (credentials) => {
-        const serverSecret = process.env.STELLAR_SERVER_SECRET;
+        // Same server signing key the legacy SEP-10 routes use
+        // (SEP10_SERVER_SIGNING_SECRET — docs/08-environment-variables.md).
+        const serverSecret = process.env.SEP10_SERVER_SIGNING_SECRET;
         if (!serverSecret) {
           throw new Error(
-            'STELLAR_SERVER_SECRET is not configured — cannot verify SEP-10 challenges.',
+            'SEP10_SERVER_SIGNING_SECRET is not configured — cannot verify SEP-10 challenges.',
           );
         }
-        return authorizeSep10(credentials as Sep10Credentials | undefined, {
-          serverSecret,
-          verify: verifySep10Challenge,
-          config: () => ({
-            homeDomain: getSep10HomeDomain(),
-            webAuthDomain: getSep10WebAuthDomain(),
-            networkPassphrase: getServerNetworkPassphrase(),
-          }),
-          claimChallengeHash,
-          ensureUser: async (wallet) => {
-            const { ensureUser } = await import('./pg');
-            return ensureUser(wallet, 'sep10');
-          },
-          getUser: async (id) => adapter.getUser!(id),
-        });
+        try {
+          return await authorizeSep10(credentials as Sep10Credentials | undefined, {
+            serverSecret,
+            verify: verifySep10Challenge,
+            config: () => ({
+              homeDomain: getSep10HomeDomain(),
+              webAuthDomain: getSep10WebAuthDomain(),
+              networkPassphrase: getServerNetworkPassphrase(),
+            }),
+            claimChallengeHash,
+            ensureUser: async (wallet) => {
+              const { ensureUser } = await import('./pg');
+              return ensureUser(wallet, 'sep10');
+            },
+            getUser: async (id) => adapter.getUser!(id),
+          });
+        } catch (err) {
+          // Returning null (not throwing) keeps the standard Auth.js
+          // credentials contract: the client's signIn() resolves with
+          // error: 'CredentialsSignin' instead of a 500, which the client
+          // bridge maps to the user-facing copy. The underlying reason is
+          // logged server-side for ops (missing config vs replay vs tamper).
+          console.warn(
+            'SEP-10 sign-in rejected:',
+            err instanceof Error ? err.message : err,
+          );
+          return null;
+        }
       },
     }),
   ],

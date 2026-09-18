@@ -1,39 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { __resetRateLimitsForTests } from '@/lib/rate-limit';
 
-// Mock the Supabase session refresh so the middleware test only exercises the
-// rate-limiting layer, not the Supabase client.
-vi.mock('@/utils/supabase/middleware', () => ({
-  updateSession: vi.fn(async () => NextResponse.next()),
-}));
+// The wallet-first auth migration (#376) removed the Supabase session
+// refresh from middleware: database sessions cannot be resolved at the edge
+// (ADR-0008). The middleware now only rate-limits and negotiates the locale.
 
 import { middleware } from './middleware';
-import { updateSession } from '@/utils/supabase/middleware';
-
-const mockedUpdateSession = vi.mocked(updateSession);
 
 function makeRequest(path: string, ip = '203.0.113.5'): NextRequest {
   return new NextRequest(`http://localhost${path}`, {
     method: 'POST',
-    headers: { 'x-forwarded-for': ip },
+    headers: { 'x-forwarded-for': ip, 'accept-language': 'en' },
   });
 }
 
 describe('middleware rate limiting', () => {
   beforeEach(() => {
-    mockedUpdateSession.mockClear();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
     __resetRateLimitsForTests();
   });
 
-  it('allows legitimate auth requests through to the session refresh', async () => {
+  it('allows legitimate auth requests through', async () => {
     const request = makeRequest('/api/auth/sep10/challenge');
     const response = await middleware(request);
     expect(response.status).toBe(200);
-    expect(mockedUpdateSession).toHaveBeenCalledTimes(1);
   });
 
   it('throttles a burst of requests to an auth endpoint with 429', async () => {
@@ -46,8 +40,23 @@ describe('middleware rate limiting', () => {
     const blocked = await middleware(request);
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get('Retry-After')).toBeTruthy();
-    // The blocked request never reached the session refresh.
-    expect(mockedUpdateSession).toHaveBeenCalledTimes(10);
+  });
+
+  it('throttles the Auth.js credentials callback path', async () => {
+    const request = makeRequest('/api/auth/callback/sep10');
+    for (let i = 0; i < 10; i++) {
+      await middleware(request);
+    }
+    const blocked = await middleware(request);
+    expect(blocked.status).toBe(429);
+  });
+
+  it('throttles the legacy verify path', async () => {
+    const request = makeRequest('/api/auth/sep10/verify');
+    for (let i = 0; i < 10; i++) {
+      await middleware(request);
+    }
+    expect((await middleware(request)).status).toBe(429);
   });
 
   it('throttles the login page path', async () => {
@@ -86,6 +95,19 @@ describe('middleware rate limiting', () => {
       const res = await middleware(request);
       expect(res.status).toBe(200);
     }
-    expect(mockedUpdateSession).toHaveBeenCalledTimes(25);
+  });
+
+  it('writes the locale cookie on a first visit and never overwrites an existing choice', async () => {
+    const first = await middleware(makeRequest('/'));
+    expect(first.cookies.get('INVOFI_LOCALE')?.value).toBe('en');
+
+    // A reader who already chose a language keeps their choice: the response
+    // must not carry a new Set-Cookie for the locale.
+    const repeated = new NextRequest('http://localhost/', {
+      headers: { 'accept-language': 'ar' },
+    });
+    repeated.cookies.set('INVOFI_LOCALE', 'fr');
+    const second = await middleware(repeated);
+    expect(second.cookies.get('INVOFI_LOCALE')?.value).toBeUndefined();
   });
 });

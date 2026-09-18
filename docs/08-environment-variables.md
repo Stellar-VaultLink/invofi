@@ -11,8 +11,8 @@ Most environment variables for the InvoFi frontend are prefixed with `NEXT_PUBLI
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | `https://xxxx.supabase.co` | Your Supabase project URL, from Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | `eyJhbGci...` | Supabase anon/public key, from Settings → API |
 | `NEXT_PUBLIC_REGISTRY_CONTRACT_ID` | Yes* | `CAXNTWS...` | Registry contract (invoices, admin, pause) — 56 chars, starts with C |
-| `NEXT_PUBLIC_FINANCING_CONTRACT_ID` | Yes* | `CBGRA34...` | Financing contract (offers, accept/reject) |
-| `NEXT_PUBLIC_REPAYMENT_CONTRACT_ID` | Yes* | `CCDATW5...` | Repayment contract (repay, overdue, reclaim) |
+| `NEXT_PUBLIC_FINANCING_CONTRACT_ID` | Yes* | *(56-char `C…` id from your deploy)* | Financing contract (offers, accept/reject) |
+| `NEXT_PUBLIC_REPAYMENT_CONTRACT_ID` | Yes* | *(56-char `C…` id from your deploy)* | Repayment contract (repay, overdue, reclaim) |
 | `NEXT_PUBLIC_STELLAR_NETWORK` | Yes | `testnet` | `testnet` for development, `mainnet` for production |
 | `NEXT_PUBLIC_RPC_URL` | Yes | See below | Soroban RPC endpoint (differs by network) |
 | `NEXT_PUBLIC_HORIZON_URL` | Yes | See below | Stellar Horizon REST API (differs by network) |
@@ -20,6 +20,9 @@ Most environment variables for the InvoFi frontend are prefixed with `NEXT_PUBLI
 | `NEXT_PUBLIC_SEP10_HOME_DOMAIN` | No (recommended) | `invofi.app` | Domain the SEP-10 challenge asserts as the party requesting auth. Defaults to `localhost`. |
 | `NEXT_PUBLIC_SEP10_WEB_AUTH_DOMAIN` | No | `invofi.app` | Domain that issued the challenge (SEP-10's `WEB_AUTH_DOMAIN`). Defaults to `NEXT_PUBLIC_SEP10_HOME_DOMAIN`. |
 | `SEP10_SERVER_SIGNING_SECRET` | Yes, for wallet login | *(never committed)* | **Server-only.** Stellar secret key (`S...`) the server uses to sign/validate SEP-10 challenges. See below. |
+| `NEXT_PUBLIC_AUTH_BACKEND` | No | `authjs` | Selects the sign-in backend (#376): `authjs` enables the wallet-first Auth.js backend (SEP-10 only, database sessions); unset or `supabase` keeps the legacy Supabase Auth. |
+| `DATABASE_URL` | Yes, for `authjs` | *(never committed)* | **Server-only.** Postgres connection string for the auth session store (Neon, or the local docker-compose Postgres). |
+| `AUTH_SECRET` | Yes, for `authjs` | *(never committed)* | **Server-only.** Auth.js session-cookie signing secret — generate with `openssl rand -base64 32`. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes, for wallet login | *(never committed)* | **Server-only.** Supabase service-role key, from Settings → API. See below. |
 | `NEXT_PUBLIC_WS_URL` | No | `wss://relay.invofi.dev` | WebSocket relay for the live portfolio dashboard (issue #221). When empty or unreachable the dashboard degrades to Soroban event-stream + Supabase polling. |
 | `NEXT_PUBLIC_XLM_USD_PRICE` | No | `0.15` | XLM/USD fallback price used for live USD position values when the live price feed (CoinGecko) is unreachable. |
@@ -40,7 +43,11 @@ contract (pre-3-contract deployments keep working).
 
 ## Server-Side Secrets
 
-Before issue #103, this stack had **no server-side secrets at all** — every variable was `NEXT_PUBLIC_` and safe to ship to the browser. Verifying real ownership of a Stellar wallet via [SEP-10](https://stellar.org/protocol/sep-10) changed that: a SEP-10 challenge must be built and validated with a key the *server* controls, and minting a real Supabase session from a verified wallet address requires the Supabase *service role* key. Both are genuine secrets and must never reach client code.
+Before issue #103, this stack had **no server-side secrets at all** — every variable was `NEXT_PUBLIC_` and safe to ship to the browser. Verifying real ownership of a Stellar wallet via [SEP-10](https://stellar.org/protocol/sep-10) changed that: a SEP-10 challenge must be built and validated with a key the *server* controls, and minting a real Supabase session from a verified wallet address requires the Supabase *service role* key. Both are genuine secrets and must never reach client code. When
+`NEXT_PUBLIC_AUTH_BACKEND=authjs`, the wallet-first backend (#376) reuses
+`SEP10_SERVER_SIGNING_SECRET` for challenge verification and replaces the
+service-role key with the Postgres `DATABASE_URL` (the session store lives in
+the `sessions` table) plus `AUTH_SECRET` for cookie signing.
 
 | Variable | Description |
 | --- | --- |

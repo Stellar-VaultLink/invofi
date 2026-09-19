@@ -68,6 +68,20 @@
       "explorerAria": "فتح عقد {label} في Stellar Expert",
       "copyFailed": "فشل النسخ",
       "copyFailedHint": "تعذّر الوصول إلى الحافظة."
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "يظهر كمُصدر للفواتير في السوق.",
+      "displayNameLabel": "الاسم المعروض",
+      "displayNameLenderHint": "اختياري — يظهر بدلاً من اسم المستخدم حيث تسمح المساحة.",
+      "roleBusiness": "شركة",
+      "roleBusinessHint": "يمكنك إنشاء الفواتير وجمع التمويل ضدها.",
+      "roleLabel": "دور الحساب",
+      "roleLender": "ممول",
+      "roleLenderHint": "يمكنك تصفح الفواتير وتمويل الشركات مباشرة.",
+      "save": "حفظ التغييرات",
+      "saving": "جارٍ الحفظ…",
+      "updated": "تم تحديث الملف الشخصي",
+      "usernamePermanent": "اسم المستخدم دائم ولا يمكن تغييره."
     }
   },
   "Errors": {

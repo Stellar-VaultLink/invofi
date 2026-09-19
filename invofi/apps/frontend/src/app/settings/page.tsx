@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
 import { CurrencySwitcher } from '@/components/settings/CurrencySwitcher';
+import { ProfileEditor } from '@/components/settings/ProfileEditor';
+import { getAuthBackend } from '@/lib/auth/client';
+import { useWallet } from '@/components/auth/WalletProvider';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
 import {
@@ -119,11 +122,22 @@ export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const { disconnect } = useWallet();
+
+  // #380: under the authjs backend the Profile card is editable in place
+  // (display name + role); the legacy Supabase backend keeps the link card.
+  const isWalletOnly = getAuthBackend() === 'authjs';
 
   const handleSignOut = async () => {
     setLoading(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    if (isWalletOnly) {
+      // WalletProvider.disconnect clears wallet state AND deletes the Auth.js
+      // session row (backend-aware) — the full sign-out users expect.
+      await disconnect();
+    } else {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    }
     toast({ title: t('account.signedOut') });
     router.push('/');
   };
@@ -133,21 +147,32 @@ export default function SettingsPage() {
       <PageHeader title={t('title')} description={t('description')} />
 
       <div className="space-y-4">
-        <Link href="/profile">
-          <Card className="hover:bg-accent transition-colors">
-            <CardContent className="flex items-center justify-between py-4">
-              <div className="flex items-center gap-3">
-                <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.label')}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{t('profile.hint')}</p>
-                </div>
-              </div>
-              {/* Chevrons point "forward", which is leftwards in RTL. */}
-              <ChevronRight className="h-4 w-4 text-gray-400 rtl:rotate-180 dark:text-gray-500" />
+        {isWalletOnly ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t('profile.label')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProfileEditor />
             </CardContent>
           </Card>
-        </Link>
+        ) : (
+          <Link href="/profile">
+            <Card className="hover:bg-accent transition-colors">
+              <CardContent className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-3">
+                  <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.label')}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{t('profile.hint')}</p>
+                  </div>
+                </div>
+                {/* Chevrons point "forward", which is leftwards in RTL. */}
+                <ChevronRight className="h-4 w-4 text-gray-400 rtl:rotate-180 dark:text-gray-500" />
+              </CardContent>
+            </Card>
+          </Link>
+        )}
 
         <Card>
           <CardHeader>

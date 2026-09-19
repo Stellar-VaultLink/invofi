@@ -68,6 +68,20 @@
       "explorerAria": "Abrir el contrato {label} en Stellar Expert",
       "copyFailed": "No se pudo copiar",
       "copyFailedHint": "No se pudo acceder al portapapeles."
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "Se muestra como emisor de facturas en el mercado.",
+      "displayNameLabel": "Nombre para mostrar",
+      "displayNameLenderHint": "Opcional: se muestra en lugar de tu usuario cuando hay espacio.",
+      "roleBusiness": "Empresa",
+      "roleBusinessHint": "Puedes crear facturas y obtener financiación con ellas.",
+      "roleLabel": "Rol de la cuenta",
+      "roleLender": "Prestamista",
+      "roleLenderHint": "Puedes explorar facturas y financiar empresas directamente.",
+      "save": "Guardar cambios",
+      "saving": "Guardando…",
+      "updated": "Perfil actualizado",
+      "usernamePermanent": "Tu nombre de usuario es permanente y no se puede cambiar."
     }
   },
   "Errors": {

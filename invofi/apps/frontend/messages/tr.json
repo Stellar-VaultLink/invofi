@@ -68,6 +68,20 @@
       "explorerAria": "{label} sözleşmesini Stellar Expert’te aç",
       "copyFailed": "Kopyalanamadı",
       "copyFailedHint": "Panoya erişilemedi."
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "Pazarda fatura düzenleyen olarak gösterilir.",
+      "displayNameLabel": "Görünen ad",
+      "displayNameLenderHint": "İsteğe bağlı — yer olduğunda kullanıcı adınızın yerine gösterilir.",
+      "roleBusiness": "İşletme",
+      "roleBusinessHint": "Fatura oluşturabilir ve bunlara karşı finansman toplayabilirsiniz.",
+      "roleLabel": "Hesap rolü",
+      "roleLender": "Yatırımcı",
+      "roleLenderHint": "Faturalara göz atabilir ve işletmelere doğrudan fon sağlayabilirsiniz.",
+      "save": "Değişiklikleri kaydet",
+      "saving": "Kaydediliyor…",
+      "updated": "Profil güncellendi",
+      "usernamePermanent": "Kullanıcı adınız kalıcıdır ve değiştirilemez."
     }
   },
   "Errors": {

@@ -68,6 +68,20 @@
       "explorerAria": "{label} のコントラクトを Stellar Expert で開く",
       "copyFailed": "コピーできませんでした",
       "copyFailedHint": "クリップボードにアクセスできませんでした。"
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "マーケットプレイスで請求書の発行者として表示されます。",
+      "displayNameLabel": "表示名",
+      "displayNameLenderHint": "任意 — スペースが許す限りユーザー名の代わりに表示されます。",
+      "roleBusiness": "ビジネス",
+      "roleBusinessHint": "請求書を作成し、それに対する資金調達ができます。",
+      "roleLabel": "アカウントの役割",
+      "roleLender": "レンダラー",
+      "roleLenderHint": "請求書を閲覧し、ビジネスに直接資金を提供できます。",
+      "save": "変更を保存",
+      "saving": "保存中…",
+      "updated": "プロフィールを更新しました",
+      "usernamePermanent": "ユーザー名は永久であり、変更できません。"
     }
   },
   "Errors": {

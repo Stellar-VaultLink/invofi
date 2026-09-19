@@ -68,6 +68,20 @@
       "explorerAria": "Contract {label} in Stellar Expert öffnen",
       "copyFailed": "Kopieren fehlgeschlagen",
       "copyFailedHint": "Zugriff auf die Zwischenablage nicht möglich."
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "Wird auf dem Marktplatz als Rechnungssteller angezeigt.",
+      "displayNameLabel": "Anzeigename",
+      "displayNameLenderHint": "Optional — wird statt deines Benutzernamens angezeigt, wenn Platz ist.",
+      "roleBusiness": "Unternehmen",
+      "roleBusinessHint": "Du kannst Rechnungen erstellen und diese finanzieren lassen.",
+      "roleLabel": "Kontorolle",
+      "roleLender": "Kreditgeber",
+      "roleLenderHint": "Du kannst Rechnungen durchsuchen und Unternehmen direkt finanzieren.",
+      "save": "Änderungen speichern",
+      "saving": "Speichern…",
+      "updated": "Profil aktualisiert",
+      "usernamePermanent": "Dein Benutzername ist dauerhaft und kann nicht geändert werden."
     }
   },
   "Errors": {

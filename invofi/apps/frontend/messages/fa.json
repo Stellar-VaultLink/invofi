@@ -68,6 +68,20 @@
       "explorerAria": "گشودن قرارداد {label} در Stellar Expert",
       "copyFailed": "رونوشت ناموفق",
       "copyFailedHint": "دسترسی به حافظهٔ موقت ممکن نشد."
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "به عنوان صادرکننده فاکتور در بازار نمایش داده می‌شود.",
+      "displayNameLabel": "نام نمایشی",
+      "displayNameLenderHint": "اختیاری — در صورت وجود فضا به جای نام کاربری نمایش داده می‌شود.",
+      "roleBusiness": "کسب‌وکار",
+      "roleBusinessHint": "می‌توانید فاکتور صادر کنید و علیه آن تأمین مالی دریافت کنید.",
+      "roleLabel": "نقش حساب",
+      "roleLender": "تأمین‌کننده",
+      "roleLenderHint": "می‌توانید فاکتورها را مرور کنید و مستقیماً به کسب‌وکارها وام دهید.",
+      "save": "ذخیره تغییرات",
+      "saving": "در حال ذخیره…",
+      "updated": "پروفایل به‌روزرسانی شد",
+      "usernamePermanent": "نام کاربری شما دائمی است و قابل تغییر نیست."
     }
   },
   "Errors": {

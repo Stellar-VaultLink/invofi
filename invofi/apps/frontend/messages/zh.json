@@ -68,6 +68,20 @@
       "explorerAria": "在 Stellar Expert 中打开 {label} 合约",
       "copyFailed": "复制失败",
       "copyFailedHint": "无法访问剪贴板。"
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "在市场中显示为发票开具方。",
+      "displayNameLabel": "显示名称",
+      "displayNameLenderHint": "可选 — 在空间允许时显示，代替用户名。",
+      "roleBusiness": "企业",
+      "roleBusinessHint": "您可以创建发票并据此筹集资金。",
+      "roleLabel": "账户角色",
+      "roleLender": "出借人",
+      "roleLenderHint": "您可以浏览发票并直接为企业提供资金。",
+      "save": "保存更改",
+      "saving": "保存中…",
+      "updated": "个人资料已更新",
+      "usernamePermanent": "用户名是永久的，无法更改。"
     }
   },
   "Errors": {

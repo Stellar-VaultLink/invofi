@@ -21,6 +21,15 @@ vi.mock('@/components/ui/use-toast', () => ({
   useToast: () => ({ toast: mockToast }),
 }));
 
+// The settings page imports WalletProvider for the backend-aware sign-out
+// (issue #380). The real provider drags @stellar/freighter-api (CJS) and the
+// whole wallet-kit into this suite, which vitest's node resolution can't
+// interop — mock it to the surface the page actually uses.
+const mockDisconnect = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/components/auth/WalletProvider', () => ({
+  useWallet: () => ({ disconnect: mockDisconnect }),
+}));
+
 // constants.ts reads process.env at module scope, so the page and its
 // constants must be re-imported after each env change (vi.resetModules).
 async function renderSettingsPage() {

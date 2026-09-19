@@ -68,6 +68,20 @@
       "explorerAria": "Abrir o contrato {label} no Stellar Expert",
       "copyFailed": "Falha ao copiar",
       "copyFailedHint": "Não foi possível acessar a área de transferência."
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "Exibido como emissor de faturas no marketplace.",
+      "displayNameLabel": "Nome de exibição",
+      "displayNameLenderHint": "Opcional — exibido no lugar do seu usuário quando há espaço.",
+      "roleBusiness": "Empresa",
+      "roleBusinessHint": "Você pode criar faturas e captar financiamento contra elas.",
+      "roleLabel": "Função da conta",
+      "roleLender": "Investidor",
+      "roleLenderHint": "Você pode navegar por faturas e financiar empresas diretamente.",
+      "save": "Salvar alterações",
+      "saving": "Salvando…",
+      "updated": "Perfil atualizado",
+      "usernamePermanent": "Seu nome de usuário é permanente e não pode ser alterado."
     }
   },
   "Errors": {

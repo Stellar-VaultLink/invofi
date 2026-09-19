@@ -170,6 +170,20 @@
       "explorerAria": "Open {label} contract on Stellar Expert",
       "copyFailed": "Copy failed",
       "copyFailedHint": "Could not access the clipboard."
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "Shown as the invoice issuer across the marketplace.",
+      "displayNameLabel": "Display name",
+      "displayNameLenderHint": "Optional — shown instead of your username where space allows.",
+      "roleBusiness": "Business",
+      "roleBusinessHint": "You can create invoices and raise financing against them.",
+      "roleLabel": "Account role",
+      "roleLender": "Lender",
+      "roleLenderHint": "You can browse invoices and fund businesses directly.",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "updated": "Profile updated",
+      "usernamePermanent": "Your username is permanent and cannot be changed."
     }
   },
   "Errors": {

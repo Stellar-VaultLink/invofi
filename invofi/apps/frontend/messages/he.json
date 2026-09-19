@@ -68,6 +68,20 @@
       "explorerAria": "פתיחת החוזה {label} ב-Stellar Expert",
       "copyFailed": "ההעתקה נכשלה",
       "copyFailedHint": "לא ניתן לגשת ללוח."
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "מוצג כמנפיק חשבוניות בשוק.",
+      "displayNameLabel": "שם לתצוגה",
+      "displayNameLenderHint": "אופציונלי — מוצג במקום שם המשתמש כשיש מקום.",
+      "roleBusiness": "עסק",
+      "roleBusinessHint": "תוכל ליצור חשבוניות ולגייס מימון כנגדן.",
+      "roleLabel": "תפקיד החשבון",
+      "roleLender": "מלווה",
+      "roleLenderHint": "תוכל לעיין בחשבוניות ולממן עסקים ישירות.",
+      "save": "שמור שינויים",
+      "saving": "שומר…",
+      "updated": "הפרופיל עודכן",
+      "usernamePermanent": "שם המשתמש שלך קבוע ולא ניתן לשינוי."
     }
   },
   "Errors": {

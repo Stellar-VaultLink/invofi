@@ -68,6 +68,20 @@
       "explorerAria": "Ouvrir le contrat {label} dans Stellar Expert",
       "copyFailed": "Échec de la copie",
       "copyFailedHint": "Impossible d’accéder au presse-papiers."
+    },
+    "profileEditor": {
+      "displayNameBusinessHint": "Affiché comme émetteur de factures sur la place de marché.",
+      "displayNameLabel": "Nom d'affichage",
+      "displayNameLenderHint": "Facultatif — affiché à la place de votre identifiant quand l'espace le permet.",
+      "roleBusiness": "Entreprise",
+      "roleBusinessHint": "Vous pouvez créer des factures et lever des financements.",
+      "roleLabel": "Rôle du compte",
+      "roleLender": "Prêteur",
+      "roleLenderHint": "Vous pouvez parcourir les factures et financer directement des entreprises.",
+      "save": "Enregistrer les modifications",
+      "saving": "Enregistrement…",
+      "updated": "Profil mis à jour",
+      "usernamePermanent": "Votre nom d'utilisateur est permanent et ne peut pas être modifié."
     }
   },
   "Errors": {

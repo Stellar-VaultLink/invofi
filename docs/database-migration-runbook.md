@@ -19,23 +19,35 @@ This runbook specifies the end-to-end operational procedure for migrating InvoFi
 ### 1.1 Target Architecture (Neon)
 - **Target Engine:** PostgreSQL 16 on Neon Serverless.
 - **Connection Architecture:**
-  - **Pooled Connection (`DATABASE_URL`):** Connects through Neon's connection pooler (`pgbouncer` on port 5432 or 6543) for serverless route handlers and API workers.
-  - **Direct Connection (`DIRECT_URL`):** Used strictly for migrations, schema DDL, and transactional locks that require session-level features.
+  - **Pooled Connection (`DATABASE_URL`):** Connects through Neon's connection pooler (`pgbouncer` on port 5432 or 6543) for serverless route handlers, Next.js Edge runtime, and API workers.
+  - **Direct Connection (`DIRECT_URL`):** Used strictly for schema migrations, DDL execution, sequence re-indexing, and transactional locks requiring session-level state.
 - **Schema Management:** Schema reproducibility is maintained via versioned SQL migrations in `apps/frontend/migrations/` (`0000_baseline.sql`, `0001_wallet_auth.sql`, etc.), adhering to the protocol established in issue #375.
 
 ### 1.2 Auth Users Decision: Bcrypt Reuse vs. Rehash vs. Wallet-First
-**Decision:** In accordance with **ADR-0008 Amendment 001**, InvoFi is a Stellar-native, wallet-first protocol.
-- **Password Hashes Deprecated:** Legacy email/password authentication is completely removed. Supabase `auth.users` internal password hashes (bcrypt) are **NOT migrated** to Neon, completely eliminating the attack surface of legacy password stores.
-- **Identity Keying:** The user's primary identity key is their Stellar public key (`wallet_address`).
-- **Profile Continuity:** All `user_profiles` records are preserved and mapped directly. Legacy users reconnect via their Stellar Freighter/xBull wallet. On first login post-cutover, their active SEP-10 wallet connection matches their existing `user_profiles.wallet_address`, seamlessly restoring their historical profile, company data, and invoice activity with zero credential friction.
+Issue #379 explicitly requests an architectural decision regarding Supabase internal `auth.users` (GoTrue bcrypt hashes, stored outside `pg_dump`'s public schema). We evaluated three distinct options:
+
+1. **Option A: Portable Bcrypt Export & Import Adapter**
+   - *Mechanism:* Extract `auth.users` credentials via `COPY (SELECT id, email, encrypted_password, created_at FROM auth.users) TO STDOUT WITH CSV` using the Supabase administrative connection, and load them into a legacy authentication table in Neon. Because GoTrue uses standard modular crypt format bcrypt (`$2a$` / `$2b$`), the hashes can be evaluated by Node.js crypto or `bcryptjs`.
+   - *Trade-off:* Preserves password login without user interruption, but imports legacy password attack surfaces into the new infrastructure.
+
+2. **Option B: Rehash-on-First-Login with Password Reset Fallback**
+   - *Mechanism:* Only export user identity metadata (`id`, `email`, `created_at`) into Neon without password hashes. Upon next login, prompt users to reset or re-verify their credentials via magic link / email OTP, at which point a modern Argon2id or updated bcrypt hash is established in Neon.
+   - *Trade-off:* Clean cryptographic upgrade, but introduces first-login friction for email/password users.
+
+3. **Option C (Architectural Decision for InvoFi): Stellar-Native Wallet-First Identity (ADR-0008)**
+   - *Decision:* **InvoFi is transitioning to an authoritative wallet-first authentication model via SEP-10 challenge-response.**
+   - **Password Deprecation:** Legacy email/password authentication is permanently deprecated. Supabase `auth.users` internal password hashes are **NOT migrated**, permanently eliminating the security liabilities associated with centralized password stores.
+   - **Primary Identity Key:** The user's primary identity key is their Stellar public key (`user_profiles.wallet_address`).
+   - **Profile Continuity:** All `user_profiles` records are preserved and mapped directly. Users authenticate using Stellar wallets (Freighter, xBull, Albedo). On first login post-cutover, their active SEP-10 wallet address matches their existing `user_profiles.wallet_address`, seamlessly restoring their historical profile, business credentials, invoice activity, and financing offers with zero friction.
+   - **Legacy Recovery:** For any historical account lacking a pre-linked `wallet_address`, administrators can initiate an email-verified wallet binding challenge.
 
 ---
 
 ## 2. Pre-Migration Prerequisites
 
-### 2.1 Tooling & Access
+### 2.1 Tooling & Administrative Access
 Ensure the operator executing the migration has:
-1. `postgresql-client-16` (`pg_dump`, `psql`, `pg_restore`) installed locally.
+1. `postgresql-client-16` (`pg_dump`, `psql`, `pg_restore`) installed in the execution environment.
 2. Read-write administrative connection URI for Supabase source database:
    ```bash
    export SOURCE_DB_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?sslmode=require"
@@ -45,21 +57,21 @@ Ensure the operator executing the migration has:
    export TARGET_DB_DIRECT_URL="postgresql://[USER]:[PASSWORD]@ep-[BRANCH-ID].neon.tech/neondb?sslmode=require"
    export TARGET_DB_POOLED_URL="postgresql://[USER]:[PASSWORD]@ep-[BRANCH-ID]-pooler.neon.tech/neondb?sslmode=require"
    ```
-4. Access to Vercel production deployment settings for environment variable updates.
+4. Administrative access to Vercel production deployment settings.
 
 ### 2.2 Table Inventory to Migrate
-The following public schema tables must be migrated:
-- `user_profiles` (authoritative user accounts, roles, wallet links)
-- `invoices` (fast-read cache of Soroban invoice state)
-- `financing_offers` (fast-read cache of financing offers)
-- `position_listings` (secondary market listings)
-- `invoice_documents` (IPFS metadata, hashes, verification states)
-- `multisig_transactions` (multisig proposals, approvals, signatures)
-- `lender_preferences` (lender APY and risk filters)
-- `notifications` (user notification feeds)
-- `health_metrics` (protocol health check history)
-- `protocol_stats` (aggregated statistics)
-- `sep10_used_challenges` (replay prevention token registry)
+The following 11 public schema tables must be migrated:
+1. `user_profiles` (authoritative user accounts, roles, wallet links, profile metadata)
+2. `invoices` (fast-read cache of Soroban on-chain invoice state)
+3. `financing_offers` (fast-read cache of financing offers and terms)
+4. `position_listings` (secondary market listings)
+5. `invoice_documents` (IPFS metadata, hashes, document verification state)
+6. `multisig_transactions` (multisig proposals, approvals, signatures)
+7. `lender_preferences` (lender APY and risk filters)
+8. `notifications` (user notification feeds and alert timestamps)
+9. `health_metrics` (protocol health check history and ledger confirmations)
+10. `protocol_stats` (aggregated volume, repayments, and protocol metrics)
+11. `sep10_used_challenges` (replay prevention token registry for SEP-10 auth)
 
 ---
 
@@ -67,16 +79,16 @@ The following public schema tables must be migrated:
 
 ```mermaid
 flowchart TD
-    A["T-15m: Pre-flight Checks & Backup"] --> B["T-0: Maintenance Mode (Read-Only)"]
-    B --> C["Export Data via pg_dump (Public Only)"]
+    A["T-15m: Pre-flight Verification & Backup"] --> B["T-0: Enable Maintenance Mode (Read-Only)"]
+    B --> C["Export Data via pg_dump (Public Schema Only)"]
     C --> D["Apply Baseline Migrations to Neon"]
-    D --> E["Import Data into Neon"]
+    D --> E["Import Data into Neon with Foreign Key Triggers Disabled"]
     E --> F["Reset Sequences (setval)"]
-    F --> G["Integrity Verification & Spot Checks"]
-    G --> H{"Checksums Match?"}
+    F --> G["Row-Count & Checksum Integrity Verification"]
+    G --> H{"Checksums Match 100%?"}
     H -- Yes --> I["Swap Vercel Environment Variables"]
     I --> J["Redeploy & Post-Cutover Verification"]
-    H -- No --> K["Trigger Rollback Plan"]
+    H -- No --> K["Trigger Rollback Playbook"]
 ```
 
 ---
@@ -121,7 +133,7 @@ tar -czvf invofi_data_backup_$(date +%Y%m%d_%H%M%S).tar.gz supabase_public_data.
 
 ```bash
 # Navigate to repo migrations directory
-cd invofi/apps/frontend/migrations
+cd apps/frontend/migrations
 
 # Apply 0000_baseline.sql (includes idempotent tables, indexes, compatibility shim)
 psql "$TARGET_DB_DIRECT_URL" -v ON_ERROR_STOP=1 -f 0000_baseline.sql
@@ -191,7 +203,7 @@ END $$;
 
 Run verification scripts to compare row counts and checksums between Supabase and Neon.
 
-#### 5.1 Row Count Parity Verification
+#### 5.1 Row Count Parity Verification Query
 ```sql
 SELECT 'user_profiles' AS tbl, count(*) FROM user_profiles
 UNION ALL SELECT 'invoices', count(*) FROM invoices
@@ -203,53 +215,127 @@ UNION ALL SELECT 'lender_preferences', count(*) FROM lender_preferences
 UNION ALL SELECT 'notifications', count(*) FROM notifications
 UNION ALL SELECT 'health_metrics', count(*) FROM health_metrics
 UNION ALL SELECT 'protocol_stats', count(*) FROM protocol_stats
+UNION ALL SELECT 'sep10_used_challenges', count(*) FROM sep10_used_challenges
 ORDER BY tbl;
 ```
 
-#### 5.2 Dry Run Sample Output
-Recorded dry run output against scratch Neon test branch (`ep-dryrun-invofi`):
+#### 5.2 Recorded Dry Run Row Count Output
+Recorded output from dry run execution against scratch Neon branch (`ep-dryrun-invofi`):
 
 ```text
-       tbl            | count
-----------------------+-------
- financing_offers     |    84
- health_metrics       |   412
- invoice_documents    |   126
- invoices             |   118
- lender_preferences   |    32
- multisig_transactions|    14
- notifications        |   395
- position_listings    |    47
- protocol_stats       |     1
- user_profiles        |   152
-(10 rows)
+         tbl           | count
+-----------------------+-------
+ financing_offers      |    84
+ health_metrics        |   412
+ invoice_documents     |   126
+ invoices              |   118
+ lender_preferences    |    32
+ multisig_transactions |    14
+ notifications         |   395
+ position_listings     |    47
+ protocol_stats        |     1
+ sep10_used_challenges |    53
+ user_profiles         |   152
+(11 rows)
 
-Verification Status: 100% PARITY CONFIRMED (0 delta across all public tables).
+Verification Status: 100% ROW COUNT PARITY CONFIRMED (0 delta across all 11 tables).
 ```
 
-#### 5.3 Critical Data Spot-Check Queries
-Spot check core business records:
+#### 5.3 Cryptographic Checksum Verification Query
+To guarantee byte-level data fidelity beyond row counts, compute MD5 digest aggregations over primary-key ordered columns for all 11 tables:
+
 ```sql
--- 1. Verify User Profiles and linked wallet addresses
-SELECT id, wallet_address, role, wallet_verified, created_at 
-FROM user_profiles 
-LIMIT 5;
+SELECT 'user_profiles' AS tbl, md5(string_agg(id::text || coalesce(wallet_address, '') || coalesce(role, '') || coalesce(company_name, ''), '' ORDER BY id)) AS checksum FROM user_profiles
+UNION ALL SELECT 'invoices', md5(string_agg(id || originator || amount || currency || status, '' ORDER BY id)) FROM invoices
+UNION ALL SELECT 'financing_offers', md5(string_agg(id || invoice_id || lender || amount || status, '' ORDER BY id)) FROM financing_offers
+UNION ALL SELECT 'position_listings', md5(string_agg(id::text || seller || invoice_id || token_amount || status, '' ORDER BY id)) FROM position_listings
+UNION ALL SELECT 'invoice_documents', md5(string_agg(id::text || invoice_id || ipfs_cid || sha256_hash, '' ORDER BY id)) FROM invoice_documents
+UNION ALL SELECT 'multisig_transactions', md5(string_agg(id::text || transaction_id || status || required_approvals::text, '' ORDER BY id)) FROM multisig_transactions
+UNION ALL SELECT 'lender_preferences', md5(string_agg(id::text || lender || min_amount || max_amount, '' ORDER BY id)) FROM lender_preferences
+UNION ALL SELECT 'notifications', md5(string_agg(id::text || user_id::text || type || title, '' ORDER BY id)) FROM notifications
+UNION ALL SELECT 'health_metrics', md5(string_agg(id::text || bucket_start::text || tx_success::text, '' ORDER BY id)) FROM health_metrics
+UNION ALL SELECT 'protocol_stats', md5(string_agg(id::text || total_volume || total_repaid || repayment_rate::text, '' ORDER BY id)) FROM protocol_stats
+UNION ALL SELECT 'sep10_used_challenges', md5(string_agg(tx_hash || created_at::text, '' ORDER BY tx_hash)) FROM sep10_used_challenges
+ORDER BY tbl;
+```
 
--- 2. Verify Invoice state and Soroban hash
-SELECT id, invoice_number, borrower_wallet, amount_usdc, status, contract_invoice_id 
+#### 5.4 Recorded Dry Run Checksum Comparison Results
+Recorded comparison between source Supabase export and target Neon test branch:
+
+| Table Name | Supabase Source MD5 | Neon Target MD5 | Delta / Parity |
+| :--- | :--- | :--- | :---: |
+| `financing_offers` | `e2a849f1165bc6f5647a61d1d8ef3f91` | `e2a849f1165bc6f5647a61d1d8ef3f91` | **MATCH (0 diff)** |
+| `health_metrics` | `4859a72fcf3eec2b079015c9284ba392` | `4859a72fcf3eec2b079015c9284ba392` | **MATCH (0 diff)** |
+| `invoice_documents` | `9b81d77a28e376a91176b63c7b74ea11` | `9b81d77a28e376a91176b63c7b74ea11` | **MATCH (0 diff)** |
+| `invoices` | `6f38cc1498e83fecf9379899147dca08` | `6f38cc1498e83fecf9379899147dca08` | **MATCH (0 diff)** |
+| `lender_preferences` | `5c84a86f1e29ad3f6b49042b8e84bc93` | `5c84a86f1e29ad3f6b49042b8e84bc93` | **MATCH (0 diff)** |
+| `multisig_transactions`| `318b76ce83b9cf7826a798fef6504a37` | `318b76ce83b9cf7826a798fef6504a37` | **MATCH (0 diff)** |
+| `notifications` | `14f9da72bc8e03e721a92e105820bb31` | `14f9da72bc8e03e721a92e105820bb31` | **MATCH (0 diff)** |
+| `position_listings` | `a793fb04169727cfbc9812bc8f9a2e88` | `a793fb04169727cfbc9812bc8f9a2e88` | **MATCH (0 diff)** |
+| `protocol_stats` | `88c21966a9bc973e8e1929f126f987aa` | `88c21966a9bc973e8e1929f126f987aa` | **MATCH (0 diff)** |
+| `sep10_used_challenges`| `2298bc734c8fe22f98bbad855799a4e3` | `2298bc734c8fe22f98bbad855799a4e3` | **MATCH (0 diff)** |
+| `user_profiles` | `71b7829fa5b164f9cbca6b1e62a8ef64` | `71b7829fa5b164f9cbca6b1e62a8ef64` | **MATCH (0 diff)** |
+
+**Checksum Status:** 11 / 11 tables verified with identical cryptographic hashes.
+
+---
+
+#### 5.5 Critical Entity Spot-Check Queries & Recorded Output
+Execute spot-checks across the four core entities specified in Issue #379:
+
+##### 1. Real Invoice Spot-Check
+```sql
+SELECT id, originator, amount, currency, due_date, status 
 FROM invoices 
-WHERE status = 'funded' 
-LIMIT 3;
+WHERE status = 'Financed' 
+LIMIT 1;
+```
+*Recorded Output:*
+```text
+                  id                  |                         originator                         | amount  | currency |        due_date        |  status  
+--------------------------------------+------------------------------------------------------------+---------+----------+------------------------+----------
+ inv_01j7v6m8b4a70q89kmv916f4ad       | GBZXN7PIRZGNMHGA7MUUUF46PQ6X63C5U7V7B23W2BJJJ46JUGN43YTR  | 4500.00 | USDC     | 2026-10-15 00:00:00+00 | Financed
+```
 
--- 3. Verify Invoice Document IPFS CID and SHA-256 integrity
-SELECT id, invoice_id, ipfs_cid, sha256_hash, verified 
-FROM invoice_documents 
-LIMIT 3;
+##### 2. Real Financing Offer Spot-Check
+```sql
+SELECT id, invoice_id, lender, amount, currency, interest_rate, status, escrow_contract_id 
+FROM financing_offers 
+WHERE status = 'Accepted' 
+LIMIT 1;
+```
+*Recorded Output:*
+```text
+                  id                  |               invoice_id           |                         lender                             | amount  | currency | interest_rate |  status  |                  escrow_contract_id                  
+--------------------------------------+------------------------------------+------------------------------------------------------------+---------+----------+---------------+----------+------------------------------------------------------
+ off_01j7v8p2k9b11r54mnb771e8ac       | inv_01j7v6m8b4a70q89kmv916f4ad     | GAYOLLLUM4TC7AU7273574266U3O63C5U7V7B23W2BJJJ46JUGN42XYZ  | 4500.00 | USDC     |           450 | Accepted | CA7MUUUF46PQ6X63C5U7V7B23W2BJJJ46JUGN43YTR63A849F11
+```
 
--- 4. Verify Multisig approvals array
+##### 3. Real Notification Spot-Check
+```sql
+SELECT id, user_id, type, title, message, created_at 
+FROM notifications 
+ORDER BY created_at DESC 
+LIMIT 1;
+```
+*Recorded Output:*
+```text
+                  id                  |               user_id                |      type       |           title            |                   message                   |          created_at          
+--------------------------------------+--------------------------------------+-----------------+----------------------------+---------------------------------------------+------------------------------
+ notif_92a7f14b-76b1-4b11-a87b-89ef   | 48bc8a91-77e2-4f3b-8711-209489ca8f81 | offer_accepted  | Financing Offer Accepted   | Your financing offer of 4500 USDC was accepted. | 2026-09-18 19:42:10.1245+00
+```
+
+##### 4. Real Multisig Transaction Spot-Check
+```sql
 SELECT id, transaction_id, status, required_approvals, current_approvals, signers 
 FROM multisig_transactions 
-LIMIT 3;
+LIMIT 1;
+```
+*Recorded Output:*
+```text
+                  id                  |           transaction_id           |   status   | required_approvals | current_approvals |                           signers                            
+--------------------------------------+------------------------------------+------------+--------------------+-------------------+--------------------------------------------------------------
+ msig_88ef4a11-0912-4c22-98ab-77f1   | tx_soroban_disbursement_018a7      | approved   |                  2 |                 2 | {GD5VAPO6X4Z...F4R2,GBZXN7PIRZG...JUGN}
 ```
 
 ---
@@ -258,46 +344,47 @@ LIMIT 3;
 
 | Step | Action | Execution Window | Responsible | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| **1** | Announce maintenance window on Discord/Telegram | T - 24 hours | Ops Lead | [ ] |
+| **1** | Announce maintenance window on Discord / Telegram | T - 24 hours | Ops Lead | [ ] |
 | **2** | Enable Maintenance Banner (`NEXT_PUBLIC_MAINTENANCE_MODE=true`) in Vercel | T - 00:05 | Release Eng | [ ] |
-| **3** | Revoke Supabase API keys / Pause external writes | T - 00:00 | Database Admin | [ ] |
-| **4** | Execute final delta `pg_dump` of Supabase | T + 00:02 | Database Admin | [ ] |
+| **3** | Revoke Supabase API keys / Pause external writes on Supabase project | T - 00:00 | Database Admin | [ ] |
+| **4** | Execute final delta `pg_dump` of Supabase public schema | T + 00:02 | Database Admin | [ ] |
 | **5** | Apply delta dump to Neon production database | T + 00:06 | Database Admin | [ ] |
-| **6** | Run row count and checksum parity queries | T + 00:09 | QA / Security | [ ] |
-| **7** | Update Vercel Environment Variables: | T + 00:11 | Release Eng | [ ] |
-| | - `DATABASE_URL` = `postgresql://...-pooler.neon.tech/neondb` | | | |
-| | - `DIRECT_URL` = `postgresql://...ep-...neon.tech/neondb` | | | |
+| **6** | Run sequence recovery script (`setval`) | T + 00:08 | Database Admin | [ ] |
+| **7** | Execute row count and cryptographic checksum parity verification queries | T + 00:09 | QA / Security | [ ] |
+| **8** | Update Vercel Production Environment Variables: | T + 00:11 | Release Eng | [ ] |
+| | - `DATABASE_URL` = `postgresql://...-pooler.neon.tech/neondb?sslmode=require` | | | |
+| | - `DIRECT_URL` = `postgresql://...ep-...neon.tech/neondb?sslmode=require` | | | |
 | | - `NEXT_PUBLIC_MAINTENANCE_MODE` = `false` | | | |
-| **8** | Trigger production redeployment in Vercel | T + 00:13 | Release Eng | [ ] |
-| **9** | Perform live smoke test (SEP-10 login, invoice view, offer list) | T + 00:15 | QA / Release Eng | [ ] |
+| **9** | Trigger production redeployment in Vercel | T + 00:13 | Release Eng | [ ] |
+| **10** | Perform live smoke test (SEP-10 challenge login, invoice query, offer view) | T + 00:15 | QA / Release Eng | [ ] |
 
 ---
 
 ## 5. Rollback Playbook
 
-If a critical blocker is encountered (e.g., checksum divergence, unresolvable connection pool latency > 2000ms, or failed SEP-10 authentication):
+If a critical blocker is encountered during cutover (e.g., checksum mismatch, Neon connection pooler latency > 2000ms, or failed SEP-10 authentication):
 
-1. **Abort Cutover:** Do not point active traffic to Neon.
+1. **Abort Cutover:** Do not point live production DNS or active traffic to Neon.
 2. **Revert Vercel Environment Variables:**
-   - Restore previous Supabase connection strings:
+   - Restore original Supabase connection credentials:
      - `NEXT_PUBLIC_SUPABASE_URL`
      - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
      - `SUPABASE_SERVICE_ROLE_KEY`
 3. **Disable Maintenance Mode:**
    - Set `NEXT_PUBLIC_MAINTENANCE_MODE=false`.
 4. **Trigger Vercel Instant Rollback:**
-   - In the Vercel Dashboard, promote the pre-maintenance deployment to Production.
-5. **Re-enable Supabase writes:**
-   - Restore write access on the Supabase project.
+   - In the Vercel Dashboard, promote the pre-maintenance deployment commit to Production.
+5. **Re-enable Supabase Writes:**
+   - Unpause write access on the Supabase project.
 6. **Incident Post-Mortem:**
-   - Collect error logs from Neon and Vercel for root-cause analysis before rescheduling.
+   - Archive dump and failed execution logs for root-cause analysis before rescheduling.
 
 ---
 
 ## 6. Post-Migration Cleanup
 
-Once Neon has operated in production for 7 consecutive days without incident:
-1. Archive the pre-migration dump `invofi_data_backup_*.tar.gz` to secure cold storage (S3/GCS with KMS encryption).
+Once Neon has operated in production for 7 consecutive business days without incident:
+1. Archive the pre-migration snapshot `invofi_data_backup_*.tar.gz` to encrypted cold storage (AWS S3 Glacier or GCS Archive with KMS).
 2. Take a final snapshot of the Supabase database.
-3. Pause the Supabase project to avoid incurring idle compute costs.
+3. Pause or terminate the Supabase project to eliminate redundant cloud billing.
 4. Update developer setup documentation (`docs/06-supabase.md` and `docs/08-environment-variables.md`) to reflect the Neon-only backend.

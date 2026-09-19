@@ -56,6 +56,14 @@ $$;
 
 -- ── user_profiles evolution (ADR-0008 Amendment 001 identity model) ─────────
 
+-- Profile edit audit timestamp (username claim, role/display changes). The
+-- trigger helper ships in 0000 (update_updated_at_column).
+alter table user_profiles add column if not exists updated_at timestamptz not null default now();
+drop trigger if exists user_profiles_updated_at on user_profiles;
+create trigger user_profiles_updated_at
+  before update on user_profiles
+  for each row execute function update_updated_at_column();
+
 -- Immutable public handle, set once at the one-time profile-setup step.
 alter table user_profiles add column if not exists username text;
 create unique index if not exists user_profiles_username_key

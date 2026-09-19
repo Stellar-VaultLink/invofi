@@ -24,15 +24,38 @@ import { ensureUser, query } from './pg';
  * type) — wallet-first users have none, so an empty string stands in for "no
  * email". Nothing in the wallet-first UI reads session.user.email (ADR-0008
  * Amendment 001); the wallet address and display_name are the identity.
+ *
+ * #380: the wallet-first identity extras (walletAddress / username / role /
+ * hasProfile) ride on the AdapterUser so the session callback can copy them
+ * onto the session without a second query. They are not part of Auth.js's
+ * User type — the session callback re-reads them via a structural cast.
  */
-function rowToUser(id: string, displayName: string | null): AdapterUser {
+interface ProfileUserRow {
+  id: string;
+  display_name: string | null;
+  wallet_address: string | null;
+  username: string | null;
+  role: 'business' | 'lender' | 'admin';
+}
+
+function rowToUser(row: {
+  id: string;
+  display_name: string | null;
+  wallet_address: string | null;
+  username: string | null;
+  role: ProfileUserRow['role'] | null;
+}): AdapterUser {
   return {
-    id,
-    name: displayName ?? null,
+    id: row.id,
+    name: row.display_name ?? null,
     email: '',
     emailVerified: null,
     image: null,
-  };
+    walletAddress: row.wallet_address,
+    username: row.username,
+    role: row.role,
+    hasProfile: row.username !== null,
+  } as AdapterUser;
 }
 
 function rowToSession(row: {
@@ -67,18 +90,14 @@ export function PgAdapter(): Adapter {
     },
 
     async getUser(id: string): Promise<AdapterUser | null> {
-      const rows = await query<{
-        id: string;
-        display_name: string | null;
-        wallet_address: string | null;
-      }>(
-        `select up.id, up.display_name, up.wallet_address
+      const rows = await query<ProfileUserRow>(
+        `select up.id, up.display_name, up.wallet_address, up.username, up.role
            from user_profiles up
           where up.id = $1`,
         [id],
       );
       if (rows.length === 0) return null;
-      return rowToUser(rows[0].id, rows[0].display_name);
+      return rowToUser(rows[0]);
     },
 
     async getUserByEmail(): Promise<AdapterUser | null> {
@@ -121,8 +140,12 @@ export function PgAdapter(): Adapter {
         user_id: string;
         expires: Date;
         display_name: string | null;
+        wallet_address: string | null;
+        username: string | null;
+        role: ProfileUserRow['role'];
       }>(
-        `select s.session_token, s.user_id, s.expires, up.display_name
+        `select s.session_token, s.user_id, s.expires,
+                up.display_name, up.wallet_address, up.username, up.role
            from sessions s
            join user_profiles up on up.id = s.user_id
           where s.session_token = $1
@@ -132,7 +155,7 @@ export function PgAdapter(): Adapter {
       if (rows.length === 0) return null;
       return {
         session: rowToSession(rows[0]),
-        user: rowToUser(rows[0].user_id, rows[0].display_name),
+        user: rowToUser({ ...rows[0], id: rows[0].user_id }),
       };
     },
 

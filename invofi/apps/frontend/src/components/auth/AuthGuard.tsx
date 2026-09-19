@@ -22,11 +22,20 @@ export function AuthGuard({ children, isUnauthorized }: AuthGuardProps) {
     // Backend-dependent session check (#376): the Auth.js database session is
     // read from /api/auth/session; the Supabase JWT from the legacy client.
     if (getAuthBackend() === 'authjs') {
-      getWalletSessionUser().then((user) => {
+      let cancelled = false;
+      getWalletSessionUser().then(async (user) => {
+        if (cancelled) return;
         setHasSession(!!user);
         setSessionReady(true);
+        // One-time setup gate (#380): a verified session without a username
+        // routes to the setup step before reaching any protected page.
+        if (user && !user.hasProfile && !user.username) {
+          router.replace('/auth/setup');
+        }
       });
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
     supabase.auth.getUser().then(({ data: { user } }) => {
       setHasSession(!!user);

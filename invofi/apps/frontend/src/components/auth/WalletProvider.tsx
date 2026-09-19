@@ -314,7 +314,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       // Block until the backend session is created so the dashboard's own
       // auth check finds a user immediately after router.push('/dashboard').
-      await ensureBackendSession(address);
+      // On the /auth/* pages the page component drives the SEP-10 flow itself
+      // (with user-facing error handling — issue #380 wallet-only login), so
+      // connecting here must not fire a second, unsupervised signature
+      // prompt behind a swallowed error.
+      const onAuthPage =
+        typeof window !== 'undefined' &&
+        window.location.pathname.startsWith('/auth/');
+      if (!onAuthPage) {
+        await ensureBackendSession(address);
+      }
 
       return address;
     } catch (err) {

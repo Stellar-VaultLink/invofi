@@ -70,3 +70,16 @@ export async function signInWithSep10Challenge(signedXdr: string): Promise<User>
 export async function signOutWalletSession(): Promise<void> {
   await signOut({ redirect: false });
 }
+
+/**
+ * Where to send a freshly signed-in user (issue #380): the one-time profile
+ * setup when the Auth.js session has no username yet, otherwise `fallback`.
+ * Under the legacy Supabase backend this always returns `fallback` — the
+ * setup step only exists in the authjs schema.
+ */
+export async function routeAfterSignIn(fallback = '/dashboard'): Promise<string> {
+  if (getAuthBackend() !== 'authjs') return fallback;
+  const user = await getWalletSessionUser();
+  if (user && !user.hasProfile && !user.username) return '/auth/setup';
+  return fallback;
+}

@@ -125,9 +125,23 @@ export const authConfig: NextAuthConfig = {
     // Session shape preserved so existing UI code keeps working
     // (ADR-0008 constraint): session.user.id is the profile id, and the
     // wallet address rides along for the components that read it.
+    //
+    // #380 extras: username / role / hasProfile are copied from the DB user
+    // (the adapter hydrates them onto the AdapterUser) so the one-time setup
+    // flow can gate on `hasProfile` without a second query.
     session({ session, user }) {
       if (user) {
         session.user.id = user.id;
+        const extras = user as typeof user & {
+          walletAddress?: string | null;
+          username?: string | null;
+          role?: 'business' | 'lender' | 'admin' | null;
+          hasProfile?: boolean;
+        };
+        session.user.walletAddress = extras.walletAddress ?? null;
+        session.user.username = extras.username ?? null;
+        session.user.role = extras.role ?? null;
+        session.user.hasProfile = extras.hasProfile ?? false;
       }
       return session;
     },

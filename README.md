@@ -38,14 +38,52 @@
 
 ## What is InvoFi?
 
-InvoFi is an open-source, decentralised invoice financing protocol built on **Stellar Soroban**. It solves a real problem: small and medium businesses often wait 30–90 days to get paid on invoices, starving them of working capital.
+InvoFi is an open-source, decentralised invoice financing protocol built on **Stellar Soroban**, with a full web application on top. It solves a real problem: small and medium businesses often wait 30–90 days to get paid on issued invoices, starving them of working capital — while investors with capital have no direct, transparent way to finance real-world trade receivables and earn yield against them.
 
-InvoFi lets businesses **tokenise their invoices as on-chain assets** and instantly receive financing from a global pool of investors. Investors earn yield. Businesses get liquidity. Everything is governed by smart contracts — no banks, no middlemen, no trust required.
+InvoFi lets businesses **tokenise invoices as on-chain assets** and receive financing from a global pool of lenders through competing offers. Lenders earn yield and hold a **SEP-41 position token** representing their claim. Every term, state transition, fund movement, and repayment is enforced by smart contracts — no bank, no factor, no middleman.
 
 ```text
 Business registers invoice  →  Lenders compete with offers  →  Business accepts best offer
-→  Funds available immediately  →  Business repays (full or partial)  →  Lender earns yield
+→  Funds move (escrow-backed disbursement)  →  Lender holds a POSI position token
+→  Business repays (full or partial, on-chain)  →  Lender earns yield  →  Token burns
 ```
+
+### What the protocol does, end to end
+
+**1. Invoice registration (registry contract).** A business registers an invoice on-chain in under a minute: amount, currency, due date, issuer identity. The registry is the canonical store of invoice state and emits the events the whole stack (indexer, keeper, frontend mirrors) reacts to. Invoice creation is **deployer-bound and replay-protected**; initialization runs in the Soroban constructor, so no deployment can be front-run.
+
+**2. Financing offers (financing contract).** Lenders browse the marketplace of registered invoices and submit competing offers with custom interest rate and duration. Originators accept the best offer — or counter. Offers carry an **on-chain expiry** enforced at acceptance; all negotiation state transitions are arbitrated by the contract.
+
+**3. Real fund movement with escrow backing.** On acceptance, the financed amount moves for real on Stellar — and through our **Trustless Work integration** the disbursement is backed by an escrow: the business confirms delivery of the financed work, the lender approves, and funds release. A **milestone-approval UI** on the invoice page and a **portfolio-wide escrow status board** make the lifecycle visible to both sides. The escrow rail is the product surface for the partnership with [Trustless Work](https://www.trustlesswork.com) (verified end-to-end on testnet with official USDC — see [the integration doc](./docs/trustless-work-integration.md)).
+
+**4. Position tokens (POSI, SEP-41).** Accepting an offer mints the lender a **SEP-41 position token** — a fungible claim on that financing — directly from the contract. Lenders can transfer a position to another wallet, or list it on the **secondary market board** (discovery only: InvoFi never holds the token or the payment; settlement is a bilateral SEP-41 transfer). Fractional positions (securitising an invoice across multiple lenders) extend the same primitive.
+
+**5. Repayment (repayment contract).** Businesses repay in full or in **partial installments**, tracked on-chain with a transparent history. The contract computes protocol fees, marks invoices **Overdue** past due date, and settles **Default** — the transition that triggers insurance.
+
+**6. Insurance (insurance contract).** Lenders and third parties stake into an **insurance pool** that backs the protocol. On default, the lender receives a payout up to the pool's available balance. The pool has a documented, hardcoded grace-period policy for this phase.
+
+**7. Reputation (reputation contract).** Every completed repayment and every default feeds a public **on-chain reputation score** per originator (a default outweighs two repayments; floor at zero). Lenders screen borrowers with it before offering.
+
+**8. Keeper automation.** A scheduled keeper (`invofi/scripts/keeper.ts`) polls Soroban RPC events, **bumps contract-storage TTLs** so state never expires, and **marks past-due invoices Overdue** — off-chain infrastructure with on-chain authority, running on a 6-hourly cadence with event-driven triggers.
+
+**9. Public stats.** A `/stats` dashboard exposes protocol aggregates — invoices financed, total volume, repayment rate, lender activity — derived from on-chain mirrors.
+
+### What the application does
+
+- **Wallet-first identity** — sign in with your Stellar wallet (Freighter, LOBSTR, and the approved-wallet set) via **SEP-10 challenge/response**; no email or password. One-time profile setup claims an **immutable username** and a role (business or lender); display name and role are editable in settings. Session layer is **Auth.js v5 with database sessions** ([ADR-0008](./docs/adr/0008-auth-replacement.md)).
+- **@invofi/sdk** — a typed SDK package (`apps/sdk`) that owns all contract bindings (register, offer, accept, repay, escrow) so the frontend and any third-party integration share one client.
+- **A 12-locale interface** with RTL support, and an **axe-core-clean** accessibility posture enforced in CI.
+- **Secondary-market and securitization surfaces** — position listings, fractional positions, and per-invoice securitization pages.
+
+### How it's built
+
+- **Two-repo topology** — this app repo and the audit-bound [invofi-contracts](https://github.com/Stellar-VaultLink/invofi-contracts) repo (six Rust contracts: registry, financing, repayment, insurance, reputation, common), kept deliberately decoupled ([ADR-0007](./docs/adr/0007-repo-topology-and-sdk.md)).
+- **Quality gates in CI** — 660+ unit tests, Playwright end-to-end suites (wallet flows, escrow lifecycle, i18n), axe-core accessibility scans, per-route bundle budgets, commitlint, reproducible WASM builds, and **Soroban Scout** static security analysis on every contract PR.
+- **Open governance** — issues are labelled by complexity (`good first issue` / `medium` / `high complexity`), the project runs an open-source contribution campaign on **GrantFox**, and security reports go through [SECURITY.md](./SECURITY.md) private disclosure.
+
+### Where it stands
+
+The protocol is **live on Stellar Testnet** (five contracts + the POSI token — addresses below), the frontend is live on Vercel, and the demo below walks the full loop: register → offer → accept (real token transfer) → position token → repay → stats. The roadmap focuses on the Postgres/Neon migration, the RLS-to-server-layer authorization port, contract hardening from open security findings, and mainnet preparation — see the [roadmap](./docs/10-roadmap.md) and [ADRs](./docs/adr/README.md).
 
 ---
 

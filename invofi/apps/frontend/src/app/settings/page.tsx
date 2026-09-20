@@ -12,7 +12,7 @@ import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
 import { CurrencySwitcher } from '@/components/settings/CurrencySwitcher';
 import { ProfileEditor } from '@/components/settings/ProfileEditor';
 import { getAuthBackend } from '@/lib/auth/backend';
-import { useWallet } from '@/components/auth/WalletProvider';
+import { clearLastWallet } from '@/lib/last-wallet';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
 import {
@@ -122,7 +122,6 @@ export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const { disconnect } = useWallet();
 
   // #380: under the authjs backend the Profile card is editable in place
   // (display name + role); the legacy Supabase backend keeps the link card.
@@ -131,9 +130,18 @@ export default function SettingsPage() {
   const handleSignOut = async () => {
     setLoading(true);
     if (isWalletOnly) {
-      // WalletProvider.disconnect clears wallet state AND deletes the Auth.js
-      // session row (backend-aware) — the full sign-out users expect.
-      await disconnect();
+      // Auth.js REST sign-out (csrf + POST) instead of next-auth/react's
+      // signOut() — calling the provider here would pull next-auth/react and
+      // the wallet stack into the /settings chunk, which blew the #108
+      // bundle budget by 26%. Clearing the last-wallet hint keeps a page
+      // refresh from silently re-connecting (ADR-0011).
+      const csrf = await fetch('/api/auth/csrf').then(r => r.json());
+      await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csrfToken: (csrf as { csrfToken: string }).csrfToken }),
+      });
+      clearLastWallet();
     } else {
       const supabase = createClient();
       await supabase.auth.signOut();

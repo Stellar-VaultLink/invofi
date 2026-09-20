@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
-import { getAuthBackend, getWalletSessionUser } from '@/lib/auth/client';
+import { getAuthBackend } from '@/lib/auth/backend';
 
 type Role = 'business' | 'lender' | 'admin';
 
@@ -35,15 +35,13 @@ export function ProfileEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load the current profile once. The /api/profile/me route is the
-  // authoritative source (it maps DB snake_case to camelCase).
+  // Load the current profile once. /api/profile/me is session-gated — a 401
+  // response means no valid session, which renders as "not ready" (the
+  // AuthGuard already guarantees a session for /settings visitors).
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const user = await getWalletSessionUser();
-        if (cancelled) return;
-        if (!user) return; // AuthGuard guarantees a session; nothing to edit
         const res = await fetch('/api/profile/me');
         if (!res.ok) return;
         const body = (await res.json()) as {

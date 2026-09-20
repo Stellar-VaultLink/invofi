@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
 import { CurrencySwitcher } from '@/components/settings/CurrencySwitcher';
 import { ProfileEditor } from '@/components/settings/ProfileEditor';
-import { getAuthBackend } from '@/lib/auth/client';
+import { getAuthBackend } from '@/lib/auth/backend';
 import { useWallet } from '@/components/auth/WalletProvider';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';

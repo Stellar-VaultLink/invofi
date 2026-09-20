@@ -2,16 +2,11 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { render } from '@/test/intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/auth/client', () => ({
+vi.mock('@/lib/auth/backend', () => ({
   getAuthBackend: vi.fn(() => 'authjs'),
-  getWalletSessionUser: vi.fn(async () => ({
-    id: 'u1',
-    walletAddress: 'GWA',
-    hasProfile: true,
-  })),
 }));
 
-import { getAuthBackend } from '@/lib/auth/client';
+import { getAuthBackend } from '@/lib/auth/backend';
 import { ProfileEditor } from '../ProfileEditor';
 
 const backendMock = vi.mocked(getAuthBackend);

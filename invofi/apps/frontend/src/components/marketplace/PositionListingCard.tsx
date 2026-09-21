@@ -125,7 +125,7 @@ export function PositionListingCard({ listing, isOwn, onStatusChange, busy }: Po
                 </>
               ) : (
                 <>
-                  <Copy className="me-1.5 h-3.5 h-3.5" /> Copy seller address
+                  <Copy className="me-1.5 h-3.5 w-3.5" /> Copy seller address
                 </>
               )}
             </Button>

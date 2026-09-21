@@ -71,3 +71,18 @@ Before starting anything non-trivial, open an issue first to coordinate.
 - **Frontend:** TypeScript strict mode. No `any`. All async ops show loading + error states.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) format.
 - **PRs:** Fill in the PR template. Reference the issue. Keep diffs small.
+
+### Authorization (ADR-0009)
+
+Every new or changed endpoint that touches the database must gate on the
+server-layer helpers in `apps/frontend/src/lib/auth/`:
+
+- `requireUser()` at minimum — authenticated, wallet-proven session
+- `requireRole('admin')` for admin surfaces (e.g. reminder_configs)
+- the per-table guards in `data-guards.ts` for party-scoped tables
+- queries against `encrypted_messages`, `pending_transactions`,
+  `transaction_approvals`, or `audit_log` go through `withUserContext()`
+  (RLS defense-in-depth, `migrations/0002_authz_guards.sql`)
+
+A PR adding a data-touching endpoint without an explicit authorization
+check will be sent back — this is the issue #377 convention.

@@ -64,6 +64,14 @@ ADR-0008 (wallet-first sessions) for the identity model.
 
 ## Provenance
 
+- `0000_baseline.sql` — full schema as of 2026-09-18, including the Supabase
+  compatibility shim (`auth.uid()` reading `request.jwt.claim.sub`)
+- `0001_wallet_auth.sql` — username + `updated_at` on `user_profiles` (#380)
+- `0002_authz_guards.sql` — ADR-0009 defense-in-depth RLS on `notifications`,
+  `audit_log`, `encrypted_messages`, `pending_transactions`,
+  `transaction_approvals`; queries on the latter four must run through
+  `withUserContext()` (#377)
+
 `0000_baseline.sql` was reconstructed from the repo's recorded DDL, in this
 order: docs/06-supabase.md (base tables + RLS + indexes), the nine runtime
 migration files under `src/lib/migrations/` (001 lender preferences; 002

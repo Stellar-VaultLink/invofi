@@ -14,11 +14,13 @@
  * Route handlers when wired (Auth.js v5 conventions):
  *   src/app/api/auth/[...nextauth]/route.ts → export const { handlers, auth, signIn, signOut }
  *
- * Session resolution note (ADR-0008 amendment, see docs/05): with the
- * database session strategy the edge middleware CANNOT resolve sessions (no
- * DB access at the edge), so middleware.ts does no session work — refresh
- * (updateAge) happens when `auth()` runs in the Node runtime (RSC / route
- * handlers), which is where every guarded page resolves its session anyway.
+ * Session resolution note (ADR-0008 Amendment 002): sessions are JWTs. Auth.js
+ * rejects database sessions when a Credentials provider is present (v5 throws
+ * UnsupportedStrategy at runtime), so the token carries the wallet extras
+ * (walletAddress / username / role / hasProfile) captured at sign-in; the
+ * adapter remains for user upsert + logout-everywhere revocation. Middleware
+ * resolves sessions statelessly — refresh (updateAge) happens when `auth()`
+ * runs in the Node runtime (RSC / route handlers).
  */
 import NextAuth, { type NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
@@ -65,10 +67,15 @@ async function claimChallengeHash(txHash: string): Promise<boolean> {
 export const authConfig: NextAuthConfig = {
   adapter,
   session: {
-    // Database sessions (ADR-0008 decision 4): the cookie holds an opaque
-    // token; the session row lives in `sessions`. Enables logout-everywhere
-    // via DELETE FROM sessions WHERE user_id = $1.
-    strategy: 'database',
+    // JWT sessions (ADR-0008 Amendment 002): Auth.js v5 hard-rejects the
+    // database strategy when a Credentials provider is registered — the
+    // wallet-first SEP-10 flow signs in through Credentials, so JWT is the
+    // only valid strategy. The DB adapter still upserts users (profile ids,
+    // #380 extras) and logout-everywhere still works by bumping the user's
+    // tokenVersion... but the simple revocation lever is clearing their
+    // sessions row set; per-user JWT revocation lands with #382 (token
+    // versioning) if it becomes necessary.
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // refresh once a day (middleware calls auth())
   },
@@ -122,27 +129,54 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    // Session shape preserved so existing UI code keeps working
-    // (ADR-0008 constraint): session.user.id is the profile id, and the
-    // wallet address rides along for the components that read it.
-    //
-    // #380 extras: username / role / hasProfile are copied from the DB user
-    // (the adapter hydrates them onto the AdapterUser) so the one-time setup
-    // flow can gate on `hasProfile` without a second query.
-    session({ session, user }) {
+    // At sign-in (Credentials) the authorize() return value lands as `user`;
+    // stash the #380 extras (walletAddress / username / role / hasProfile) in
+    // the JWT so every later session() call can read them — under JWT the
+    // session callback does NOT receive the DB user, only this token does.
+    jwt({ token, user, trigger, session }) {
       if (user) {
-        session.user.id = user.id;
         const extras = user as typeof user & {
           walletAddress?: string | null;
           username?: string | null;
           role?: 'business' | 'lender' | 'admin' | null;
           hasProfile?: boolean;
         };
-        session.user.walletAddress = extras.walletAddress ?? null;
-        session.user.username = extras.username ?? null;
-        session.user.role = extras.role ?? null;
-        session.user.hasProfile = extras.hasProfile ?? false;
+        token.uid = user.id;
+        token.walletAddress = extras.walletAddress ?? null;
+        token.username = extras.username ?? null;
+        token.role = extras.role ?? null;
+        token.hasProfile = extras.hasProfile ?? false;
       }
+      // Server-side mutations (profile setup / update) push refreshed extras
+      // through unstable_update() so the token never goes stale mid-session.
+      if (trigger === 'update' && session?.user) {
+        const u = session.user as Partial<{
+          name: string | null;
+          walletAddress: string | null;
+          username: string | null;
+          role: 'business' | 'lender' | 'admin' | null;
+          hasProfile: boolean;
+        }>;
+        if (u.name !== undefined) token.name = u.name;
+        if (u.walletAddress !== undefined) token.walletAddress = u.walletAddress;
+        if (u.username !== undefined) token.username = u.username;
+        if (u.role !== undefined) token.role = u.role;
+        if (u.hasProfile !== undefined) token.hasProfile = u.hasProfile;
+      }
+      return token;
+    },
+    // Session shape preserved so existing UI code keeps working
+    // (ADR-0008 constraint): session.user.id is the profile id, and the
+    // wallet address rides along for the components that read it.
+    //
+    // #380 extras come from the token (see jwt() above) — the one-time setup
+    // flow gates on `hasProfile` without a second query.
+    session({ session, token }) {
+      session.user.id = (token.uid as string | undefined) ?? token.sub ?? '';
+      session.user.walletAddress = token.walletAddress ?? null;
+      session.user.username = token.username ?? null;
+      session.user.role = token.role ?? null;
+      session.user.hasProfile = token.hasProfile ?? false;
       return session;
     },
   },
@@ -159,4 +193,5 @@ export const authConfig: NextAuthConfig = {
 
 // Lazy singleton — importing NextAuth() at module scope starts nothing until
 // the route handler module requests it.
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const { handlers, auth, signIn, signOut, unstable_update: updateAuthSession } =
+  NextAuth(authConfig);

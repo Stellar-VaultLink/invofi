@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { auth } from '@/lib/auth/config';
+import { auth, updateAuthSession } from '@/lib/auth/config';
 import {
   claimUsername,
   type SetupRole,
@@ -92,6 +92,20 @@ export async function POST(req: NextRequest) {
       { error: 'Could not save your profile. Please try again.' },
       { status: 500 },
     );
+  }
+
+  // Refresh the JWT session extras so the client sees hasProfile=true /
+  // username / role immediately — without this, the token's snapshot of the
+  // profile (frozen at sign-in under the JWT strategy) would stay stale
+  // until the next wallet sign-in and loop users back to /auth/setup.
+  try {
+    await updateAuthSession({
+      user: { name: name ?? check.username, hasProfile: true },
+    });
+  } catch (err) {
+    // Non-fatal: the profile row is saved; worst case the token catches up
+    // on the next sign-in. Logged for ops rather than failing the request.
+    console.warn('profile/setup session refresh failed:', err);
   }
 
   return NextResponse.json({ username: check.username, role, displayName: name });

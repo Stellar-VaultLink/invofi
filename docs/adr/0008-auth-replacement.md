@@ -154,6 +154,49 @@ product; email/password is not the audience and adds surface area.
 - `docs/05-authentication.md` and the README auth sections are rewritten
   at cutover (wallet-only, not "dual auth").
 
+## Amendment 002 (2026-09-23): JWT session strategy
+
+**Status: Supersedes decision 4 (database session strategy).**
+
+### Why
+
+NextAuth v5 **hard-rejects** the database session strategy when a Credentials
+provider is registered — the first `auth()` call after a credentials sign-in
+throws `UnsupportedStrategy: Signing in with credentials only supported if JWT
+strategy is enabled`. The wallet-first flow (Amendment 001) signs in through
+exactly such a Credentials provider (SEP-10), so the combination chosen in
+decision 4 cannot boot. It passed unit tests only because the adapter was
+mocked; the first real deployment (Vercel preview with a live `DATABASE_URL`)
+surfaced it with a 500 on `/api/auth/session`.
+
+### What changes
+
+1. `session.strategy: 'jwt'` — the cookie carries a signed JWT; no session
+   rows are read per request.
+2. A `jwt()` callback stashes the wallet extras (`walletAddress`, `username`,
+   `role`, `hasProfile`) in the token at sign-in; the `session()` callback
+   copies them from the token. Under JWT the session callback no longer
+   receives the DB user, so this stash is mandatory to preserve the session
+   shape (ADR-0008 constraint).
+3. Profile mutations (setup, display-name/role update) call
+   `unstable_update()` server-side so the token extras never go stale
+   mid-session.
+4. The pg adapter stays: it still upserts users at sign-in (profile ids,
+   #380 extras) and remains available for user lookups.
+
+### Consequences
+
+- Edge middleware can now resolve sessions statelessly (a benefit database
+  sessions never allowed).
+- **Logout-everywhere via `DELETE FROM sessions` no longer applies** — there
+  are no session rows. If per-user JWT revocation becomes necessary, it
+  lands as token-versioning (`user_profiles.token_version` checked in the
+  `jwt()` callback). SEP-10 single-use challenges still bind every sign-in
+  to a fresh on-chain proof, which bounds the practical exposure.
+- Role/display-name changes propagate immediately via `unstable_update()`;
+  users who never re-keep an old tab may see stale extras until their next
+  session fetch — acceptable for this surface.
+
 ## References
 
 - Issue #376 — this decision's parent

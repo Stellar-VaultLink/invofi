@@ -6,9 +6,28 @@ import type { DefaultSession } from 'next-auth';
  * is the immutable public handle set once at profile setup; `role` mirrors
  * `user_profiles.role` and is switchable from settings.
  *
- * The pg adapter (src/lib/auth/pg-adapter.ts) reads these columns and the
- * session callback in src/lib/auth/config.ts copies them onto the session.
+ * The pg adapter (src/lib/auth/pg-adapter.ts) reads these columns at sign-in
+ * and the jwt() callback in src/lib/auth/config.ts stashes them in the token
+ * (Amendment 002: JWT strategy); the session callback copies them onto
+ * session.user from there.
  */
+// Augment the SOURCE module — `next-auth/jwt` is a bare `export * from
+// '@auth/core/jwt'`, and re-exported names cannot be augmented through the
+// re-exporting module.
+declare module '@auth/core/jwt' {
+  interface JWT {
+    /** user_profiles.id (wallet-derived) — mirrors session.user.id. */
+    uid?: string;
+    /** Stellar address proven via SEP-10, captured at sign-in. */
+    walletAddress?: string | null;
+    /** Immutable handle; null until the one-time profile setup completes. */
+    username?: string | null;
+    /** user_profiles.role ('business' | 'lender' | 'admin') at sign-in. */
+    role?: 'business' | 'lender' | 'admin' | null;
+    /** True once the profile row carried a username at sign-in. */
+    hasProfile?: boolean;
+  }
+}
 declare module 'next-auth' {
   interface Session {
     user: {

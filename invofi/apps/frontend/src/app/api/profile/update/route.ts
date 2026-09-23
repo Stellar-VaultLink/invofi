@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { auth } from '@/lib/auth/config';
+import { auth, updateAuthSession } from '@/lib/auth/config';
 import { getProfileByWallet, updateProfileDisplay } from '@/lib/auth/profile';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
@@ -107,6 +107,21 @@ export async function PATCH(req: NextRequest) {
   // back to the username when cleared).
   const wallet = session?.user?.walletAddress;
   const profile = wallet ? await getProfileByWallet(wallet) : null;
+
+  // Push the new role/display name into the JWT token (strategy is jwt per
+  // ADR-0008 Amendment 002 — token extras would otherwise stay frozen at
+  // sign-in until the next wallet login).
+  try {
+    await updateAuthSession({
+      user: {
+        name: profile?.display_name ?? profile?.username ?? null,
+        role: (profile?.role as 'business' | 'lender' | 'admin' | null) ?? null,
+      },
+    });
+  } catch (err) {
+    // Non-fatal: DB row is authoritative; the token catches up next sign-in.
+    console.warn('profile/update session refresh failed:', err);
+  }
 
   return NextResponse.json({
     displayName: profile?.display_name ?? null,

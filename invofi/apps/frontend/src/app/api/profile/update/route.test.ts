@@ -5,6 +5,7 @@ import { NextRequest } from 'next/server';
 
 vi.mock('@/lib/auth/config', () => ({
   auth: vi.fn(),
+  updateAuthSession: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/profile', () => ({
@@ -17,12 +18,13 @@ vi.mock('@/lib/rate-limit', () => ({
   getClientIp: vi.fn(() => '127.0.0.1'),
 }));
 
-import { auth } from '@/lib/auth/config';
+import { auth, updateAuthSession } from '@/lib/auth/config';
 import { getProfileByWallet, updateProfileDisplay } from '@/lib/auth/profile';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { PATCH } from './route';
 
 const authMock = vi.mocked(auth);
+const updateSessionMock = vi.mocked(updateAuthSession);
 const updateMock = vi.mocked(updateProfileDisplay);
 const getProfileMock = vi.mocked(getProfileByWallet);
 const rateLimitMock = vi.mocked(checkRateLimit);
@@ -57,6 +59,11 @@ describe('PATCH /api/profile/update', () => {
     expect(updateMock).toHaveBeenCalledWith('u1', { displayName: 'Ada Lovelace', role: undefined });
     const body = await res.json();
     expect(body).toEqual({ displayName: 'Ada L', role: 'lender' });
+    // JWT strategy (ADR-0008 Amendment 002): the token extras must be
+    // refreshed so the session reflects the new display name immediately.
+    expect(updateSessionMock).toHaveBeenCalledWith({
+      user: { name: 'Ada L', role: 'lender' },
+    });
   });
 
   it('switches the role', async () => {

@@ -8,6 +8,11 @@ vi.mock('@/lib/auth/config', () => ({
   updateAuthSession: vi.fn(),
 }));
 
+// The authjs gate is a pure env read — flip it per test.
+vi.mock('@/lib/auth/enabled', () => ({
+  isAuthjsBackendEnabled: vi.fn(() => true),
+}));
+
 vi.mock('@/lib/auth/profile', () => ({
   updateProfileDisplay: vi.fn(),
   getProfileByWallet: vi.fn(),
@@ -19,12 +24,14 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 
 import { auth, updateAuthSession } from '@/lib/auth/config';
+import { isAuthjsBackendEnabled } from '@/lib/auth/enabled';
 import { getProfileByWallet, updateProfileDisplay } from '@/lib/auth/profile';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { PATCH } from './route';
 
 const authMock = vi.mocked(auth);
 const updateSessionMock = vi.mocked(updateAuthSession);
+const enabledMock = vi.mocked(isAuthjsBackendEnabled);
 const updateMock = vi.mocked(updateProfileDisplay);
 const getProfileMock = vi.mocked(getProfileByWallet);
 const rateLimitMock = vi.mocked(checkRateLimit);
@@ -133,5 +140,12 @@ describe('PATCH /api/profile/update', () => {
     });
     const res = await PATCH(bad);
     expect(res.status).toBe(400);
+  });
+
+  it('answers 401 (not 500) when the authjs backend is disabled — legacy hosts', async () => {
+    enabledMock.mockReturnValue(false);
+    const res = await PATCH(req({ displayName: 'X' }));
+    expect(res.status).toBe(401);
+    expect(updateMock).not.toHaveBeenCalled();
   });
 });

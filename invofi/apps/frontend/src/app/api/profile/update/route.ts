@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth, updateAuthSession } from '@/lib/auth/config';
+import { isAuthjsBackendEnabled } from '@/lib/auth/enabled';
 import { getProfileByWallet, updateProfileDisplay } from '@/lib/auth/profile';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
@@ -19,6 +20,13 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
  * omitted/undefined leaves it unchanged (coalesce in SQL).
  */
 export async function PATCH(req: NextRequest) {
+  // Backend gate: on legacy-Supabase deployments there is no Auth.js session
+  // (and auth() would throw MissingSecret) — answer 401 like any other
+  // unauthenticated request instead of 500.
+  if (!isAuthjsBackendEnabled()) {
+    return NextResponse.json({ error: 'Sign in with your wallet first.' }, { status: 401 });
+  }
+
   const ip = getClientIp(req);
   if (
     !checkRateLimit(`profile-update:${ip}`, {

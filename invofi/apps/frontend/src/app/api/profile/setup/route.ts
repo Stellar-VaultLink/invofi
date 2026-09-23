@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth, updateAuthSession } from '@/lib/auth/config';
+import { isAuthjsBackendEnabled } from '@/lib/auth/enabled';
 import {
   claimUsername,
   type SetupRole,
@@ -26,6 +27,13 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
  * shown across the marketplace.
  */
 export async function POST(req: NextRequest) {
+  // Backend gate: on legacy-Supabase deployments there is no Auth.js session
+  // (and auth() would throw MissingSecret) — answer 401 like any other
+  // unauthenticated request instead of 500.
+  if (!isAuthjsBackendEnabled()) {
+    return NextResponse.json({ error: 'Sign in with your wallet first.' }, { status: 401 });
+  }
+
   const ip = getClientIp(req);
   if (!checkRateLimit(`profile-setup:${ip}`, { limit: RATE_LIMIT, windowMs: RATE_LIMIT_WINDOW_MS }).allowed) {
     return NextResponse.json(

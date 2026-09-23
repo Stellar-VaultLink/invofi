@@ -20,7 +20,7 @@ Most environment variables for the InvoFi frontend are prefixed with `NEXT_PUBLI
 | `NEXT_PUBLIC_SEP10_HOME_DOMAIN` | No (recommended) | `invofi.app` | Domain the SEP-10 challenge asserts as the party requesting auth. Defaults to `localhost`. |
 | `NEXT_PUBLIC_SEP10_WEB_AUTH_DOMAIN` | No | `invofi.app` | Domain that issued the challenge (SEP-10's `WEB_AUTH_DOMAIN`). Defaults to `NEXT_PUBLIC_SEP10_HOME_DOMAIN`. |
 | `SEP10_SERVER_SIGNING_SECRET` | Yes, for wallet login | *(never committed)* | **Server-only.** Stellar secret key (`S...`) the server uses to sign/validate SEP-10 challenges. See below. |
-| `NEXT_PUBLIC_AUTH_BACKEND` | No | `authjs` | Selects the sign-in backend (#376): `authjs` enables the wallet-first Auth.js backend (SEP-10 only, database sessions); unset or `supabase` keeps the legacy Supabase Auth. |
+| `NEXT_PUBLIC_AUTH_BACKEND` | No | `authjs` | Selects the sign-in backend (#376): `authjs` enables the wallet-first Auth.js backend (SEP-10 only, JWT sessions per ADR-0008 Amendment 002) and mounts the `/api/auth/*` handlers; unset or `supabase` keeps the legacy Supabase Auth and the handlers answer 404. |
 | `DATABASE_URL` | Yes, for `authjs` | *(never committed)* | **Server-only.** Postgres connection string for the auth session store (Neon, or the local docker-compose Postgres). |
 | `AUTH_SECRET` | Yes, for `authjs` | *(never committed)* | **Server-only.** Auth.js session-cookie signing secret — generate with `openssl rand -base64 32`. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes, for wallet login | *(never committed)* | **Server-only.** Supabase service-role key, from Settings → API. See below. |

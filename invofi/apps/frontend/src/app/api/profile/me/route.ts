@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth/config';
+import { isAuthjsBackendEnabled } from '@/lib/auth/enabled';
 import { getProfileByWallet } from '@/lib/auth/profile';
 
 export const runtime = 'nodejs';
@@ -15,6 +16,13 @@ export const runtime = 'nodejs';
  * "needs setup".
  */
 export async function GET(_req: NextRequest) {
+  // Backend gate: on legacy-Supabase deployments there is no Auth.js session
+  // (and auth() would throw MissingSecret) — answer 401 like any other
+  // unauthenticated request instead of 500.
+  if (!isAuthjsBackendEnabled()) {
+    return NextResponse.json({ error: 'Sign in with your wallet first.' }, { status: 401 });
+  }
+
   const session = await auth();
   const wallet = session?.user?.walletAddress;
   if (!session || !wallet) {

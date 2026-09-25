@@ -1,19 +1,15 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { useLocale, useTranslations } from 'next-intl';
-import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, Copy, Check, Send, RefreshCw, Tag, DollarSign, Layers } from 'lucide-react';
+import { TrendingUp, Clock, CheckCircle2, AlertCircle, Download, RefreshCw, DollarSign, Layers } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import { useWallet } from '@/components/auth/WalletProvider';
 import { TableSkeleton } from '@/components/common/LoadingSkeleton';
-import { useToast } from '@/components/ui/use-toast';
-import { addPositionTrustline, getPositionTokenId, getTokenBalance, getTokenDecimals, hasPositionTrustline, transferPositionToken, type FinancingOffer } from '@/lib/contract';
+import type { FinancingOffer } from '@/lib/contract';
 import { OFFER_STATUS_COLORS, toStroopsBigInt, interestRateLabel, durationLabel } from '@/lib/utils';
 import { useFormat } from '@/hooks/useFormat';
 import { STROOPS_PER_XLM } from '@/lib/constants';
@@ -22,16 +18,13 @@ import { getXlmUsdInfo, stroopsToUsd } from '@/lib/live/prices';
 import { formatAmount, formatDate } from '@/lib/formatters';
 import { useLivePortfolio } from '@/components/portfolio/LivePortfolioProvider';
 import { ConnectionStatus } from '@/components/portfolio/ConnectionStatus';
-import { RepaymentProgress } from '@/components/portfolio/RepaymentProgress';
-import { PaginationControls } from '@/components/portfolio/PaginationControls';
 import { PositionTokensPanel } from '@/components/portfolio/PositionTokensPanel';
+import { ExplorerLink } from '@/components/common/ExplorerLink';
+import { TransferPositionCard } from '@/components/portfolio/TransferPositionCard';
+import { CopyId } from '@/components/portfolio/CopyId';
 import { EscrowStatusesCard } from '@/components/portfolio/EscrowStatusesCard';
-import { paginate } from '@/lib/pagination';
-import type { LivePosition } from '@/lib/live/types';
-import { toErrorMessage } from '@/lib/errors';
 
 
-const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'mainnet' : 'testnet';
 
 const STATUS_ICONS = {
   Pending:   Clock,
@@ -45,23 +38,6 @@ const STATUS_ICONS = {
 /** Total repayment due in stroops: principal + simple yield (matches the contract). */
 function offerTotalDue(offer: FinancingOffer): bigint {
   return toStroopsBigInt(offer.amount) + (toStroopsBigInt(offer.amount) * BigInt(offer.interest_rate)) / 10_000n;
-}
-
-/** Parse a decimal string (e.g. "12.5") into base units for `decimals` places. */
-function toBaseUnits(amount: string, decimals: number): bigint | null {
-  if (!/^\d+(\.\d+)?$/.test(amount)) return null;
-  const [whole, frac = ''] = amount.split('.');
-  if (frac.length > decimals) return null;
-  const padded = frac.padEnd(decimals, '0');
-  try {
-    return BigInt(whole + padded);
-  } catch {
-    return null;
-  }
-}
-
-function isStellarAddress(addr: string): boolean {
-  return /^G[A-Z2-7]{55}$/.test(addr);
 }
 
 /**
@@ -79,327 +55,6 @@ function useRelativeUpdate() {
       return rtf.format(-Math.floor(diffMs / 60_000), 'minute');
     },
     [locale],
-  );
-}
-
-/**
- * Task 8: transfer a financed-invoice position token to another wallet.
- * The token is a standard SEP-41 Stellar asset contract minted to the lender
- * on offer acceptance (1 token = 1 base unit of principal — ADR-0002).
- *
- * This is also where a secondary-market sale settles: a listing on the
- * position board (ADR-0004) links here with `?amount=` prefilled, and the
- * seller signs the transfer themselves. The board never mediates it.
- */
-function TransferPositionCard() {
-  const t = useTranslations('Portfolio.transfer');
-  const { publicKey } = useWallet();
-  const { toast } = useToast();
-  const searchParams = useSearchParams();
-  // Amount handed over by a position listing; ignored unless well-formed.
-  const [prefilledAmount] = useState(() => {
-    const raw = searchParams.get('amount') ?? '';
-    return /^\d+(\.\d{1,7})?$/.test(raw) ? raw : '';
-  });
-  const [tokenId, setTokenId] = useState<string | null>(null);
-  const [decimals, setDecimals] = useState(7);
-  const [balance, setBalance] = useState<bigint | null>(null);
-  const [hasTrustline, setHasTrustline] = useState<boolean | null>(null);
-  const [addingTrustline, setAddingTrustline] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState(prefilledAmount);
-  const [busy, setBusy] = useState(false);
-
-  const refresh = useCallback(async () => {
-    if (!publicKey) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const id = await getPositionTokenId();
-      setTokenId(id);
-      if (id) {
-        setDecimals(await getTokenDecimals(id));
-        setBalance(await getTokenBalance(id, publicKey));
-        setHasTrustline(await hasPositionTrustline(publicKey));
-      } else {
-        setBalance(null);
-        setHasTrustline(null);
-      }
-    } catch {
-      // RPC/horizon hiccup — keep the previous state; the user can refresh.
-    } finally {
-      setLoading(false);
-    }
-  }, [publicKey]);
-
-  const setupTrustline = async () => {
-    if (!publicKey) return;
-    setAddingTrustline(true);
-    try {
-      await addPositionTrustline(publicKey);
-      toast({ title: t('trustlineAdded'), description: t('trustlineAddedHint') });
-      await refresh();
-    } catch (err) {
-      const msg = toErrorMessage(err, t('trustlineFailedHint'));
-      toast({ title: t('trustlineFailed'), description: msg, variant: 'destructive' });
-    } finally {
-      setAddingTrustline(false);
-    }
-  };
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  const submit = async () => {
-    if (!tokenId || !publicKey) return;
-    const to = recipient.trim();
-    if (!isStellarAddress(to)) {
-      toast({ title: t('invalidAddress'), description: t('invalidAddressHint'), variant: 'destructive' });
-      return;
-    }
-    const units = toBaseUnits(amount, decimals);
-    if (units === null || units <= 0n) {
-      toast({ title: t('invalidAmount'), description: t('invalidAmountHint', { decimals }), variant: 'destructive' });
-      return;
-    }
-    if (balance !== null && units > balance) {
-      toast({ title: t('insufficient'), description: t('insufficientHint'), variant: 'destructive' });
-      return;
-    }
-    setBusy(true);
-    try {
-      // POS is a Stellar asset: the recipient must hold a trustline before a
-      // transfer can credit them. Pre-check so the failure is friendly.
-      if (!(await hasPositionTrustline(to))) {
-        toast({
-          title: t('recipientTrustline'),
-          description: t('recipientTrustlineHint'),
-          variant: 'destructive',
-        });
-        setBusy(false);
-        return;
-      }
-      await transferPositionToken(tokenId, publicKey, to, units);
-      toast({
-        title: t('transferred'),
-        description: t('transferredHint', { amount, recipient: `${to.slice(0, 6)}…${to.slice(-4)}` }),
-      });
-      setRecipient('');
-      setAmount('');
-      await refresh();
-    } catch (err) {
-      const msg = toErrorMessage(err, t('transferFailedHint'));
-      toast({ title: t('transferFailed'), description: msg, variant: 'destructive' });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const balanceLabel =
-    balance === null ? '—' : (Number(balance) / 10 ** decimals).toFixed(decimals > 7 ? 7 : decimals);
-
-  return (
-    <Card className="mt-8" id="transfer">
-      <CardContent className="pt-5">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <Send className="h-4 w-4 text-blue-500" />
-            <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
-          </div>
-          <Button size="sm" variant="ghost" onClick={refresh} disabled={loading} aria-label={t('refreshBalance')}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground mb-2">{t('description')}</p>
-        <p className="text-xs text-muted-foreground mb-4">
-          <Tag className="inline h-3 w-3 me-1" />
-          {t.rich('secondaryBoard', {
-            link: chunks => (
-              <Link href="/marketplace/positions" className="text-blue-600 hover:underline">
-                {chunks}
-              </Link>
-            ),
-          })}
-        </p>
-        {prefilledAmount && (
-          <p className="text-xs text-blue-600 mb-4" role="status">
-            {t('prefilled', { amount: prefilledAmount })}
-          </p>
-        )}
-
-        {!publicKey ? (
-          <p className="text-sm text-muted-foreground">{t('connectWallet')}</p>
-        ) : tokenId === null && !loading ? (
-          <p className="text-sm text-muted-foreground">{t('notConfigured')}</p>
-        ) : hasTrustline === false ? (
-          <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center gap-3">
-            <p className="text-sm text-amber-800 dark:text-amber-300 flex-1">{t('needsTrustline')}</p>
-            <Button size="sm" onClick={setupTrustline} disabled={addingTrustline}>
-              {addingTrustline ? t('adding') : t('addTrustline')}
-            </Button>
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-[1fr_auto] items-end">
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('recipientLabel')}</label>
-                <input
-                  value={recipient}
-                  onChange={e => setRecipient(e.target.value)}
-                  placeholder="G…"
-                  aria-label={t('recipientLabel')}
-                  dir="ltr"
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  {t('amountLabel')}{' '}
-                  <span className="text-muted-foreground/70">{t('available', { balance: balanceLabel })}</span>
-                </label>
-                <input
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  placeholder="0.0"
-                  aria-label={t('amountLabel')}
-                  dir="ltr"
-                  inputMode="decimal"
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
-              </div>
-            </div>
-            <Button onClick={submit} disabled={busy || loading || balance === null || hasTrustline !== true}>
-              {busy ? t('transferring') : t('transfer')}
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function CopyId({ id }: { id: string }) {
-  const t = useTranslations('Common');
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(id);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* clipboard unavailable */ }
-  };
-  return (
-    <button
-      onClick={copy}
-      title={copied ? t('copied') : t('copy')}
-      className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-foreground group"
-    >
-      {/* Contract IDs are base32 identifiers — force LTR so they are not
-          visually reversed inside an RTL layout. */}
-      <span className="truncate max-w-[140px]" dir="ltr">{id}</span>
-      {copied
-        ? <Check className="h-3 w-3 text-green-500 shrink-0" />
-        : <Copy className="h-3 w-3 opacity-0 group-hover:opacity-60 shrink-0 transition-opacity" />
-      }
-    </button>
-  );
-}
-
-/** Live position row: value + yields + streaming repayment progress. */
-function PositionCard({ offer }: { offer: LivePosition }) {
-  const t = useTranslations('Portfolio.position');
-  const tStatus = useTranslations('Status');
-  const format = useFormat();
-  const relativeUpdate = useRelativeUpdate();
-  const Icon = STATUS_ICONS[offer.status] ?? Clock;
-  const active = offer.status === 'Accepted' || offer.status === 'Financed';
-
-  return (
-    <Card key={offer.id}>
-      <CardContent className="py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <Icon className="h-5 w-5 text-muted-foreground shrink-0" />
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <CopyId id={offer.invoice_id} />
-                <a
-                  href={`https://stellar.expert/explorer/${NETWORK}/contract/${offer.invoice_id}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="text-xs text-blue-500 hover:underline"
-                >
-                  ↗
-                </a>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {format.percent(offer.interest_rate)} · {t('days', { count: Math.round(offer.duration / 86_400) })}
-                {offer.funded_at > 0 && ` · ${t('funded', { date: format.date(offer.funded_at) })}`}
-              </p>
-            </div>
-          </div>
-          <div className="text-end flex items-center gap-3 shrink-0">
-            <div>
-              <p className="text-sm font-semibold font-mono text-foreground">
-                {format.currency(offer.amount, offer.currency)}
-              </p>
-              <p className="text-xs text-muted-foreground font-mono">
-                ≈ {format.number(offer.liveValueUsd, { style: 'currency', currency: 'USD' })}
-              </p>
-            </div>
-            <Badge className={OFFER_STATUS_COLORS[offer.status]}>{tStatus(offer.status)}</Badge>
-          </div>
-        </div>
-
-        {active && (
-          <>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">{t('apy')}</p>
-                <p className="text-sm font-semibold font-mono text-foreground">
-                  {format.number(offer.apy / 100, { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">{t('earnedToDate')}</p>
-                <p className="text-sm font-semibold font-mono text-foreground">
-                  {format.currency(offer.earnedToDate, offer.currency)}
-                  <span className="text-xs text-muted-foreground font-normal">
-                    {' '}≈ {format.number(stroopsToUsd(offer.earnedToDate, offer.currency), { style: 'currency', currency: 'USD' })}
-                  </span>
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">{t('repayment')}</p>
-                <p className="text-sm font-semibold font-mono text-foreground">
-                  {t('percentRepaid', { percent: format.number(offer.repaymentProgress, { style: 'percent' }) })}
-                </p>
-              </div>
-            </div>
-            <div className="mt-3">
-              <RepaymentProgress
-                value={offer.repaymentProgress}
-                label={t('progressLabel', { percent: format.number(offer.repaymentProgress, { style: 'percent' }) })}
-              />
-              <p className="text-xs mt-1 text-muted-foreground">
-                {t('repaidRemaining', {
-                  repaid: format.currency(offer.amount_repaid, offer.currency),
-                  remaining: format.currency(offer.remaining, offer.currency),
-                })}{' '}
-                ·{' '}
-                <span className="text-muted-foreground/70">
-                  {t('updated', { when: relativeUpdate(offer.updatedAt) })}
-                </span>
-              </p>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 
@@ -626,14 +281,13 @@ export default function PortfolioPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <CopyId id={offer.invoice_id} />
-                        <a
-                          href={`https://stellar.expert/explorer/${NETWORK}/contract/${offer.invoice_id}`}
-                          target="_blank"
-                          rel="noreferrer noopener"
+                        <ExplorerLink
+                          type="contract"
+                          id={offer.invoice_id}
                           className="text-xs text-blue-500 hover:underline"
                         >
                           ↗
-                        </a>
+                        </ExplorerLink>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {interestRateLabel(offer.interest_rate)} · {durationLabel(offer.duration)}

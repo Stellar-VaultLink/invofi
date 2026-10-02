@@ -539,7 +539,10 @@ export function createTrustlessWorkClient(cfg: TrustlessWorkConfig) {
      * (TW's `/helper/get-escrow-by-contract-ids`).
      */
     async getEscrowsByContractIds(contractIds: string[]): Promise<Record<string, unknown>[]> {
-      const qs = contractIds.map(id => `contractIds=${encodeURIComponent(id)}`).join('&');
+      // TW's dev API validates this endpoint as an array param — the plain
+      // `contractIds=` form 400s with "contractIds must be an array". Send the
+      // bracket form (`contractIds[]=`) the API accepts.
+      const qs = contractIds.map(id => `contractIds%5B%5D=${encodeURIComponent(id)}`).join('&');
       const res = await fetchImpl(`${baseUrl}/helper/get-escrow-by-contract-ids?${qs}`, { method: 'GET', headers: headers() });
       const data = (await res.json().catch(() => null)) as unknown;
       if (!res.ok) throw toError((data ?? {}) as Record<string, unknown>, res.status);

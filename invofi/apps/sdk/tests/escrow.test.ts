@@ -188,7 +188,7 @@ describe('createTrustlessWorkClient — build/sign/submit loop (live-verified co
     });
     const escrow = await client.getEscrow('CEscrow1');
     expect(escrow.contractId).toBe('CEscrow1');
-    expect(calls[0].url).toContain('/helper/get-escrow-by-contract-ids?contractIds=CEscrow1');
+    expect(calls[0].url).toContain('/helper/get-escrow-by-contract-ids?contractIds%5B%5D=CEscrow1');
   });
 
   it('getEscrow throws ESCROW_NOT_FOUND when the read model has no row', async () => {

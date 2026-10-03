@@ -50,7 +50,7 @@
     "pg": "^8.23.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-hook-form": "^7.88.0",
+    "react-hook-form": "^7.89.0",
     "tailwind-merge": "^2.5.2",
     "zod": "^3.23.8"
   },

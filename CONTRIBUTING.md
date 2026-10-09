@@ -87,7 +87,7 @@ A CI check (`check-issue-assignment`) verifies that the PR author is assigned to
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 20 — the pinned version lives in `.nvmrc` (run `nvm use` to pick it up); npm warns on other majors via the `engines` field
 - Rust 1.70+ with `wasm32-unknown-unknown` target (`rustup target add wasm32-unknown-unknown`)
 - [Stellar CLI](https://developers.stellar.org/docs/tools/stellar-cli) (`cargo install --locked stellar-cli`)
 - [Freighter wallet](https://freighter.app) browser extension

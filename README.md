@@ -604,6 +604,7 @@ in the Supabase SQL Editor.
 | `NEXT_PUBLIC_REGISTRY_CONTRACT_ID` | Output from `stellar contract deploy` (registry) |
 | `NEXT_PUBLIC_FINANCING_CONTRACT_ID` | Output from `stellar contract deploy` (financing) |
 | `NEXT_PUBLIC_REPAYMENT_CONTRACT_ID` | Output from `stellar contract deploy` (repayment) |
+| `NEXT_PUBLIC_POSITION_TOKEN_ASSET` | *(optional)* Position token asset behind financed invoices, `CODE:ISSUER` — defaults to the protocol's POSv2 (`docs/08-environment-variables.md`) |
 | `NEXT_PUBLIC_STELLAR_NETWORK` | `testnet` |
 | `NEXT_PUBLIC_RPC_URL` | `https://soroban-testnet.stellar.org` |
 | `NEXT_PUBLIC_HORIZON_URL` | `https://horizon-testnet.stellar.org` |

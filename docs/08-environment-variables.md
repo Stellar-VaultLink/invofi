@@ -13,6 +13,7 @@ Most environment variables for the InvoFi frontend are prefixed with `NEXT_PUBLI
 | `NEXT_PUBLIC_REGISTRY_CONTRACT_ID` | Yes* | `CAXNTWS...` | Registry contract (invoices, admin, pause) — 56 chars, starts with C |
 | `NEXT_PUBLIC_FINANCING_CONTRACT_ID` | Yes* | *(56-char `C…` id from your deploy)* | Financing contract (offers, accept/reject) |
 | `NEXT_PUBLIC_REPAYMENT_CONTRACT_ID` | Yes* | *(56-char `C…` id from your deploy)* | Repayment contract (repay, overdue, reclaim) |
+| `NEXT_PUBLIC_POSITION_TOKEN_ASSET` | No | `POSv2:GBDDLOWR6YUEEYUKFKS6ISTCLBQKDPUXAOVJMNJYAACT6UYQGEKYEVZR` | Position token asset backing financed invoices, in `CODE:ISSUER` form (issue #85). Defaults to the protocol's POSv2 issued by the protocol deployer (`src/lib/constants.ts`); set it when your deployment mints a different asset. Read by `src/lib/constants.ts` as `POSITION_TOKEN_ASSET`. |
 | `NEXT_PUBLIC_STELLAR_NETWORK` | Yes | `testnet` | `testnet` for development, `mainnet` for production |
 | `NEXT_PUBLIC_RPC_URL` | Yes | See below | Soroban RPC endpoint (differs by network) |
 | `NEXT_PUBLIC_HORIZON_URL` | Yes | See below | Stellar Horizon REST API (differs by network) |

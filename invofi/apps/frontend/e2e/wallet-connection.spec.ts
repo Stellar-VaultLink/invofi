@@ -182,36 +182,50 @@ test.describe('wallet connection is user-initiated', () => {
     await expect(page.evaluate(() => window.localStorage.getItem('invofi:last-wallet'))).resolves.toBeNull();
   });
 
-  test('dialog connects via LOBSTR when it is the wallet clicked', async ({ page }) => {
-    const { popups } = trackPopups(page);
-    await mockLobstr(page, LOBSTR_ADDRESS);
+  test('dialog connects via LOBSTR when it is the wallet clicked', async ({ browser }) => {
+    // This test is deliberately isolated on its own browser context with a
+    // dedicated origin path: under CI's parallel workers, the LOBSTR mock's
+    // postMessage handshake shares `window` state by origin, and sibling
+    // specs that open the same dialog on the same origin have intermittently
+    // intercepted each other's message replies (issue #421 — failed 2026-09-04,
+    // 09-06, 09-13, 10-04, 10-11 scheduled runs, always at the same assertion).
+    // A dedicated context guarantees a clean localStorage/sessionStorage and
+    // an uncontended message channel for exactly this handshake.
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    try {
+      const { popups } = trackPopups(page);
+      await mockLobstr(page, LOBSTR_ADDRESS);
 
-    await page.goto('/auth/login');
-    await page
-      .getByRole('main')
-      .getByRole('button', { name: 'Connect Wallet' })
-      .click();
+      await page.goto('/auth/login');
+      await page
+        .getByRole('main')
+        .getByRole('button', { name: 'Connect Wallet' })
+        .click();
 
-    const dialog = page.getByRole('dialog');
-    await expect(dialog.getByRole('heading', { name: 'Connect Wallet' })).toBeVisible();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.getByRole('heading', { name: 'Connect Wallet' })).toBeVisible();
 
-    // LOBSTR is the second row — pick its Connect button specifically (the
-    // row whose inner text names LOBSTR), not the first. Albedo/xBull rows
-    // also render Connect buttons (web wallets are always "available"), so
-    // row targeting by name is mandatory — clicking those would pop up UI.
-    const lobstrRow = dialog.locator('div.rounded-xl').filter({ hasText: 'LOBSTR' });
-    await expect(lobstrRow).toHaveCount(1);
-    await lobstrRow
-      .getByRole('button', { name: 'Connect', exact: true })
-      .click();
+      // LOBSTR is the second row — pick its Connect button specifically (the
+      // row whose inner text names LOBSTR), not the first. Albedo/xBull rows
+      // also render Connect buttons (web wallets are always "available"), so
+      // row targeting by name is mandatory — clicking those would pop up UI.
+      const lobstrRow = dialog.locator('div.rounded-xl').filter({ hasText: 'LOBSTR' });
+      await expect(lobstrRow).toHaveCount(1);
+      await lobstrRow
+        .getByRole('button', { name: 'Connect', exact: true })
+        .click();
 
-    await expect(page.locator('header').getByText(LOBSTR_ADDRESS.slice(0, 4))).toBeVisible({
-      timeout: 30_000,
-    });
-    await expect(dialog).not.toBeVisible();
-    expect(popups, 'extension connect is silent (no popup needed)').toHaveLength(0);
+      await expect(page.locator('header').getByText(LOBSTR_ADDRESS.slice(0, 4))).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(dialog).not.toBeVisible();
+      expect(popups, 'extension connect is silent (no popup needed)').toHaveLength(0);
 
-    const stored = await page.evaluate(() => window.localStorage.getItem('invofi:last-wallet'));
-    expect(JSON.parse(stored ?? '{}')).toMatchObject({ walletId: 'lobstr' });
+      const stored = await page.evaluate(() => window.localStorage.getItem('invofi:last-wallet'));
+      expect(JSON.parse(stored ?? '{}')).toMatchObject({ walletId: 'lobstr' });
+    } finally {
+      await context.close();
+    }
   });
 });

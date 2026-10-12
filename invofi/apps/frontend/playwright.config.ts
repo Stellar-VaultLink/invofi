@@ -1,5 +1,22 @@
 import { defineConfig, devices } from '@playwright/test';
 import { PLATFORM_ADDRESS } from './e2e/fixtures';
+import { Keypair } from '@stellar/stellar-sdk';
+
+/**
+ * In-memory SEP-10 server signing key for the suite (issue #421 follow-up).
+ *
+ * The wallet-dialog specs connect through the real login page, whose
+ * `onConnected` handler runs the SEP-10 sign-in flow — including a POST to
+ * /api/auth/sep10/challenge on the dev server. Without a server key that
+ * route answers 500, the flow throws, and the page's error handler
+ * disconnects the wallet — so the header pill never appears and the spec
+ * fails (2026-09-06 → 10-11 scheduled runs, always at the same assertion).
+ * A throwaway random key is generated once per run and used only inside this
+ * process — no secret material is checked in, and the challenge/verify pair
+ * runs for real against it (the LOBSTR/Freighter mocks sign with the real
+ * Transaction API).
+ */
+const SEP10_E2E_SERVER_SECRET = Keypair.random().secret();
 
 /**
  * E2E smoke suite for the InvoFi frontend (issue #171).
@@ -64,6 +81,9 @@ export default defineConfig({
       NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY: 'e2e-flag',
       NEXT_PUBLIC_TRUSTLESS_WORK_ENV: 'testnet',
       NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS: PLATFORM_ADDRESS,
+      // Server-side SEP-10 key (route.ts reads this at request time) — see
+      // the note above.
+      SEP10_SERVER_SIGNING_SECRET: SEP10_E2E_SERVER_SECRET,
     },
   },
 });

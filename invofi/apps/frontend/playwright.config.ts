@@ -73,6 +73,13 @@ export default defineConfig({
       NEXT_PUBLIC_STELLAR_NETWORK: 'testnet',
       NEXT_PUBLIC_RPC_URL: 'https://soroban-testnet.stellar.org',
       NEXT_PUBLIC_HORIZON_URL: 'https://horizon-testnet.stellar.org',
+      // Auth backend is pinned to the suite's mock design (#376, ADR-0008):
+      // developers whose `vercel env pull`-created .env.local sets
+      // NEXT_PUBLIC_AUTH_BACKEND=authjs (+ a real DB) used to silently flip
+      // the app under test onto the Auth.js bridge, so the seeded Supabase
+      // session was ignored and guarded pages bounced to /auth/login.
+      // Process env wins over .env.local, same as the other keys here.
+      NEXT_PUBLIC_AUTH_BACKEND: 'supabase',
       // Escrow rail ON for the suite: role-gated escrow UI (the milestone
       // panel, Epic 3.4) becomes reachable. The flag value is NOT a key —
       // the real TW API key stays server-side in production; every TW call

@@ -310,6 +310,25 @@ It runs against the live Stellar testnet contracts and stubs Supabase + the
 on-chain invoice read with fixtures, so no Supabase credentials are needed.
 There is no unit test suite yet — if you add one, use Vitest.
 
+**The suite's environment is pinned, don't leak yours in.** The Playwright
+webServer boots `next dev` with its own env block (`playwright.config.ts`):
+
+- `NEXT_PUBLIC_SUPABASE_URL` is a placeholder (`https://e2e.supabase.co`); the
+  tests intercept every request to it, so no real project is ever contacted.
+- `SEP10_SERVER_SIGNING_SECRET` is generated **in memory** at config load — a
+  throwaway Stellar keypair, never checked in. Without it the SEP-10
+  challenge route answers 500 and the wallet-connect specs fail (this bit the
+  weekly e2e job for weeks — see the comment atop the config).
+- `NEXT_PUBLIC_AUTH_BACKEND` is pinned to `supabase`, the backend the fixture
+  mocks encode. If you ran `vercel env pull` in the frontend directory, the
+  `.env.local` it creates sets `authjs` (+ a real DB) — process env wins over
+  `.env.local`, so the pin keeps the suite deterministic. Never delete the
+  pinned keys from the webServer env block.
+
+If you need to change the e2e environment contract, update **both** the
+webServer env in `playwright.config.ts` and the `env:` block of the
+`frontend-wallet-e2e` job in `.github/workflows/ci.yml` — they must match.
+
 ### Bundle-size budget & route smoke check
 
 CI enforces a **per-route JavaScript budget** and a **route smoke check** on

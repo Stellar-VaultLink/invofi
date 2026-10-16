@@ -18,7 +18,7 @@ jobs:
         working-directory: invofi/apps/frontend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 20
           cache: npm
@@ -36,7 +36,7 @@ jobs:
         working-directory: invofi/apps/frontend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 20
           cache: npm
@@ -65,7 +65,7 @@ jobs:
       NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 20
           cache: npm
@@ -95,7 +95,7 @@ jobs:
           # The workflow only reads the repository; do not leave the GitHub
           # token in the runner's git config for the npm ci / build steps.
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 20
           cache: npm
@@ -139,7 +139,7 @@ jobs:
       NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 20
           cache: npm
@@ -182,7 +182,7 @@ jobs:
       NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS: GARQM6JYPWTTOEQRRLL5L3N5I3TOPOVWR4G72H6E5NVMNB5RK662UXVR
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 20
           cache: npm

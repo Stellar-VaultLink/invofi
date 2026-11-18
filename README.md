@@ -923,13 +923,6 @@ Thanks to everyone who has contributed to InvoFi!! Happy to have you here!
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/Jah-yee">
-                    <img src="https://avatars.githubusercontent.com/u/166608075?v=4" width="100;" alt="Jah-yee"/>
-                    <br />
-                    <sub><b>RoomWithOutRoof</b></sub>
-                </a>
-            </td>
-            <td align="center">
                 <a href="https://github.com/wagmiiii">
                     <img src="https://avatars.githubusercontent.com/u/130152505?v=4" width="100;" alt="wagmiiii"/>
                     <br />
